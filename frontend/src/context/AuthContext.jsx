@@ -54,6 +54,26 @@ export function AuthProvider({ children }) {
   // ── Inicializa sessão ao montar ──
   useEffect(() => {
     let mounted = true;
+    let initialized = false;
+
+    // Escuta mudanças de sessão (login, logout, refresh de token)
+    // Registrado ANTES do init() para não perder eventos
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_, session) => {
+      // Durante a inicialização, deixa o init() cuidar do loading
+      // Depois disso, atualiza silenciosamente sem travar a UI
+      if (!initialized) return;
+
+      if (!mounted) return;
+
+      try {
+        setUser(session?.user ?? null);
+        await fetchProfile(session?.user ?? null);
+      } catch (err) {
+        console.error("Erro no auth state:", err.message);
+      }
+    });
 
     async function init() {
       try {
@@ -64,33 +84,18 @@ export function AuthProvider({ children }) {
         if (!mounted) return;
 
         setUser(session?.user ?? null);
-
         await fetchProfile(session?.user ?? null);
       } catch (err) {
         console.error("Erro ao iniciar auth:", err.message);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          initialized = true;
+          setLoading(false);
+        }
       }
     }
 
     init();
-
-    // Escuta mudanças de sessão (login, logout, refresh de token)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_, session) => {
-      try {
-        setLoading(true);
-
-        setUser(session?.user ?? null);
-
-        await fetchProfile(session?.user ?? null);
-      } catch (err) {
-        console.error("Erro no auth state:", err.message);
-      } finally {
-        setLoading(false);
-      }
-    });
 
     return () => {
       mounted = false;
@@ -100,27 +105,12 @@ export function AuthProvider({ children }) {
 
   // ── LOGIN ──────────────────────────────────────────────────
   const signIn = async ({ email, senha }) => {
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
-
-      if (error) throw error;
-
-      const authUser = data?.user ?? data?.session?.user;
-
-      if (authUser) {
-        setUser(authUser);
-        await fetchProfile(authUser);
-      }
-
-      return data;
-    } finally {
-      setLoading(false);
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
+    if (error) throw error;
+    return data;
   };
 
   // ── LOGOUT ────────────────────────────────────────────────

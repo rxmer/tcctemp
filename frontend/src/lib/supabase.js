@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseKey) {
     "❌ Variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não configuradas.\n" +
       "Crie o arquivo frontend/.env com suas credenciais do Supabase.",
   );
-}
+} 
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
