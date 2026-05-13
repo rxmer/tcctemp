@@ -3,21 +3,25 @@ import { supabase } from "../lib/supabase";
 import { AuthContext } from "./AuthContextStore";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // auth.users
-  const [usuario, setUsuario] = useState(null); // public.usuarios
-  const [tenant, setTenant] = useState(null); // public.tenants
+  const [user, setUser] = useState(null);
+  const [usuario, setUsuario] = useState(null);
+  const [tenant, setTenant] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ── Busca perfil completo do usuário (usuario + tenant) ──
   const fetchProfile = useCallback(async (authUser) => {
+    // Sem usuário autenticado
     if (!authUser) {
+      setUser(null);
       setUsuario(null);
       setTenant(null);
+      setLoading(false);
       return;
     }
 
     try {
-      // Busca o registro em public.usuarios
+      setUser(authUser);
+
+      // Busca usuário da tabela public.usuarios
       const { data: usuarioData, error: usuarioError } = await supabase
         .from("usuarios")
         .select("*")
@@ -26,125 +30,77 @@ export function AuthProvider({ children }) {
 
       if (usuarioError) throw usuarioError;
 
-      // Evita travar caso o trigger ainda não tenha criado o usuário
-      if (!usuarioData) {
-        console.warn("Usuário ainda não encontrado em public.usuarios");
-        setUsuario(null);
+      setUsuario(usuarioData ?? null);
+
+      // Busca tenant somente se existir usuário
+      if (usuarioData?.tenant_id) {
+        const { data: tenantData, error: tenantError } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("id", usuarioData.tenant_id)
+          .maybeSingle();
+
+        if (tenantError) throw tenantError;
+
+        setTenant(tenantData ?? null);
+      } else {
         setTenant(null);
-        return;
       }
-
-      setUsuario(usuarioData);
-
-      // Busca o tenant associado
-      const { data: tenantData, error: tenantError } = await supabase
-        .from("tenants")
-        .select("*")
-        .eq("id", usuarioData.tenant_id)
-        .maybeSingle();
-
-      if (tenantError) throw tenantError;
-
-      setTenant(tenantData ?? null);
     } catch (err) {
-      console.error("Erro ao buscar perfil:", err.message);
+      console.error("Erro ao carregar perfil:", err.message);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // ── Inicializa sessão ao montar ──
   useEffect(() => {
-    let mounted = true;
-    let initialized = false;
-
-    // Escuta mudanças de sessão (login, logout, refresh de token)
-    // Registrado ANTES do init() para não perder eventos
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_, session) => {
-      // Durante a inicialização, deixa o init() cuidar do loading
-      // Depois disso, atualiza silenciosamente sem travar a UI
-      if (!initialized) return;
-
-      if (!mounted) return;
-
-      try {
-        setUser(session?.user ?? null);
-        await fetchProfile(session?.user ?? null);
-      } catch (err) {
-        console.error("Erro no auth state:", err.message);
-      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      fetchProfile(session?.user ?? null);
     });
 
-    async function init() {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!mounted) return;
-
-        setUser(session?.user ?? null);
-        await fetchProfile(session?.user ?? null);
-      } catch (err) {
-        console.error("Erro ao iniciar auth:", err.message);
-      } finally {
-        if (mounted) {
-          initialized = true;
-          setLoading(false);
-        }
-      }
-    }
-
-    init();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  // ── LOGIN ──────────────────────────────────────────────────
   const signIn = async ({ email, senha }) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password: senha,
     });
+
     if (error) throw error;
+
     return data;
   };
 
-  // ── LOGOUT ────────────────────────────────────────────────
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
 
     if (error) throw error;
-
-    setUser(null);
-    setUsuario(null);
-    setTenant(null);
   };
 
-  // ── CADASTRO (novo tenant + admin) ────────────────────────
   const signUp = async ({ nomeEmpresa, nome, email, senha }) => {
-    // Passo 1: Cria o tenant
-    const slugBase = nomeEmpresa
+    const slug = `${nomeEmpresa
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+      .replace(/^-|-$/g, "")}-${Date.now()}`;
 
-    const slug = `${slugBase}-${Date.now()}`;
-
+    // Cria tenant
     const { data: tenantData, error: tenantError } = await supabase
       .from("tenants")
-      .insert({ nome: nomeEmpresa, slug })
+      .insert({
+        nome: nomeEmpresa,
+        slug,
+      })
       .select()
       .single();
 
     if (tenantError) throw tenantError;
 
-    // Passo 2: Cria o usuário Auth
+    // Cria usuário auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password: senha,
@@ -157,10 +113,9 @@ export function AuthProvider({ children }) {
       },
     });
 
+    // Rollback se falhar
     if (authError) {
-      // Rollback
       await supabase.from("tenants").delete().eq("id", tenantData.id);
-
       throw authError;
     }
 
@@ -170,16 +125,20 @@ export function AuthProvider({ children }) {
     };
   };
 
-  const value = {
-    user,
-    usuario,
-    tenant,
-    loading,
-    signIn,
-    signOut,
-    signUp,
-    isAdmin: usuario?.perfil === "admin",
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        usuario,
+        tenant,
+        loading,
+        signIn,
+        signOut,
+        signUp,
+        isAdmin: usuario?.perfil === "admin",
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
