@@ -1,6 +1,6 @@
-// src/pages/Funcionarios.jsx
 import { useState } from "react";
 import { useAuth } from "../context/useAuth";
+import { supabase } from "../lib/supabase";
 
 export function Funcionario() {
   const { tenant } = useAuth();
@@ -34,13 +34,23 @@ export function Funcionario() {
     try {
       setLoading(true);
 
-      // chamada da api
-      console.log("Cadastrar funcionário:", form);
+      const { data, error } = await supabase.functions.invoke(
+        "criar-funcionario",
+        {
+          body: {
+            nome: form.nome,
+            email: form.email,
+            senha: form.senha,
+            telefone: form.telefone,
+            perfil: form.perfil,
+          },
+        },
+      );
 
-      // await api.post("/funcionarios", form)
+      if (error || !data?.ok)
+        throw new Error(data?.error ?? "Erro desconhecido");
 
       alert("Funcionário cadastrado com sucesso!");
-
       setForm({
         nome: "",
         email: "",
@@ -50,8 +60,7 @@ export function Funcionario() {
         confirmarSenha: "",
       });
     } catch (err) {
-      console.error(err);
-      alert("Erro ao cadastrar funcionário");
+      alert(`Erro: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -106,7 +115,7 @@ export function Funcionario() {
               />
             </div>
 
-            <div className="input-group">
+            {/* <div className="input-group">
               <label>Telefone</label>
               <input
                 type="text"
@@ -115,7 +124,7 @@ export function Funcionario() {
                 onChange={handleChange}
                 placeholder="(00) 00000-0000"
               />
-            </div>
+            </div> */}
 
             <div className="input-group">
               <label>Perfil</label>
