@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { supabase } from "../lib/supabase";
 
@@ -15,6 +15,35 @@ export function Funcionario() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [funcionarios, setFuncionarios] = useState([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [erroList, setErroList] = useState(null);
+
+  useEffect(() => {
+    if (!tenant) return;
+    carregarFuncionarios();
+  }, [tenant]);
+
+  async function carregarFuncionarios() {
+    try {
+      setLoadingList(true);
+      setErroList(null);
+      const { data, error } = await supabase
+        .from("usuarios")
+        .select("id, nome, email, perfil")
+        .eq("tenant_id", tenant.id)
+        .order("nome", { ascending: true });
+
+      if (error) throw error;
+      console.log("Funcionarios data:", JSON.stringify(data));
+      setFuncionarios(data ?? []);
+    } catch (err) {
+      console.error("Erro ao carregar funcionários:", err.message);
+      setErroList(err.message);
+    } finally {
+      setLoadingList(false);
+    }
+  }
 
   function handleChange(e) {
     setForm((prev) => ({
@@ -59,6 +88,7 @@ export function Funcionario() {
         senha: "",
         confirmarSenha: "",
       });
+      carregarFuncionarios();
     } catch (err) {
       alert(`Erro: ${err.message}`);
     } finally {
@@ -194,6 +224,56 @@ export function Funcionario() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="func-table-section">
+        <div className="table-header">
+          <h2>Funcionários cadastrados</h2>
+          <span className="table-count">{funcionarios.length} registro(s)</span>
+        </div>
+
+        {loadingList ? (
+          <div className="table-loading">
+            <div className="spinner" />
+          </div>
+        ) : erroList ? (
+          <div className="table-error">
+            Erro ao carregar: {erroList}
+          </div>
+        ) : funcionarios.length === 0 ? (
+          <div className="table-empty">
+            Nenhum funcionário cadastrado ainda.
+          </div>
+        ) : (
+          <>
+            <div className="table-wrapper">
+              <table className="func-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Perfil</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {funcionarios.map((f, idx) => (
+                    <tr key={f.id ?? idx}>
+                      <td className="td-nome">{f.nome}</td>
+                      <td>{f.email}</td>
+                      <td>
+                        <span
+                          className={`perfil-badge ${f.perfil === "admin" ? "badge-admin" : "badge-func"}`}
+                        >
+                          {f.perfil === "admin" ? "Administrador" : "Funcionário"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       <style>{styles}</style>
@@ -372,6 +452,121 @@ const styles = `
   font-size: 13px;
   line-height: 1.6;
   color: var(--text-secondary);
+}
+
+/* ── TABLE ──────────────────────────────────── */
+.func-table-section {
+  margin-top: 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-header h2 {
+  font-size: 16px;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.table-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.table-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.table-empty {
+  text-align: center;
+  padding: 48px 22px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.table-error {
+  text-align: center;
+  padding: 24px 22px;
+  color: var(--error);
+  font-size: 13px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.func-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.func-table thead {
+  background: var(--bg-elevated);
+}
+
+.func-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.func-table td {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.func-table tbody tr:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.td-nome {
+  font-weight: 500;
+}
+
+.perfil-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.badge-admin {
+  background: rgba(232,93,4,0.15);
+  color: var(--accent);
+}
+
+.badge-func {
+  background: rgba(34,197,94,0.12);
+  color: var(--success);
 }
 
 @media (max-width: 980px) {
