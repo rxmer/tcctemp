@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { authService } from "../services/auth.service";
 import { AuthContext } from "./AuthContextStore";
 
 export function AuthProvider({ children }) {
@@ -9,7 +10,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (authUser) => {
-    // Sem usuário autenticado
     if (!authUser) {
       setUser(null);
       setUsuario(null);
@@ -20,34 +20,13 @@ export function AuthProvider({ children }) {
 
     try {
       setUser(authUser);
-
-      // Busca usuário da tabela public.usuarios
-      const { data: usuarioData, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("id", authUser.id)
-        .maybeSingle();
-
-      if (usuarioError) throw usuarioError;
-
-      setUsuario(usuarioData ?? null);
-
-      // Busca tenant somente se existir usuário
-      if (usuarioData?.tenant_id) {
-        const { data: tenantData, error: tenantError } = await supabase
-          .from("tenants")
-          .select("*")
-          .eq("id", usuarioData.tenant_id)
-          .maybeSingle();
-
-        if (tenantError) throw tenantError;
-
-        setTenant(tenantData ?? null);
-      } else {
-        setTenant(null);
-      }
+      const data = await authService.me();
+      setUsuario(data.usuario ?? null);
+      setTenant(data.tenant ?? null);
     } catch (err) {
       console.error("Erro ao carregar perfil:", err.message);
+      setUsuario(null);
+      setTenant(null);
     } finally {
       setLoading(false);
     }
@@ -76,53 +55,11 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-
     if (error) throw error;
   };
 
   const signUp = async ({ nomeEmpresa, nome, email, senha }) => {
-    const slug = `${nomeEmpresa
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")}-${Date.now()}`;
-
-    // Cria tenant
-    const { data: tenantData, error: tenantError } = await supabase
-      .from("tenants")
-      .insert({
-        nome: nomeEmpresa,
-        slug,
-      })
-      .select()
-      .single();
-
-    if (tenantError) throw tenantError;
-
-    // Cria usuário auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        data: {
-          nome,
-          tenant_id: tenantData.id,
-          perfil: "admin",
-        },
-      },
-    });
-
-    // Rollback se falhar
-    if (authError) {
-      await supabase.from("tenants").delete().eq("id", tenantData.id);
-      throw authError;
-    }
-
-    return {
-      tenant: tenantData,
-      user: authData.user,
-    };
+    return authService.signup({ nomeEmpresa, nome, email, senha });
   };
 
   return (

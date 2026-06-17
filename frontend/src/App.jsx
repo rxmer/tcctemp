@@ -1,12 +1,4 @@
-// src/App.jsx
-//
-// MUDANÇAS vs versão anterior:
-// 1. Rotas /login e /cadastro agora envolvidas em <PublicRoute>.
-//    Usuário autenticado que acessar essas rotas é automaticamente
-//    redirecionado para /dashboard sem carregar o componente.
-// 2. Rota "/" redireciona para /dashboard em vez de /login —
-//    deixa o PublicRoute/ProtectedRoute decidir para onde ir,
-//    em vez de forçar /login para usuários autenticados.
+
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -41,7 +33,6 @@ export default function App() {
             </Route>
           </Route>
 
-          {/* Fallback: deixa o sistema de guards decidir */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
