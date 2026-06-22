@@ -42,18 +42,39 @@ export function Login() {
           <div className={styles.brandContent}>
             <div className={styles.brandIconWrapper}>
               <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
-                <path d="M4 20L8 8H20L24 20H4Z" stroke="#e85d04" strokeWidth="2" strokeLinejoin="round" />
+                <path
+                  d="M4 20L8 8H20L24 20H4Z"
+                  stroke="#e85d04"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
                 <circle cx="9" cy="22" r="2" fill="#e85d04" />
                 <circle cx="19" cy="22" r="2" fill="#e85d04" />
                 <path d="M8 13H20" stroke="#e85d04" strokeWidth="1.5" />
               </svg>
             </div>
-            <h1 className={styles.brandTitle}>EstéticaPro</h1>
-            <p className={styles.brandTagline}>Gestão inteligente para sua clínica de estética</p>
+            <h1 className={styles.brandTitle}>EstetiCar</h1>
+            <p className={styles.brandTagline}>
+              Gestão inteligente para sua clínica de estética
+            </p>
             <div className={styles.brandFeatures}>
-              {["Agendamento de clientes", "Controle financeiro", "Gestão de equipe", "Relatórios e analytics"].map((text) => (
+              {[
+                "Agendamento de clientes",
+                "Controle financeiro",
+                "Gestão de equipe",
+                "Relatórios e analytics",
+              ].map((text) => (
                 <div key={text} className={styles.brandFeature}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e85d04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#e85d04"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   <span>{text}</span>
@@ -74,16 +95,38 @@ export function Login() {
           {erro && <Alert>{erro}</Alert>}
 
           <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
-            <Input label="E-mail" name="email" type="email" placeholder="seu@email.com" value={form.email} onChange={handleChange} required autoComplete="email" />
-            <Input label="Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required autoComplete="current-password" />
-            <Button type="submit" fullWidth loading={loading}>Entrar</Button>
+            <Input
+              label="E-mail"
+              name="email"
+              type="email"
+              placeholder="seu@email.com"
+              value={form.email}
+              onChange={handleChange}
+              required
+              autoComplete="email"
+            />
+            <Input
+              label="Senha"
+              name="senha"
+              type="password"
+              placeholder="••••••••"
+              value={form.senha}
+              onChange={handleChange}
+              required
+              autoComplete="current-password"
+            />
+            <Button type="submit" fullWidth loading={loading}>
+              Entrar
+            </Button>
           </form>
 
           <div className="divider">ou</div>
 
           <p className={styles.authFooterText}>
             Não tem conta?{" "}
-            <Link to="/cadastro" className="link">Cadastrar estética</Link>
+            <Link to="/cadastro" className="link">
+              Cadastrar estética
+            </Link>
           </p>
         </div>
       </div>

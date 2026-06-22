@@ -7,6 +7,7 @@ import { AppLayout } from "./components/AppLayout";
 import { Login } from "./pages/Login";
 import { Cadastro } from "./pages/Cadastro";
 import { Funcionario } from "./pages/funcionarios";
+import { Servicos } from "./pages/servicos";
 import { Dashboard } from "./pages/Dashboard";
 import "./styles/global.css";
 
@@ -27,6 +28,8 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
 
               {/* Admin only */}
+              <Route path="/servicos" element={<Servicos />} />
+
               <Route element={<ProtectedRoute adminOnly />}>
                 <Route path="/funcionarios" element={<Funcionario />} />
               </Route>

@@ -31,7 +31,8 @@ export function Cadastro() {
   const validarStep = () => {
     const e = {};
     if (step === 0) {
-      if (!form.nomeEmpresa.trim()) e.nomeEmpresa = "Nome da empresa obrigatório";
+      if (!form.nomeEmpresa.trim())
+        e.nomeEmpresa = "Nome da empresa obrigatório";
     }
     if (step === 1) {
       if (!form.nome.trim()) e.nome = "Seu nome é obrigatório";
@@ -72,50 +73,108 @@ export function Cadastro() {
       <div className={styles.authBrand}>
         <div className={styles.brandIcon}>
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M4 20L8 8H20L24 20H4Z" stroke="#e85d04" strokeWidth="2" strokeLinejoin="round" />
+            <path
+              d="M4 20L8 8H20L24 20H4Z"
+              stroke="#e85d04"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
             <circle cx="9" cy="22" r="2" fill="#e85d04" />
             <circle cx="19" cy="22" r="2" fill="#e85d04" />
             <path d="M8 13H20" stroke="#e85d04" strokeWidth="1.5" />
           </svg>
         </div>
-        <span className={styles.brandName}>EstéticaPro</span>
+        <span className={styles.brandName}>EstetiCar</span>
       </div>
 
       <div className={styles.authCard}>
         <div className={styles.stepIndicator}>
           {STEPS.map((label, i) => (
-            <div key={i} className={`${styles.stepItem} ${i === step ? styles.stepItemActive : i < step ? styles.stepItemDone : ""}`}>
+            <div
+              key={i}
+              className={`${styles.stepItem} ${i === step ? styles.stepItemActive : i < step ? styles.stepItemDone : ""}`}
+            >
               <div className={styles.stepDot}>{i < step ? "✓" : i + 1}</div>
               <span>{label}</span>
             </div>
           ))}
-          <div className={styles.stepLine} style={{ "--progress": `${(step / (STEPS.length - 1)) * 100}%` }} />
+          <div
+            className={styles.stepLine}
+            style={{ "--progress": `${(step / (STEPS.length - 1)) * 100}%` }}
+          />
         </div>
 
         <div className={styles.authHeader}>
           <h1>{step === 0 ? "Sua estética" : "Crie seu acesso"}</h1>
-          <p>{step === 0 ? "Como se chama sua empresa?" : "Dados do administrador"}</p>
+          <p>
+            {step === 0
+              ? "Como se chama sua empresa?"
+              : "Dados do administrador"}
+          </p>
         </div>
 
         {erro && <Alert>{erro}</Alert>}
 
         <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
           {step === 0 && (
-            <Input label="Nome da estética" name="nomeEmpresa" placeholder="Ex: Auto Brilho Premium" value={form.nomeEmpresa} onChange={handleChange} error={erros.nomeEmpresa} autoFocus />
+            <Input
+              label="Nome da estética"
+              name="nomeEmpresa"
+              placeholder="Ex: Auto Brilho Premium"
+              value={form.nomeEmpresa}
+              onChange={handleChange}
+              error={erros.nomeEmpresa}
+              autoFocus
+            />
           )}
 
           {step === 1 && (
             <>
-              <Input label="Seu nome" name="nome" placeholder="João Silva" value={form.nome} onChange={handleChange} error={erros.nome} />
-              <Input label="E-mail" name="email" type="email" placeholder="seu@email.com" value={form.email} onChange={handleChange} error={erros.email} />
-              <Input label="Senha" name="senha" type="password" placeholder="Mínimo 8 caracteres" value={form.senha} onChange={handleChange} error={erros.senha} />
-              <Input label="Confirmar senha" name="confirma" type="password" placeholder="Repita a senha" value={form.confirma} onChange={handleChange} error={erros.confirma} />
+              <Input
+                label="Seu nome"
+                name="nome"
+                placeholder="João Silva"
+                value={form.nome}
+                onChange={handleChange}
+                error={erros.nome}
+              />
+              <Input
+                label="E-mail"
+                name="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={form.email}
+                onChange={handleChange}
+                error={erros.email}
+              />
+              <Input
+                label="Senha"
+                name="senha"
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                value={form.senha}
+                onChange={handleChange}
+                error={erros.senha}
+              />
+              <Input
+                label="Confirmar senha"
+                name="confirma"
+                type="password"
+                placeholder="Repita a senha"
+                value={form.confirma}
+                onChange={handleChange}
+                error={erros.confirma}
+              />
             </>
           )}
 
           <div className={styles.formActions}>
             {step > 0 && (
-              <Button type="button" variant="ghost" onClick={() => setStep((s) => s - 1)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setStep((s) => s - 1)}
+              >
                 ← Voltar
               </Button>
             )}
@@ -133,7 +192,9 @@ export function Cadastro() {
 
         <p className={styles.authFooterText}>
           Já tem conta?{" "}
-          <Link to="/login" className="link">Entrar</Link>
+          <Link to="/login" className="link">
+            Entrar
+          </Link>
         </p>
       </div>
     </div>
