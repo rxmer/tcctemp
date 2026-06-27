@@ -22,8 +22,13 @@ export async function getStatus(req, res) {
 export async function connect(req, res) {
   const { tenantId } = req;
 
-  if (baileysClient.getConnectionState().status === "connected") {
+  const currentState = baileysClient.getConnectionState().status;
+  if (currentState === "connected") {
     return res.json({ message: "Já conectado" });
+  }
+
+  if (currentState === "reconnecting" || currentState === "awaiting_qr") {
+    return res.json({ message: "Já tentando conectar, aguarde..." });
   }
 
   const authDir = path.join(__dirname, "..", "..", "..", `baileys_auth_${tenantId}`);
@@ -37,8 +42,13 @@ export async function connect(req, res) {
 }
 
 export async function disconnect(req, res) {
-  await baileysClient.stopBaileys();
-  res.json({ message: "Desconectado" });
+  try {
+    await baileysClient.stopBaileys();
+    res.json({ message: "Desconectado" });
+  } catch (err) {
+    logger.error({ err }, "Erro ao desconectar");
+    res.json({ message: "Desconectado" });
+  }
 }
 
 export async function listSessions(req, res) {

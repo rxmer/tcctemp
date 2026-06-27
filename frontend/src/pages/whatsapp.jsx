@@ -10,6 +10,7 @@ const STATUS_LABELS = {
   connected: { label: "Conectado", cls: styles.connected },
   awaiting_qr: { label: "Aguardando QR Code", cls: styles.awaitingQr },
   reconnecting: { label: "Reconectando...", cls: styles.reconnecting },
+  connecting: { label: "Conectando...", cls: styles.reconnecting },
 };
 
 export function WhatsApp() {
@@ -97,6 +98,13 @@ export function WhatsApp() {
                 ⏳
                 <p style={{ fontSize: 16, marginTop: 8 }}>
                   Gerando QR Code...
+                </p>
+              </div>
+            ) : state.status === "connecting" ? (
+              <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
+                ⏳
+                <p style={{ fontSize: 16, marginTop: 8 }}>
+                  Pareamento concluído, conectando...
                 </p>
               </div>
             ) : (

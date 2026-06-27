@@ -23,6 +23,7 @@ let connectionState = {
 
 let onMessageHandler = null;
 let intentionalDisconnect = false;
+let socketId = 0;
 
 const baileysLogger = pino({ level: "silent" });
 
@@ -44,7 +45,7 @@ export function getAuthDir(tenantId) {
 
 export async function startBaileys(tenantId) {
   if (socket) {
-    await stopBaileys();
+    await stopBaileys(true);
   }
 
   currentTenantId = tenantId;
@@ -52,6 +53,9 @@ export async function startBaileys(tenantId) {
 
   const { state: authStateValue, saveCreds } = await useMultiFileAuthState(authDir);
   authState = authStateValue;
+
+  const thisSocketId = ++socketId;
+  let pairingCompleted = false;
 
   socket = makeWASocket({
     auth: {
@@ -61,14 +65,30 @@ export async function startBaileys(tenantId) {
     logger: baileysLogger,
     printQRInTerminal: true,
     syncFullHistory: false,
-    connectTimeoutMs: 60000,
+    connectTimeoutMs: 120000,
     keepAliveIntervalMs: 30000,
-    markOnlineOnConnect: true,
-    browser: ["Esteticar", "Chrome", "120.0"],
+    markOnlineOnConnect: false,
+    browser: ["Chrome (Windows)", "Chrome", "120.0.0"],
+    qrTimeout: 120000,
+    fireInitQueries: false,
   });
 
-  socket.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
-    logger.info({ connection, hasQr: !!qr }, "Baileys connection.update");
+  socket.ev.on("connection.update", async ({ connection, lastDisconnect, qr, isNewLogin }) => {
+    if (thisSocketId !== socketId) {
+      logger.debug({ thisSocketId, currentSocketId: socketId }, "Evento de socket antigo, ignorando");
+      return;
+    }
+
+    const statusCode = lastDisconnect?.error?.output?.statusCode;
+    const errorMessage = lastDisconnect?.error?.message;
+    logger.info({ connection, hasQr: !!qr, statusCode, errorMessage, isNewLogin, errorType: lastDisconnect?.error?.constructor?.name }, "Baileys connection.update");
+
+    if (isNewLogin) {
+      pairingCompleted = true;
+      connectionState.status = "connecting";
+      connectionState.error = null;
+      logger.info("Pareamento concluído com sucesso");
+    }
 
     if (qr) {
       connectionState.qrCode = qr;
@@ -81,38 +101,52 @@ export async function startBaileys(tenantId) {
       connectionState.status = "connected";
       connectionState.qrCode = null;
       connectionState.error = null;
-      logger.info("Baileys conectado");
+      pairingCompleted = false;
+      logger.info("Baileys conectado com sucesso");
     }
 
     if (connection === "close") {
       const wasIntentional = intentionalDisconnect;
       intentionalDisconnect = false;
 
-      connectionState.status = "disconnected";
       connectionState.qrCode = null;
 
       if (wasIntentional) {
+        connectionState.status = "disconnected";
         logger.info("Desconectado manualmente");
         return;
       }
 
-      const shouldReconnect =
-        (lastDisconnect?.error instanceof Boom &&
-          lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) ||
-        lastDisconnect?.error === undefined;
+      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+      const isTimedOut = statusCode === DisconnectReason.timedOut;
+      const isConnectionClosed = statusCode === DisconnectReason.connectionClosed;
+      const isConnectionReplaced = statusCode === DisconnectReason.connectionReplaced;
+      const isStreamError = statusCode === 515;
 
-      if (shouldReconnect) {
-        connectionState.status = "reconnecting";
-        logger.info("Reconectando em 5s...");
-        setTimeout(() => startBaileys(tenantId), 5000);
-      } else {
+      logger.warn({ statusCode, errorMessage, isLoggedOut, isTimedOut, isConnectionClosed, isConnectionReplaced, isStreamError, pairingCompleted },
+        "Conexão fechada - analisando motivo");
+
+      if (isLoggedOut || isConnectionReplaced) {
         connectionState.status = "disconnected";
-        const isLoggedOut = lastDisconnect?.error instanceof Boom &&
-          lastDisconnect.error.output.statusCode === DisconnectReason.loggedOut;
-        if (isLoggedOut) {
-          connectionState.error = "Desconectado do WhatsApp. Clique em Conectar para gerar novo QR Code.";
-        }
-        logger.info("Desconectado (logout ou erro fatal)");
+        connectionState.error = isLoggedOut
+          ? "Desconectado do WhatsApp. Clique em Conectar para gerar novo QR Code."
+          : "Conexão substituída por outro dispositivo. Clique em Conectar novamente.";
+        logger.info({ statusCode }, "Desconectado definitivamente");
+      } else if (isStreamError && pairingCompleted) {
+        connectionState.status = "connecting";
+        connectionState.error = null;
+        logger.info("Reiniciando stream após pareamento bem-sucedido...");
+        setTimeout(() => startBaileys(tenantId), 1500);
+      } else if (!statusCode && connectionState.status === "connected") {
+        logger.info("Close sem statusCode após conexão ativa, ignorando (cleanup do servidor)");
+      } else if (connectionState.status === "connecting" || connectionState.status === "reconnecting") {
+        logger.info({ currentStatus: connectionState.status }, "Close durante reconexão, ignorando");
+      } else {
+        connectionState.status = "reconnecting";
+        connectionState.error = isStreamError ? null : connectionState.error;
+        const delay = isTimedOut ? 3000 : 5000;
+        logger.info({ delay, statusCode }, `Reconectando em ${delay / 1000}s...`);
+        setTimeout(() => startBaileys(tenantId), delay);
       }
     }
   });
@@ -191,18 +225,25 @@ export async function startBaileys(tenantId) {
   return socket;
 }
 
-export async function stopBaileys() {
+export async function stopBaileys(keepState = false) {
   intentionalDisconnect = true;
   if (socket) {
-    socket.end(undefined);
+    try {
+      socket.ws?.close();
+    } catch {}
+    try {
+      socket.end(undefined);
+    } catch {}
     socket = null;
   }
   currentTenantId = null;
-  connectionState = {
-    status: "disconnected",
-    qrCode: null,
-    error: null,
-  };
+  if (!keepState) {
+    connectionState = {
+      status: "disconnected",
+      qrCode: null,
+      error: null,
+    };
+  }
 }
 
 export async function sendWhatsAppMessage(jid, text) {

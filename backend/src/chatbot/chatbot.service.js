@@ -355,15 +355,15 @@ function gerarButtonsDatas(datas) {
 async function sendMenu(jid, session) {
   await sendButtons(
     jid,
-    "*Menu Principal*",
+    "Como posso te ajudar? Escolha uma opção:",
     [
-      { id: "menu_agendar", text: "📅 Agendar" },
-      { id: "menu_consultar", text: "📋 Consultar" },
-      { id: "menu_servicos", text: "✨ Serviços" },
+      { id: "menu_agendar", text: "📅 Agendar Serviço" },
+      { id: "menu_consultar", text: "📋 Meus Agendamentos" },
+      { id: "menu_servicos", text: "✨ Nossos Serviços" },
       { id: "menu_cancelar", text: "❌ Cancelar" },
-      { id: "menu_atendente", text: "👤 Atendente" },
+      { id: "menu_atendente", text: "👤 Falar com Atendente" },
     ],
-    "Esteticar"
+    "Esteticar — Estética Automotiva"
   );
   await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
 }
@@ -1468,11 +1468,11 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
 
       await sendWhatsAppMessage(
         remoteJid,
-        `Olá, ${pushName}! 👋 Bem-vindo(a) à *Estética Automotiva*!`
+        `Olá, ${pushName}! 👋 Seja bem-vindo(a) à *Esteticar — Estética Automotiva*!`
       );
       await sendWhatsAppMessage(
         remoteJid,
-        "Estou aqui para ajudar com agendamentos e informações sobre nossos serviços."
+        "Somos especialistas em cuidar do acabamento e proteção do seu veículo. 🚗✨\n\nPosso ajudar com *agendamentos*, *consultas* ou tirar qualquer dúvida sobre nossos serviços."
       );
       await sendMenu(remoteJid, session);
       return;
@@ -1487,23 +1487,23 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
 
     if (intent === "SAUDACAO") {
       if (session.state === "MENU_PRINCIPAL") {
-        await sendWhatsAppMessage(jid, "Olá! 😊 Em que posso ajudar?");
+        await sendWhatsAppMessage(jid, `Olá, ${session.client_name || "cliente"}! 👋 Como posso ajudar você hoje?`);
         await sendMenu(jid, session);
         return;
       }
-      await sendWhatsAppMessage(jid, "Olá! 😊 Continuando de onde paramos...");
+      await sendWhatsAppMessage(jid, "Olá! 😊 Estou te ajudando agora, vamos continuar...");
     } else if (intent === "THANKS") {
-      await sendWhatsAppMessage(jid, "Por nada! 😊 Estou aqui para ajudar.");
+      await sendWhatsAppMessage(jid, "Fico feliz em ajudar! 😊 Se precisar de algo mais, é só chamar.");
       return;
     } else if (intent === "RESET") {
       await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
       session.state = "MENU_PRINCIPAL";
       session.state_data = {};
-      await sendWhatsAppMessage(jid, "🔄 Conversa reiniciada! Use o menu abaixo:");
+      await sendWhatsAppMessage(jid, "🔄 Conversa reiniciada! Como posso te ajudar?");
       await sendMenu(jid, session);
       return;
     } else if (intent === "DESPEDIDA") {
-      await sendWhatsAppMessage(jid, "Até mais! 😊 Se precisar, estou aqui.");
+      await sendWhatsAppMessage(jid, "Até logo! 👋 Foi um prazer atender você. Cuide bem do seu carro! 🚗");
       if (session.state !== "MENU_PRINCIPAL") {
         await sendMenu(jid, session);
       }
