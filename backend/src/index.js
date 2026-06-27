@@ -1,24 +1,24 @@
 import "dotenv/config";
-import "express-async-errors";
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import { routes } from "./routes/index.js";
-import { errorHandler } from "./middleware/errorHandler.js";
+import { app } from "./app.js";
 import { env } from "./config/env.js";
+import { logger } from "./config/logger.js";
+import { initCache } from "./config/cache.js";
+import { verificarEEnviarLembretes } from "./services/lembretes.service.js";
+import { limparSessoesExpiradas } from "./chatbot/chatbot.session.js";
 
-const app = express();
+app.listen(env.port, async () => {
+  await initCache();
+  logger.info({ port: env.port }, "Backend iniciado");
 
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? "http://localhost:5173" }));
-app.use(express.json());
+  setInterval(() => {
+    verificarEEnviarLembretes().catch((err) =>
+      logger.error({ err }, "Erro no intervalo de lembretes")
+    );
+  }, 5 * 60 * 1000);
 
-app.use("/api", routes);
-
-app.get("/health", (_req, res) => res.json({ ok: true }));
-
-app.use(errorHandler);
-
-app.listen(env.port, () => {
-  console.log(`🚀 Backend rodando em http://localhost:${env.port}`);
+  setInterval(() => {
+    limparSessoesExpiradas().catch((err) =>
+      logger.error({ err }, "Erro na limpeza de sessões expiradas")
+    );
+  }, 5 * 60 * 1000);
 });

@@ -23,5 +23,10 @@ export async function authenticate(req, _res, next) {
   req.tenantId = user.user_metadata?.tenant_id;
   req.perfil = user.user_metadata?.perfil;
   req.userMetadata = user.user_metadata;
+
+  if (!req.tenantId) {
+    throw new AppError("Usuário sem vínculo com empresa", 403);
+  }
+
   next();
 }

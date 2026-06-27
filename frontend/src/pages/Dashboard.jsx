@@ -1,15 +1,34 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
-import { PageHeader, Button } from "../components/ui";
+import { PageHeader, Button, SkeletonCard } from "../components/ui";
+import { dashboardService } from "../services/dashboard.service";
 import styles from "../styles/pages/Dashboard.module.css";
 
 export function Dashboard() {
   const { usuario, tenant, loading } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [dashLoading, setDashLoading] = useState(true);
+  const [dashError, setDashError] = useState(null);
 
-  if (loading) {
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const dados = await dashboardService.resumo();
+        setStats(dados);
+      } catch (err) {
+        setDashError("Não foi possível carregar os dados do dashboard.");
+        console.error("Erro dashboard:", err);
+      } finally {
+        setDashLoading(false);
+      }
+    }
+    carregar();
+  }, []);
+
+  if (loading || dashLoading) {
     return (
       <div className={styles.dashLoading}>
-        <div className="spinner" />
-        <p>Carregando dashboard...</p>
+        <SkeletonCard lines={6} />
       </div>
     );
   }
@@ -24,6 +43,31 @@ export function Dashboard() {
       </div>
     );
   }
+
+  if (dashError) {
+    return (
+      <div className={styles.dashError}>
+        <div className={styles.dashErrorIcon}>⚠️</div>
+        <h2>Erro no dashboard</h2>
+        <p>{dashError}</p>
+        <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+      </div>
+    );
+  }
+
+  function formatMoney(value) {
+    return Number(value).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  const STATS = [
+    { icon: "📅", label: "Agendamentos hoje", value: String(stats?.agendamentos_hoje ?? 0) },
+    { icon: "✅", label: "Serviços realizados", value: String(stats?.servicos_realizados ?? 0) },
+    { icon: "👥", label: "Total de clientes", value: String(stats?.total_clientes ?? 0) },
+    { icon: "💵", label: "Faturamento mês", value: formatMoney(stats?.faturamento_mes ?? 0) },
+  ];
 
   return (
     <>
@@ -40,14 +84,6 @@ export function Dashboard() {
           </div>
         }
       />
-
-      <div className={styles.infoBanner}>
-        <span className={styles.infoDot} />
-        <span>
-          Autenticação multi-tenant ativa · Tenant ID:{" "}
-          <code>{tenant?.id?.slice(0, 8) ?? "N/A"}...</code>
-        </span>
-      </div>
 
       <div className={styles.statGrid}>
         {STATS.map((s) => (
@@ -66,23 +102,17 @@ export function Dashboard() {
           <DebugRow label="Tenant ID" value={tenant?.id?.slice(0, 12) + "..."} />
           <DebugRow label="Perfil" value={usuario?.perfil} accent />
           <DebugRow label="Empresa" value={tenant?.nome} />
-          <DebugRow label="RLS Ativo" value="Sim — dados isolados por tenant" accent />
         </div>
       </div>
     </>
   );
 }
 
-const DebugRow = ({ label, value, accent }) => (
-  <div className={styles.debugRow}>
-    <span className={styles.debugKey}>{label}</span>
-    <span className={`${styles.debugVal} ${accent ? styles.debugValAccent : ""}`}>{value}</span>
-  </div>
-);
-
-const STATS = [
-  { icon: "📅", label: "Agendamentos hoje", value: "0" },
-  { icon: "✅", label: "Serviços realizados", value: "0" },
-  { icon: "👥", label: "Total de clientes", value: "0" },
-  { icon: "💵", label: "Faturamento mês", value: "R$ 0,00" },
-];
+function DebugRow({ label, value, accent }) {
+  return (
+    <div className={styles.debugRow}>
+      <span className={styles.debugKey}>{label}</span>
+      <span className={`${styles.debugVal} ${accent ? styles.debugValAccent : ""}`}>{value}</span>
+    </div>
+  );
+}

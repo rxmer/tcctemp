@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { funcionariosService } from "../services/funcionarios.service";
 import { Input, Button, PageHeader } from "../components/ui";
@@ -6,6 +7,7 @@ import styles from "../styles/pages/funcionarios.module.css";
 
 export function Funcionario() {
   const { tenant } = useAuth();
+  const { feedback, showFeedback } = useFeedback();
 
   const [form, setForm] = useState({
     nome: "",
@@ -28,7 +30,7 @@ export function Funcionario() {
     e.preventDefault();
 
     if (form.senha !== form.confirmarSenha) {
-      alert("As senhas não coincidem");
+      showFeedback("error", "As senhas não coincidem");
       return;
     }
 
@@ -42,7 +44,7 @@ export function Funcionario() {
         telefone: form.telefone,
       });
 
-      alert("Funcionário cadastrado com sucesso!");
+      showFeedback("success", "Funcionário cadastrado com sucesso!");
       setForm({
         nome: "",
         email: "",
@@ -51,7 +53,7 @@ export function Funcionario() {
         confirmarSenha: "",
       });
     } catch (err) {
-      alert(`Erro: ${err.message}`);
+      showFeedback("error", err.message);
     } finally {
       setLoading(false);
     }
@@ -69,6 +71,8 @@ export function Funcionario() {
           </div>
         }
       />
+
+      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
 
       <div className={styles.funcGrid}>
         <div className={styles.formCard}>

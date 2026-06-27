@@ -27,8 +27,9 @@ export async function criar(req, res) {
 }
 
 export async function listar(req, res) {
-  const servicos = await servicosService.listarServicos(req.tenantId);
-  res.json(servicos);
+  const { page, limit, search } = req.query;
+  const result = await servicosService.listarServicos(req.tenantId, { page: Number(page) || 1, limit: Number(limit) || 20, search: search || "" });
+  res.json(result);
 }
 
 export async function atualizar(req, res) {

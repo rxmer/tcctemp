@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 
@@ -7,7 +8,7 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")}-${Date.now()}`;
+    .replace(/^-|-$/g, "")}-${randomUUID().slice(0, 8)}`;
 
   const { data: tenantData, error: tenantError } = await supabaseAdmin
     .from("tenants")

@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { servicosService } from "../services/servicos.service";
-import { Input, Button, PageHeader } from "../components/ui";
+import { useFeedback } from "../hooks/useFeedback";
+import { useConfirm } from "../hooks/useConfirm";
+import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
 import styles from "../styles/pages/servicos.module.css";
 
 const formInitial = {
@@ -19,18 +21,38 @@ export function Servicos() {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
+  const debounceRef = useRef(null);
+  const { feedback, showFeedback } = useFeedback();
+  const { confirm, ConfirmModal } = useConfirm();
+
+  const LIMIT = 20;
 
   useEffect(() => {
     carregarServicos();
-  }, []);
+  }, [page]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const result = await servicosService.listar({ page: 1, limit: LIMIT, search });
+      setPage(1);
+      setServicos(result.data);
+      setTotal(result.total);
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [search]);
 
   async function carregarServicos() {
     try {
       setLoading(true);
-      const data = await servicosService.listar();
-      setServicos(data);
+      const result = await servicosService.listar({ page, limit: LIMIT, search });
+      setServicos(result.data);
+      setTotal(result.total);
     } catch (err) {
-      alert(`Erro ao carregar serviços: ${err.message}`);
+      showFeedback("error", err.message);
     } finally {
       setLoading(false);
     }
@@ -65,8 +87,8 @@ export function Servicos() {
       duracao_min: Number(form.duracao_min),
     };
 
-    if (!payload.nome_servico || !payload.preco_base || !payload.duracao_min) {
-      alert("Preencha todos os campos obrigatórios");
+    if (!payload.nome_servico || form.preco_base === "" || !payload.duracao_min) {
+      showFeedback("error", "Preencha todos os campos obrigatórios");
       return;
     }
 
@@ -75,16 +97,16 @@ export function Servicos() {
 
       if (editingId) {
         await servicosService.atualizar(editingId, payload);
-        alert("Serviço atualizado com sucesso!");
+        showFeedback("success", "Serviço atualizado com sucesso!");
       } else {
         await servicosService.criar(payload);
-        alert("Serviço cadastrado com sucesso!");
+        showFeedback("success", "Serviço cadastrado com sucesso!");
       }
 
       cancelarEdicao();
       await carregarServicos();
     } catch (err) {
-      alert(`Erro: ${err.message}`);
+      showFeedback("error", err.message);
     } finally {
       setSaving(false);
     }
@@ -95,18 +117,19 @@ export function Servicos() {
       await servicosService.toggleAtivo(servico.servico_id);
       await carregarServicos();
     } catch (err) {
-      alert(`Erro ao alterar status: ${err.message}`);
+      showFeedback("error", err.message);
     }
   }
 
   async function handleDelete(servico) {
-    if (!confirm(`Remover "${servico.nome_servico}"?`)) return;
+    const ok = await confirm(`Remover "${servico.nome_servico}"?`);
+    if (!ok) return;
 
     try {
       await servicosService.deletar(servico.servico_id);
       await carregarServicos();
     } catch (err) {
-      alert(`Erro ao remover: ${err.message}`);
+      showFeedback("error", err.message);
     }
   }
 
@@ -129,6 +152,8 @@ export function Servicos() {
           </div>
         }
       />
+
+      {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
 
       <div className={styles.servGrid}>
         <div className={styles.formCard}>
@@ -200,11 +225,21 @@ export function Servicos() {
         <div className={styles.listCard}>
           <div className={styles.cardHeader}>
             <h2>Serviços cadastrados</h2>
-            <p>{servicos.length} serviço(s) encontrado(s)</p>
+            <p>{total} serviço(s) encontrado(s)</p>
+          </div>
+
+          <div className={styles.searchBar}>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Buscar por nome ou descrição..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
 
           {loading ? (
-            <div className={styles.loadingState}>Carregando...</div>
+            <SkeletonTable columns={[3, 4, 2, 1.5, 1.5]} rows={5} />
           ) : servicos.length === 0 ? (
             <div className={styles.emptyState}>
               Nenhum serviço cadastrado ainda.
@@ -272,8 +307,10 @@ export function Servicos() {
               </table>
             </div>
           )}
+          <Pagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
         </div>
       </div>
+      <ConfirmModal />
     </>
   );
 }

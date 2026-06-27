@@ -1,2 +1,8 @@
 node_modules
 .env
+baileys_auth_*
+dist/
+.DS_Store
+*.log
+.vite/
+*.tsbuildinfo

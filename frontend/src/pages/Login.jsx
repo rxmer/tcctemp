@@ -26,7 +26,7 @@ export function Login() {
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setErro(
-        err.message === "Invalid login credentials"
+        err?.message?.includes("Invalid login credentials")
           ? "E-mail ou senha incorretos."
           : err.message,
       );

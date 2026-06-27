@@ -1,7 +1,14 @@
 import { apiFetch } from "./api";
 
 export const servicosService = {
-  listar: () => apiFetch("/api/servicos"),
+  listar: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    if (params.search) query.set("search", params.search);
+    const qs = query.toString();
+    return apiFetch(`/api/servicos${qs ? `?${qs}` : ""}`);
+  },
 
   criar: (data) =>
     apiFetch("/api/servicos", {

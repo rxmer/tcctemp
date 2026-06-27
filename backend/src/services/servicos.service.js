@@ -18,16 +18,25 @@ export async function criarServico({ nome_servico, descricao, preco_base, duraca
   return data;
 }
 
-export async function listarServicos(tenantId) {
-  const { data, error } = await supabaseAdmin
+export async function listarServicos(tenantId, { page = 1, limit = 20, search = "" } = {}) {
+  const offset = (page - 1) * limit;
+
+  let query = supabaseAdmin
     .from("servico")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("tenant_id", tenantId)
-    .is("deletado_em", null)
-    .order("servico_id", { ascending: false });
+    .is("deletado_em", null);
+
+  if (search) {
+    query = query.or(`nome_servico.ilike.%${search}%,descricao.ilike.%${search}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("servico_id", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) throw new AppError(`Erro ao listar serviços: ${error.message}`);
-  return data;
+  return { data, total: count, page, limit };
 }
 
 export async function atualizarServico(id, tenantId, updates) {

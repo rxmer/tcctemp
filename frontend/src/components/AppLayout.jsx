@@ -1,5 +1,6 @@
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import { NotificacaoBell } from "./NotificacaoBell";
 import styles from "../styles/components/AppLayout.module.css";
 
 const NAV_ITEMS = [
@@ -7,17 +8,18 @@ const NAV_ITEMS = [
   { icon: "👥", label: "Clientes", path: "/clientes" },
   { icon: "🚗", label: "Veículos", path: "/veiculos" },
   { icon: "✨", label: "Serviços", path: "/servicos" },
-  { icon: "📅", label: "Agendamentos", path: "/agendamentos", badge: "3" },
-  { icon: "📋", label: "Ordem de Serviço", path: "/ordens" },
+  { icon: "📅", label: "Agendamentos", path: "/agendamentos" },
+  { icon: "📋", label: "Ordem de Serviço", path: "/ordens-servico" },
   { icon: "💰", label: "Financeiro", path: "/financeiro" },
   { icon: "👤", label: "Funcionários", path: "/funcionarios", adminOnly: true },
+  { icon: "⏰", label: "Expediente", path: "/expediente", adminOnly: true },
   { icon: "📊", label: "Relatórios", path: "/relatorios", adminOnly: true },
+  { icon: "💬", label: "WhatsApp", path: "/whatsapp", adminOnly: true },
 ];
 
 export function AppLayout() {
   const { tenant, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -43,23 +45,19 @@ export function AppLayout() {
             <div className={styles.sidebarTenant}>{tenant?.nome}</div>
             <div className={styles.sidebarSub}>Sistema de Gestão</div>
           </div>
+          <NotificacaoBell />
         </div>
 
         <nav className={styles.sidebarNav}>
           {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => (
-            <a
+            <NavLink
               key={item.label}
-              href={item.path}
-              className={`${styles.navItem} ${location.pathname === item.path ? styles.navItemActive : ""}`}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(item.path);
-              }}
+              to={item.path}
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
             >
               <span className={styles.navIcon}>{item.icon}</span>
               {item.label}
-              {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-            </a>
+            </NavLink>
           ))}
         </nav>
 
