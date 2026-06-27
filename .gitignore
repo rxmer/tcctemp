@@ -6,3 +6,12 @@ dist/
 *.log
 .vite/
 *.tsbuildinfo
+
+# Documentos e imagens desnecessárias
+*.docx
+*.zip
+*.rar
+*.7z
+rt-tds-extracted/
+coverage/
+a fazer.png
