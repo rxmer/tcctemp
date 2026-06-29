@@ -60,8 +60,8 @@ export default function App() {
                   <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/whatsapp" element={<WhatsApp />} />
                 <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />
-                <Route path="/perfil" element={<Perfil />} />
                 </Route>
+                <Route path="/perfil" element={<Perfil />} />
                 </Route>
               </Route>
 
