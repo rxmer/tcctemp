@@ -7,7 +7,9 @@ import { clientesService } from "../services/clientes.service";
 import { veiculosService } from "../services/veiculos.service";
 import { servicosService } from "../services/servicos.service";
 import { Input, Button, PageHeader, Pagination, Calendar, SkeletonTable } from "../components/ui";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import styles from "../styles/pages/agendamentos.module.css";
+import { List, CalendarDays, Pencil, Trash2, CheckCircle2, Play, CheckSquare, XCircle, ArrowRight, Smartphone, Clock } from "lucide-react";
 
 const STATUS_MAP = {
   pendente: "Pendente",
@@ -233,8 +235,8 @@ export function Agendamentos() {
         title="Agendamentos"
         subtitle="Gerencie os agendamentos da sua empresa"
         action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} />
+          <div className={crud.tenantChip}>
+            <span className={crud.tenantDot} />
             <span>{tenant?.nome}</span>
           </div>
         }
@@ -242,21 +244,21 @@ export function Agendamentos() {
 
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
 
-      <div className={styles.filtros}>
-        <div className={styles.filtroGroup}>
-          <label className={styles.filtroLabel}>Filtrar por data</label>
+      <div className={crud.filtros}>
+        <div className={crud.filtroGroup}>
+          <label className={crud.filtroLabel}>Filtrar por data</label>
           <input
             type="date"
-            className={styles.filtroInput}
+            className={crud.filtroInput}
             value={filtroData}
             onChange={(e) => setFiltroData(e.target.value)}
           />
         </div>
 
-        <div className={styles.filtroGroup}>
-          <label className={styles.filtroLabel}>Filtrar por status</label>
+        <div className={crud.filtroGroup}>
+          <label className={crud.filtroLabel}>Filtrar por status</label>
           <select
-            className={styles.filtroInput}
+            className={crud.filtroInput}
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
           >
@@ -286,30 +288,30 @@ export function Agendamentos() {
           className={`${styles.viewBtn} ${viewMode === "lista" ? styles.viewBtnActive : ""}`}
           onClick={() => setViewMode("lista")}
         >
-          📋 Lista
+          <List size={16} /> Lista
         </button>
         <button
           type="button"
           className={`${styles.viewBtn} ${viewMode === "calendario" ? styles.viewBtnActive : ""}`}
           onClick={() => setViewMode("calendario")}
         >
-          📅 Calendário
+          <CalendarDays size={16} /> Calendário
         </button>
       </div>
 
-      <div className={styles.agGrid}>
-        <div className={styles.formCard}>
-          <div className={styles.cardHeader}>
+      <div className={crud.pageGrid}>
+        <div className={crud.formCard}>
+          <div className={crud.cardHeader}>
             <h2>{editingId ? "Editar agendamento" : "Novo agendamento"}</h2>
             <p>Preencha os dados abaixo</p>
           </div>
 
-          <form onSubmit={handleSubmit} className={styles.agForm}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Cliente</label>
+          <form onSubmit={handleSubmit} className={crud.formActions}>
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Cliente</label>
               <select
                 name="cliente_id"
-                className={styles.fieldSelect}
+                className={crud.fieldSelect}
                 value={form.cliente_id}
                 onChange={handleChange}
                 required
@@ -323,11 +325,11 @@ export function Agendamentos() {
               </select>
             </div>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Veículo</label>
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Veículo</label>
               <select
                 name="veiculo_id"
-                className={styles.fieldSelect}
+                className={crud.fieldSelect}
                 value={form.veiculo_id}
                 onChange={handleChange}
                 required
@@ -341,11 +343,11 @@ export function Agendamentos() {
               </select>
             </div>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Serviço</label>
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Serviço</label>
               <select
                 name="servico_id"
-                className={styles.fieldSelect}
+                className={crud.fieldSelect}
                 value={form.servico_id}
                 onChange={handleChange}
                 required
@@ -359,7 +361,7 @@ export function Agendamentos() {
               </select>
             </div>
 
-            <div className={styles.row}>
+            <div className={crud.row}>
               <Input
                 label="Data"
                 name="data_agendamento"
@@ -378,11 +380,11 @@ export function Agendamentos() {
               />
             </div>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Observações</label>
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Observações</label>
               <textarea
                 name="observacoes"
-                className={styles.fieldTextarea}
+                className={crud.fieldTextarea}
                 placeholder="Observações opcionais"
                 rows={3}
                 value={form.observacoes}
@@ -390,7 +392,7 @@ export function Agendamentos() {
               />
             </div>
 
-            <div className={styles.formActions}>
+            <div className={crud.formActions}>
               <Button type="submit" fullWidth loading={saving}>
                 {editingId ? "Salvar alterações" : "Criar agendamento"}
               </Button>
@@ -403,7 +405,7 @@ export function Agendamentos() {
           </form>
         </div>
 
-        <div className={styles.listCard}>
+        <div className={crud.listCard}>
           {viewMode === "calendario" ? (
             <>
               <div className={styles.calSection}>
@@ -422,15 +424,15 @@ export function Agendamentos() {
 
               {selectedDate ? (
                 <div className={styles.dayList}>
-                  <div className={styles.cardHeader}>
+                  <div className={crud.cardHeader}>
                     <h2>Agendamentos de {formatDate(selectedDate)}</h2>
-                    <p>{agendamentos.length} agendamento(s)</p>
+                    <p>{mesAgendamentos.filter((ag) => ag.data_agendamento === selectedDate && ag.status !== "cancelado").length} agendamento(s)</p>
                   </div>
-                  {agendamentos.length === 0 ? (
-                    <div className={styles.emptyState}>Nenhum agendamento nesta data.</div>
+                  {mesAgendamentos.filter((ag) => ag.data_agendamento === selectedDate && ag.status !== "cancelado").length === 0 ? (
+                    <div className={crud.emptyState}>Nenhum agendamento nesta data.</div>
                   ) : (
-                    <div className={styles.tableWrapper}>
-                      <table className={styles.table}>
+                    <div className={crud.tableWrapper}>
+                      <table className={crud.table}>
                         <thead>
                           <tr>
                             <th>Hora</th>
@@ -442,7 +444,7 @@ export function Agendamentos() {
                           </tr>
                         </thead>
                         <tbody>
-                          {agendamentos.map((ag) => (
+                          {mesAgendamentos.filter((ag) => ag.data_agendamento === selectedDate && ag.status !== "cancelado").map((ag) => (
                             <tr key={ag.agendamento_id}>
                               <td>{formatTime(ag.hora_agendamento)}</td>
                               <td>{ag.cliente?.nome ?? "-"}</td>
@@ -453,27 +455,27 @@ export function Agendamentos() {
                               </td>
                               <td>{ag.servico?.nome_servico ?? "-"}</td>
                               <td>
-                                <span className={`${styles.statusBadge} ${styles[`status_${ag.status}`]}`}>
+                                <span className={`${crud.statusBadge} ${styles[`status_${ag.status}`]}`}>
                                   {STATUS_MAP[ag.status] ?? ag.status}
                                 </span>
                               </td>
                               <td>
-                                <div className={styles.actionBtns}>
-                                  <button className={styles.actionBtn} title="Editar" onClick={() => iniciarEdicao(ag)}>✏️</button>
+                                <div className={crud.actionBtns}>
+                                  <button className={crud.actionBtn} title="Editar" onClick={() => iniciarEdicao(ag)}><Pencil size={14} /></button>
                                   {PROXIMOS_STATUS[ag.status]?.map((ns) => (
                                     <button
                                       key={ns}
-                                      className={`${styles.actionBtn} ${styles[`act_${ns}`]}`}
+                                      className={`${crud.actionBtn} ${styles[`act_${ns}`]}`}
                                       title={`Mover para ${STATUS_MAP[ns]}`}
                                       onClick={() => handleStatus(ag, ns)}
                                     >
-                                      {ns === "confirmado" ? "✅" :
-                                       ns === "em_andamento" ? "▶️" :
-                                       ns === "finalizado" ? "✔️" :
-                                       ns === "cancelado" ? "❌" : "➡️"}
+                                      {ns === "confirmado" ? <CheckCircle2 size={14} /> :
+                                       ns === "em_andamento" ? <Play size={14} /> :
+                                       ns === "finalizado" ? <CheckSquare size={14} /> :
+                                       ns === "cancelado" ? <XCircle size={14} /> : <ArrowRight size={14} />}
                                     </button>
                                   ))}
-                                  <button className={`${styles.actionBtn} ${styles.actionDelete}`} title="Remover" onClick={() => handleDelete(ag)}>🗑️</button>
+                                  <button className={`${crud.actionBtn} ${crud.actionDelete}`} title="Remover" onClick={() => handleDelete(ag)}><Trash2 size={14} /></button>
                                 </div>
                               </td>
                             </tr>
@@ -485,12 +487,12 @@ export function Agendamentos() {
                   <Pagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
                 </div>
               ) : (
-                <div className={styles.emptyState}>Clique em um dia para ver os agendamentos.</div>
+                <div className={crud.emptyState}>Clique em um dia para ver os agendamentos.</div>
               )}
             </>
           ) : (
             <>
-              <div className={styles.cardHeader}>
+              <div className={crud.cardHeader}>
                 <h2>Agendamentos</h2>
                 <p>{total} agendamento(s) encontrado(s)</p>
               </div>
@@ -498,10 +500,10 @@ export function Agendamentos() {
               {loading ? (
                 <SkeletonTable columns={[2, 3, 3, 2.5, 1.5, 1, 2]} rows={5} />
               ) : agendamentos.length === 0 ? (
-                <div className={styles.emptyState}>Nenhum agendamento encontrado.</div>
+                <div className={crud.emptyState}>Nenhum agendamento encontrado.</div>
               ) : (
-                <div className={styles.tableWrapper}>
-                  <table className={styles.table}>
+                <div className={crud.tableWrapper}>
+                  <table className={crud.table}>
                     <thead>
                       <tr>
                         <th>Data/Hora</th>
@@ -528,36 +530,36 @@ export function Agendamentos() {
                           </td>
                           <td>{ag.servico?.nome_servico ?? "-"}</td>
                           <td>
-                            <span className={`${styles.statusBadge} ${styles[`status_${ag.status}`]}`}>
+                            <span className={`${crud.statusBadge} ${styles[`status_${ag.status}`]}`}>
                               {STATUS_MAP[ag.status] ?? ag.status}
                             </span>
                           </td>
                           <td>
                             {ag.lembrete_enviado ? (
-                              <span className={styles.lembreteEnviado} title={`Enviado em ${new Date(ag.lembrete_enviado).toLocaleString("pt-BR")}`}>📲</span>
+                              <span className={styles.lembreteEnviado} title={`Enviado em ${new Date(ag.lembrete_enviado).toLocaleString("pt-BR")}`}><Smartphone size={14} /></span>
                             ) : ag.status === "confirmado" ? (
-                              <span className={styles.lembretePendente}>⏳</span>
+                              <span className={styles.lembretePendente}><Clock size={14} /></span>
                             ) : (
                               <span className={styles.lembreteNao}>—</span>
                             )}
                           </td>
                           <td>
-                            <div className={styles.actionBtns}>
-                              <button className={styles.actionBtn} title="Editar" onClick={() => iniciarEdicao(ag)}>✏️</button>
+                            <div className={crud.actionBtns}>
+                              <button className={crud.actionBtn} title="Editar" onClick={() => iniciarEdicao(ag)}><Pencil size={14} /></button>
                               {PROXIMOS_STATUS[ag.status]?.map((ns) => (
                                 <button
                                   key={ns}
-                                  className={`${styles.actionBtn} ${styles[`act_${ns}`]}`}
+                                  className={`${crud.actionBtn} ${styles[`act_${ns}`]}`}
                                   title={`Mover para ${STATUS_MAP[ns]}`}
                                   onClick={() => handleStatus(ag, ns)}
                                 >
-                                  {ns === "confirmado" ? "✅" :
-                                   ns === "em_andamento" ? "▶️" :
-                                   ns === "finalizado" ? "✔️" :
-                                   ns === "cancelado" ? "❌" : "➡️"}
+                                  {ns === "confirmado" ? <CheckCircle2 size={14} /> :
+                                   ns === "em_andamento" ? <Play size={14} /> :
+                                   ns === "finalizado" ? <CheckSquare size={14} /> :
+                                   ns === "cancelado" ? <XCircle size={14} /> : <ArrowRight size={14} />}
                                 </button>
                               ))}
-                              <button className={`${styles.actionBtn} ${styles.actionDelete}`} title="Remover" onClick={() => handleDelete(ag)}>🗑️</button>
+                              <button className={`${crud.actionBtn} ${crud.actionDelete}`} title="Remover" onClick={() => handleDelete(ag)}><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>

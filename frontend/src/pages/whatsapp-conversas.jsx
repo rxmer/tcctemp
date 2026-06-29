@@ -3,6 +3,7 @@ import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { PageHeader, SkeletonCard } from "../components/ui";
 import styles from "../styles/pages/whatsapp.module.css";
+import { formatPhone } from "../utils/formatPhone";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -66,7 +67,7 @@ export function WhatsAppConversas() {
             {sessions.map((s) => (
               <div key={s.id} className={styles.sessionCard}>
                 <div className={styles.sessionName}>{s.client_name ?? "Cliente"}</div>
-                <div className={styles.sessionPhone}>{s.client_phone ?? "—"}</div>
+                <div className={styles.sessionPhone}>{formatPhone(s.client_phone) || "—"}</div>
                 <div className={styles.sessionMeta}>
                   <span>Estado: {s.state}</span>
                   <span>•</span>

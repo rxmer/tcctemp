@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import styles from "../styles/pages/relatorios.module.css";
+import { Download, FileText } from "lucide-react";
 
 const STATUS_CORES = {
   pendente: "#f59e0b",
@@ -127,10 +128,10 @@ export function Relatorios() {
 
         <div className={styles.exportActions}>
           <Button onClick={() => relatoriosService.exportarExcel(getFiltros())}>
-            📥 Excel
+            <Download size={14} /> Excel
           </Button>
           <Button variant="ghost" onClick={() => relatoriosService.exportarPDF(getFiltros())}>
-            📄 PDF
+            <FileText size={14} /> PDF
           </Button>
         </div>
       </div>
@@ -220,6 +221,23 @@ export function Relatorios() {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+        <div className={styles.card}>
+          <h2>Clientes mais frequentes</h2>
+          <p className={styles.cardSub}>Por quantidade de agendamentos</p>
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+            {(dados?.clientes_frequentes ?? []).length > 0 ? (
+              (dados?.clientes_frequentes ?? []).slice(0, 5).map((c, i) => (
+                <div key={c.cliente_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)" }}>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: i === 0 ? "var(--accent)" : "var(--text-secondary)", minWidth: 24 }}>#{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 14 }}>{c.nome}</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{c.quantidade}x</span>
+                </div>
+              ))
+            ) : (
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Nenhum dado disponível.</p>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,10 @@ import { AppError } from "../utils/errors.js";
 
 export async function criarCliente({ nome, telefone, email, tenantId }) {
   if (telefone) {
+    telefone = telefone.replace(/\D/g, "");
+    if (telefone.length < 12 || telefone.length > 13) {
+      throw new AppError("Telefone deve conter 12 ou 13 dígitos (55 + DDD + número)", 400);
+    }
     const { data: existing } = await supabaseAdmin
       .from("clientes")
       .select("cliente_id")
@@ -36,7 +40,10 @@ export async function listarClientes(tenantId, { page = 1, limit = 20, search = 
     .is("deletado_em", null);
 
   if (search) {
-    query = query.or(`nome.ilike.%${search}%,telefone.ilike.%${search}%,email.ilike.%${search}%`);
+    const s = search.replace(/[,%()\\;]/g, "").trim().slice(0, 100);
+    if (s) {
+      query = query.or(`nome.ilike.%${s}%,telefone.ilike.%${s}%,email.ilike.%${s}%`);
+    }
   }
 
   const { data, error, count } = await query
@@ -49,6 +56,10 @@ export async function listarClientes(tenantId, { page = 1, limit = 20, search = 
 
 export async function atualizarCliente(id, tenantId, updates) {
   if (updates.telefone) {
+    updates.telefone = updates.telefone.replace(/\D/g, "");
+    if (updates.telefone.length < 12 || updates.telefone.length > 13) {
+      throw new AppError("Telefone deve conter 12 ou 13 dígitos (55 + DDD + número)", 400);
+    }
     const { data: existing } = await supabaseAdmin
       .from("clientes")
       .select("cliente_id")
@@ -76,6 +87,40 @@ export async function atualizarCliente(id, tenantId, updates) {
 }
 
 export async function deletarCliente(id, tenantId) {
+  const hoje = new Date().toISOString().split("T")[0];
+
+  const { count: agFuturos } = await supabaseAdmin
+    .from("agendamentos")
+    .select("*", { count: "exact", head: true })
+    .eq("cliente_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .gte("data_agendamento", hoje)
+    .in("status", ["pendente", "confirmado", "em_andamento"]);
+
+  if (agFuturos > 0) {
+    throw new AppError("Não é possível excluir um cliente com agendamentos futuros", 400);
+  }
+
+  const { count: osAndamento } = await supabaseAdmin
+    .from("ordens_servico")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .eq("status", "em_andamento")
+    .in("agendamento_id",
+      (await supabaseAdmin
+        .from("agendamentos")
+        .select("agendamento_id")
+        .eq("cliente_id", id)
+        .eq("tenant_id", tenantId)
+      ).data?.map((a) => a.agendamento_id) ?? []
+    );
+
+  if (osAndamento > 0) {
+    throw new AppError("Não é possível excluir um cliente com ordem de serviço em andamento", 400);
+  }
+
   const { error } = await supabaseAdmin
     .from("clientes")
     .update({ deletado_em: new Date().toISOString() })

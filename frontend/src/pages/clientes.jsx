@@ -4,7 +4,9 @@ import { clientesService } from "../services/clientes.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
 import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
-import styles from "../styles/pages/clientes.module.css";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
+import { Pencil, Trash2 } from "lucide-react";
+import { formatPhone } from "../utils/formatPhone";
 
 const formInitial = {
   nome: "",
@@ -36,10 +38,14 @@ export function Clientes() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const result = await clientesService.listar({ page: 1, limit: LIMIT, search });
-      setPage(1);
-      setClientes(result.data);
-      setTotal(result.total);
+      try {
+        const result = await clientesService.listar({ page: 1, limit: LIMIT, search });
+        setPage(1);
+        setClientes(result.data);
+        setTotal(result.total);
+      } catch (err) {
+        showFeedback("error", err.message);
+      }
     }, 400);
     return () => clearTimeout(debounceRef.current);
   }, [search]);
@@ -58,7 +64,9 @@ export function Clientes() {
   }
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    const newValue = name === "telefone" ? value.replace(/\D/g, "") : value;
+    setForm((prev) => ({ ...prev, [name]: newValue }));
   }
 
   function iniciarEdicao(cliente) {
@@ -78,9 +86,10 @@ export function Clientes() {
   async function handleSubmit(e) {
     e.preventDefault();
 
+    const telefone = form.telefone ? form.telefone.replace(/\D/g, "") : null;
     const payload = {
       nome: form.nome,
-      telefone: form.telefone || null,
+      telefone: telefone && telefone.length <= 11 ? `55${telefone}` : telefone,
       email: form.email || null,
     };
 
@@ -121,14 +130,35 @@ export function Clientes() {
     }
   }
 
+  const columns = [
+    { key: "nome", label: "Nome", render: (c) => c.nome },
+    { key: "telefone", label: "Telefone", render: (c) => formatPhone(c.telefone) || "-" },
+    { key: "email", label: "E-mail", render: (c) => c.email ?? "-" },
+    {
+      key: "acoes",
+      label: "Ações",
+      width: "1px",
+      render: (c) => (
+        <ActionBtns>
+          <ActionBtn title="Editar" onClick={() => iniciarEdicao(c)}>
+            <Pencil size={14} />
+          </ActionBtn>
+          <ActionBtn title="Remover" danger onClick={() => handleDelete(c)}>
+            <Trash2 size={14} />
+          </ActionBtn>
+        </ActionBtns>
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader
         title="Clientes"
         subtitle="Gerencie os clientes da sua empresa"
         action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} />
+          <div className={crud.tenantChip}>
+            <span className={crud.tenantDot} />
             <span>{tenant?.nome}</span>
           </div>
         }
@@ -136,14 +166,14 @@ export function Clientes() {
 
       {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
 
-      <div className={styles.cliGrid}>
-        <div className={styles.formCard}>
-          <div className={styles.cardHeader}>
-            <h2>{editingId ? "Editar cliente" : "Novo cliente"}</h2>
-            <p>Preencha os dados abaixo</p>
-          </div>
+      <div className={crud.pageGrid}>
+        <Card>
+          <CardHeader
+            title={editingId ? "Editar cliente" : "Novo cliente"}
+            subtitle="Preencha os dados abaixo"
+          />
 
-          <form onSubmit={handleSubmit} className={styles.cliForm}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <Input
               label="Nome"
               name="nome"
@@ -156,6 +186,7 @@ export function Clientes() {
             <Input
               label="Telefone"
               name="telefone"
+              mask="phone"
               placeholder="(11) 99999-9999"
               value={form.telefone}
               onChange={handleChange}
@@ -170,7 +201,7 @@ export function Clientes() {
               onChange={handleChange}
             />
 
-            <div className={styles.formActions}>
+            <div className={crud.formActions}>
               <Button type="submit" fullWidth loading={saving}>
                 {editingId ? "Salvar alterações" : "Cadastrar cliente"}
               </Button>
@@ -181,18 +212,18 @@ export function Clientes() {
               )}
             </div>
           </form>
-        </div>
+        </Card>
 
-        <div className={styles.listCard}>
-          <div className={styles.cardHeader}>
-            <h2>Clientes cadastrados</h2>
-            <p>{total} cliente(s) encontrado(s)</p>
-          </div>
+        <Card>
+          <CardHeader
+            title="Clientes cadastrados"
+            subtitle={`${total} cliente(s) encontrado(s)`}
+          />
 
-          <div className={styles.searchBar}>
+          <div className={crud.searchBar}>
             <input
               type="text"
-              className={styles.searchInput}
+              className={crud.searchInput}
               placeholder="Buscar por nome, telefone ou e-mail..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -201,53 +232,15 @@ export function Clientes() {
 
           {loading ? (
             <SkeletonTable columns={[3, 3, 3, 2, 1.5]} rows={5} />
-          ) : clientes.length === 0 ? (
-            <div className={styles.emptyState}>
-              Nenhum cliente cadastrado ainda.
-            </div>
           ) : (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Telefone</th>
-                    <th>E-mail</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientes.map((c) => (
-                    <tr key={c.cliente_id}>
-                      <td className={styles.cliNome}>{c.nome}</td>
-                      <td>{c.telefone ?? "-"}</td>
-                      <td>{c.email ?? "-"}</td>
-                      <td>
-                        <div className={styles.actionBtns}>
-                          <button
-                            className={styles.actionBtn}
-                            title="Editar"
-                            onClick={() => iniciarEdicao(c)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            className={`${styles.actionBtn} ${styles.actionDelete}`}
-                            title="Remover"
-                            onClick={() => handleDelete(c)}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={columns}
+              rows={clientes.map((c) => ({ ...c, id: c.cliente_id }))}
+              emptyMessage="Nenhum cliente cadastrado ainda."
+            />
           )}
           <Pagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
-        </div>
+        </Card>
       </div>
       <ConfirmModal />
     </>

@@ -11,6 +11,7 @@ export async function resumoDashboard(tenantId) {
       .select("*", { count: "exact", head: true })
       .eq("tenant_id", tenantId)
       .eq("data_agendamento", hoje)
+      .neq("status", "cancelado")
       .is("deletado_em", null);
 
     const { count: servicosRealizados } = await supabaseAdmin
@@ -40,11 +41,23 @@ export async function resumoDashboard(tenantId) {
       0
     );
 
+    const { data: proximosAgendamentos } = await supabaseAdmin
+      .from("agendamentos")
+      .select("*, cliente:clientes(nome), veiculo:veiculos(marca, modelo, placa), servico:servico(nome_servico)")
+      .eq("tenant_id", tenantId)
+      .gte("data_agendamento", hoje)
+      .in("status", ["pendente", "confirmado"])
+      .is("deletado_em", null)
+      .order("data_agendamento", { ascending: true })
+      .order("hora_agendamento", { ascending: true })
+      .limit(5);
+
     return {
       agendamentos_hoje: agendamentosHoje ?? 0,
       servicos_realizados: servicosRealizados ?? 0,
       total_clientes: totalClientes ?? 0,
       faturamento_mes: faturamentoTotal,
+      proximos_agendamentos: proximosAgendamentos ?? [],
     };
   } catch (err) {
     throw new AppError(`Erro ao carregar dashboard: ${err.message}`);

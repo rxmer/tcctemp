@@ -85,8 +85,8 @@
   margin-top: 22px;
   padding: 16px;
   border-radius: var(--radius-sm);
-  background: rgba(232,93,4,0.06);
-  border: 1px solid rgba(232,93,4,0.14);
+  background: rgba(212,168,67,0.06);
+  border: 1px solid rgba(212,168,67,0.14);
 }
 
 .securityTitle {

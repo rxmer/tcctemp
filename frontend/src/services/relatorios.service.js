@@ -78,6 +78,14 @@ export const relatoriosService = {
     return apiFetch(`/api/relatorios/status${qs ? `?${qs}` : ""}`);
   },
 
+  clientesFrequentes: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.data_inicio) query.set("data_inicio", params.data_inicio);
+    if (params.data_fim) query.set("data_fim", params.data_fim);
+    const qs = query.toString();
+    return apiFetch(`/api/relatorios/clientes-frequentes${qs ? `?${qs}` : ""}`);
+  },
+
   exportarExcel: (params = {}) => {
     downloadBlob(exportUrl("exportar/excel", params), `relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.xlsx`);
   },

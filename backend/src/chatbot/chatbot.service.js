@@ -3,6 +3,9 @@ import { logger } from "../config/logger.js";
 import { criarSessao, buscarSessao, atualizarSessao } from "./chatbot.session.js";
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
+import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
+
+const messageLocks = new Map();
 
 function formatMoney(value) {
   return Number(value).toLocaleString("pt-BR", {
@@ -37,14 +40,79 @@ const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julh
 
 const ERRO_MAXIMO = 3;
 const ANTECEDENCIA_MINIMA_HORAS = 2;
+const SESSION_TIMEOUT_MINUTOS = 30;
+
+const VALID_TRANSITIONS = {
+  "MENU_PRINCIPAL": ["ESCOLHENDO_SERVICO", "CONSULTANDO_AGENDAMENTOS", "CANCELANDO_AGENDAMENTO", "FALANDO_COM_ATENDENTE"],
+  "ESCOLHENDO_SERVICO": ["ESCOLHENDO_DATA", "DIGITANDO_NOME", "DIGITANDO_VEICULO_MARCA", "ESCOLHENDO_VEICULO", "MENU_PRINCIPAL"],
+  "DIGITANDO_NOME": ["DIGITANDO_TELEFONE", "ESCOLHENDO_VEICULO", "DIGITANDO_VEICULO_MARCA", "MENU_PRINCIPAL"],
+  "DIGITANDO_TELEFONE": ["DIGITANDO_VEICULO_MARCA", "DIGITANDO_VEICULO_MARCA", "MENU_PRINCIPAL"],
+  "ESCOLHENDO_VEICULO": ["ESCOLHENDO_DATA", "DIGITANDO_VEICULO_MARCA", "MENU_PRINCIPAL"],
+  "DIGITANDO_VEICULO_MARCA": ["DIGITANDO_VEICULO_MODELO", "ESCOLHENDO_VEICULO", "MENU_PRINCIPAL"],
+  "DIGITANDO_VEICULO_MODELO": ["DIGITANDO_VEICULO_PLACA", "DIGITANDO_VEICULO_MARCA", "MENU_PRINCIPAL"],
+  "DIGITANDO_VEICULO_PLACA": ["ESCOLHENDO_DATA", "ESCOLHENDO_VEICULO", "MENU_PRINCIPAL"],
+  "ESCOLHENDO_DATA": ["ESCOLHENDO_HORARIO", "ESCOLHENDO_VEICULO", "MENU_PRINCIPAL"],
+  "ESCOLHENDO_HORARIO": ["CONFIRMANDO_AGENDAMENTO", "ESCOLHENDO_DATA", "MENU_PRINCIPAL"],
+  "CONFIRMANDO_AGENDAMENTO": ["AGENDAMENTO_CONFIRMADO", "MENU_PRINCIPAL"],
+  "AGENDAMENTO_CONFIRMADO": ["MENU_PRINCIPAL"],
+  "CANCELANDO_AGENDAMENTO": ["CONFIRMANDO_CANCELAMENTO", "MENU_PRINCIPAL"],
+  "CONFIRMANDO_CANCELAMENTO": ["MENU_PRINCIPAL"],
+  "CONSULTANDO_AGENDAMENTOS": ["MENU_PRINCIPAL"],
+  "FALANDO_COM_ATENDENTE": ["MENU_PRINCIPAL"],
+};
+
+async function validarTransicao(currentState, nextState) {
+  const allowed = VALID_TRANSITIONS[currentState];
+  if (!allowed) {
+    logger.warn({ currentState, nextState }, "Estado atual não reconhecido");
+    return false;
+  }
+  if (!allowed.includes(nextState)) {
+    logger.warn({ currentState, nextState, allowed }, "Transição inválida bloqueada");
+    return false;
+  }
+  return true;
+}
+
+async function transicaoState(sessionId, currentState, nextState, stateData = {}) {
+  const valida = await validarTransicao(currentState, nextState);
+  if (!valida) {
+    logger.warn({ currentState, nextState, sessionId }, "Transição inválida ignorada");
+    return false;
+  }
+  await atualizarSessao(sessionId, { state: nextState, state_data: stateData });
+  return true;
+}
+
+async function verificarSessaoExpirada(session) {
+  if (!session?.ultima_atividade) return false;
+  const agora = new Date();
+  const ultima = new Date(session.ultima_atividade);
+  const diffMin = (agora - ultima) / (1000 * 60);
+  return diffMin >= SESSION_TIMEOUT_MINUTOS;
+}
+
+function isAtLeast11Digits(num) {
+  const digits = String(num).replace(/\D/g, "");
+  return /^\d{11,13}$/.test(digits);
+}
 
 function extractPhone(remoteJid) {
-  return remoteJid.replace(/@.*$/, "");
+  return remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
 }
 
 function isValidPhone(phone) {
   const digits = phone.replace(/\D/g, "");
-  return digits.length >= 10 && digits.length <= 13;
+  return digits.length >= 12 && digits.length <= 13;
+}
+
+function formatPhone(phone) {
+  const d = String(phone).replace(/\D/g, "");
+  if (d.length < 12) return phone;
+  const ddd = d.slice(2, 4);
+  const parte1 = d.slice(4, 9);
+  const parte2 = d.slice(9, 13);
+  return `(${ddd}) ${parte1}-${parte2}`;
 }
 
 function formatDateBr(dateStr) {
@@ -104,37 +172,18 @@ async function listarExpediente(tenantId, diaSemana) {
   return data;
 }
 
-async function verificarHorarioDisponivel(tenantId, data, hora) {
-  const { count, error } = await supabaseAdmin
-    .from("agendamentos")
-    .select("*", { count: "exact", head: true })
-    .eq("data_agendamento", data)
-    .eq("hora_agendamento", hora)
-    .eq("tenant_id", tenantId)
-    .is("deletado_em", null)
-    .in("status", ["pendente", "confirmado", "em_andamento"]);
-
-  if (error) return false;
-  return count === 0;
+function converterHoraParaMinutos(horaStr) {
+  const [h, m] = horaStr.split(":").map(Number);
+  return h * 60 + m;
 }
 
-async function verificarAgendamentoDuplicado(tenantId, clienteId, servicoId, data, hora) {
-  const { count, error } = await supabaseAdmin
-    .from("agendamentos")
-    .select("*", { count: "exact", head: true })
-    .eq("tenant_id", tenantId)
-    .eq("cliente_id", clienteId)
-    .eq("servico_id", servicoId)
-    .eq("data_agendamento", data)
-    .eq("hora_agendamento", hora)
-    .is("deletado_em", null)
-    .in("status", ["pendente", "confirmado"]);
-
-  if (error) return false;
-  return count > 0;
+function converterMinutosParaHora(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-async function gerarHorariosDisponiveis(tenantId, data) {
+async function gerarHorariosDisponiveis(tenantId, data, servicoId = null) {
   const diaSemana = new Date(data + "T12:00:00").getDay();
   const expediente = await listarExpediente(tenantId, diaSemana);
 
@@ -143,19 +192,23 @@ async function gerarHorariosDisponiveis(tenantId, data) {
   const [hAbertura, mAbertura] = expediente.abertura.split(":").map(Number);
   const [hFechamento, mFechamento] = expediente.fechamento.split(":").map(Number);
 
+  let duracaoMin = 30;
+  if (servicoId) {
+    duracaoMin = await buscarDuracaoServico(tenantId, servicoId);
+  }
+
+  const inicioMin = hAbertura * 60 + mAbertura;
+  const fimMin = hFechamento * 60 + mFechamento;
+
   const horarios = [];
-  for (let h = hAbertura; h < hFechamento; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      if (h === hAbertura && m < mAbertura) continue;
-      if (h > hFechamento || (h === hFechamento && m >= mFechamento)) continue;
-      const horaStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      horarios.push(horaStr);
-    }
+  for (let t = inicioMin; t + duracaoMin <= fimMin; t += 30) {
+    const horaStr = converterMinutosParaHora(t);
+    horarios.push(horaStr);
   }
 
   const disponiveis = [];
   for (const hora of horarios) {
-    const livre = await verificarHorarioDisponivel(tenantId, data, hora);
+    const livre = await verificarDisponibilidade(tenantId, data, hora, servicoId);
     if (livre) disponiveis.push(hora);
   }
 
@@ -184,6 +237,8 @@ async function gerarDatasDisponiveis(tenantId) {
 }
 
 async function criarClienteViaChatbot(tenantId, nome, telefone) {
+  telefone = telefone.replace(/\D/g, "").trim();
+  if (telefone.length < 12 || telefone.length > 13) return null;
   const { data, error } = await supabaseAdmin
     .from("clientes")
     .insert({ nome, telefone, tenant_id: tenantId })
@@ -224,23 +279,14 @@ async function criarVeiculoViaChat(tenantId, clienteId, marca, modelo, placa) {
 async function criarAgendamentoViaChat(session, stateData) {
   if (!session.cliente_id || !stateData.veiculo_id || !stateData.servico_id || !stateData.data_agendamento || !stateData.hora_agendamento) return null;
 
-  const disponivel = await verificarHorarioDisponivel(
+  const disponivel = await verificarDisponibilidade(
     session.tenant_id,
     stateData.data_agendamento,
-    stateData.hora_agendamento
+    stateData.hora_agendamento,
+    stateData.servico_id
   );
 
   if (!disponivel) return { conflito: true };
-
-  const duplicado = await verificarAgendamentoDuplicado(
-    session.tenant_id,
-    session.cliente_id,
-    stateData.servico_id,
-    stateData.data_agendamento,
-    stateData.hora_agendamento
-  );
-
-  if (duplicado) return { conflito: true };
 
   const { data: adminUser } = await supabaseAdmin
     .from("usuarios")
@@ -251,33 +297,25 @@ async function criarAgendamentoViaChat(session, stateData) {
 
   if (!adminUser?.id) return null;
 
-  const { data, error } = await supabaseAdmin
-    .from("agendamentos")
-    .insert({
+  try {
+    const data = await criarAgendamento({
       cliente_id: session.cliente_id,
       veiculo_id: stateData.veiculo_id,
       servico_id: stateData.servico_id,
       data_agendamento: stateData.data_agendamento,
       hora_agendamento: stateData.hora_agendamento,
-      tenant_id: session.tenant_id,
-      criado_por: adminUser.id,
       observacoes: "Criado via WhatsApp",
-    })
-    .select("*, servico:servico(*), veiculo:veiculos(*)")
-    .single();
+      tenantId: session.tenant_id,
+      criadoPor: adminUser.id,
+    });
 
-  if (error || !data) return null;
-
-  criarNotificacao({
-    tenantId: session.tenant_id,
-    tipo: "agendamento_criado",
-    titulo: "Novo agendamento via WhatsApp",
-    mensagem: `Agendamento via WhatsApp para ${session.client_name} em ${data.data_agendamento} às ${data.hora_agendamento}`,
-    referenciaTipo: "agendamento",
-    referenciaId: data.agendamento_id,
-  }).catch((e) => logger.error({ err: e }, "notification error"));
-
-  return data;
+    return data;
+  } catch (err) {
+    if (err.message && err.message.includes("conflita")) {
+      return { conflito: true };
+    }
+    return null;
+  }
 }
 
 async function listarAgendamentosCliente(tenantId, clienteId) {
@@ -310,7 +348,6 @@ function gerarSectionsMarcas() {
   const marcas = Object.keys(MARCAS_CARROS).sort();
   const rows = marcas.map((m) => ({
     title: m,
-    description: `${MARCAS_CARROS[m].length} modelos`,
     rowId: `marca_${m}`,
   }));
   rows.push({ title: "Outra marca", description: "Digitar manualmente", rowId: "marca_outra" });
@@ -353,18 +390,29 @@ function gerarButtonsDatas(datas) {
 }
 
 async function sendMenu(jid, session) {
-  await sendButtons(
-    jid,
-    "Como posso te ajudar? Escolha uma opção:",
-    [
-      { id: "menu_agendar", text: "📅 Agendar Serviço" },
-      { id: "menu_consultar", text: "📋 Meus Agendamentos" },
-      { id: "menu_servicos", text: "✨ Nossos Serviços" },
-      { id: "menu_cancelar", text: "❌ Cancelar" },
-      { id: "menu_atendente", text: "👤 Falar com Atendente" },
-    ],
-    "Esteticar — Estética Automotiva"
-  );
+  const phone = extractPhone(session.remote_jid);
+  const cliente = await listarClientePorTelefone(session.tenant_id, phone);
+  let temAgendamento = false;
+
+  if (cliente) {
+    const agendamentos = await listarAgendamentosCliente(session.tenant_id, cliente.cliente_id);
+    temAgendamento = agendamentos.length > 0;
+  }
+
+  const botoes = temAgendamento
+    ? [
+        { id: "menu_consultar", text: "📋 Meus Agendamentos" },
+        { id: "menu_agendar", text: "📅 Novo Agendamento" },
+        { id: "menu_cancelar", text: "❌ Cancelar" },
+        { id: "menu_atendente", text: "👤 Atendente" },
+      ]
+    : [
+        { id: "menu_agendar", text: "📅 Agendar Serviço" },
+        { id: "menu_servicos", text: "✨ Nossos Serviços" },
+        { id: "menu_atendente", text: "👤 Falar com Atendente" },
+      ];
+
+  await sendButtons(jid, "🚗 *Esteticar* — Como posso ajudar?", botoes, "Esteticar");
   await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
 }
 
@@ -448,8 +496,8 @@ async function detectServiceIntent(text, tenantId) {
    VALIDAÇÕES DE NEGÓCIO
    =================================================================== */
 
-async function validarDisponibilidadeImediata(tenantId, data, hora) {
-  const disponivel = await verificarHorarioDisponivel(tenantId, data, hora);
+async function validarDisponibilidadeImediata(tenantId, data, hora, servicoId = null) {
+  const disponivel = await verificarDisponibilidade(tenantId, data, hora, servicoId);
   if (!disponivel) return "Este horário foi ocupado enquanto você escolhia. Por favor, selecione outro horário.";
   return null;
 }
@@ -459,6 +507,31 @@ async function validarHorarioExpediente(tenantId, data, hora) {
   const expediente = await listarExpediente(tenantId, diaSemana);
   if (!expediente) return "Data fora do expediente.";
   return null;
+}
+
+const ESTADOS_RECUPERAVEIS = [
+  "ESCOLHENDO_SERVICO", "DIGITANDO_NOME", "DIGITANDO_TELEFONE",
+  "ESCOLHENDO_VEICULO", "DIGITANDO_VEICULO_MARCA", "DIGITANDO_VEICULO_MODELO",
+  "DIGITANDO_VEICULO_PLACA", "ESCOLHENDO_DATA", "ESCOLHENDO_HORARIO",
+  "CONFIRMANDO_AGENDAMENTO",
+];
+
+async function montarMensagemRecuperacao(session) {
+  const stateData = session.state_data ?? {};
+  const servicoNome = stateData.servicoInfo?.nome_servico || stateData.servicoNome || "";
+  const dataStr = stateData.data_agendamento ? formatDateBr(stateData.data_agendamento) : "";
+
+  let msg = "👋 Bem-vindo de volta! ";
+  if (servicoNome && dataStr) {
+    msg += `Você estava agendando *${servicoNome}* para o dia *${dataStr}*.\n\nDeseja continuar de onde parou?`;
+  } else if (servicoNome) {
+    msg += `Você estava escolhendo o serviço *${servicoNome}*.\n\nDeseja continuar?`;
+  } else if (dataStr) {
+    msg += `Você estava selecionando horário para o dia *${dataStr}*.\n\nDeseja continuar?`;
+  } else {
+    return null;
+  }
+  return msg;
 }
 
 export async function validarAntecedenciaCancelamento(dataAgendamento, horaAgendamento) {
@@ -473,11 +546,12 @@ export async function validarAntecedenciaCancelamento(dataAgendamento, horaAgend
   return null;
 }
 
-export async function validarAgendamentoNaoIniciado(agendamentoId) {
+export async function validarAgendamentoNaoIniciado(agendamentoId, tenantId) {
   const { data, error } = await supabaseAdmin
     .from("agendamentos")
     .select("status, data_agendamento, hora_agendamento")
     .eq("agendamento_id", agendamentoId)
+    .eq("tenant_id", tenantId)
     .single();
 
   if (error || !data) return "Agendamento não encontrado.";
@@ -492,24 +566,70 @@ export async function validarAgendamentoNaoIniciado(agendamentoId) {
 }
 
 /* ===================================================================
+   CONSULTANDO_AGENDAMENTOS
+   =================================================================== */
+
+async function handleConsultandoAgendamentos(action, jid, session) {
+  const phone = extractPhone(session.remote_jid);
+  const cliente = await listarClientePorTelefone(session.tenant_id, phone);
+
+  if (!cliente) {
+    await sendWhatsAppMessage(jid, "Você ainda não possui agendamentos. Utilize o menu para agendar um serviço.");
+    await sendMenu(jid, session);
+    return;
+  }
+
+  const agendamentos = await listarAgendamentosCliente(session.tenant_id, cliente.cliente_id);
+  if (!agendamentos.length) {
+    await sendWhatsAppMessage(jid, "Você não possui agendamentos futuros. Deseja agendar um serviço? Use o menu abaixo:");
+    await sendMenu(jid, session);
+    return;
+  }
+
+  let msg = "*Seus agendamentos futuros:*\n\n";
+  for (const a of agendamentos) {
+    msg += `📅 ${formatDateBr(a.data_agendamento)} às ${a.hora_agendamento}\n`;
+    msg += `🔧 ${a.servico?.nome_servico ?? "Serviço"}\n`;
+    msg += `📍 ${a.status === "confirmado" ? "✅ Confirmado" : a.status === "pendente" ? "⏳ Pendente" : "❌ Cancelado"}\n\n`;
+  }
+
+  await sendWhatsAppMessage(jid, msg);
+  await sendWhatsAppMessage(jid, "Para agendar um novo serviço ou cancelar, utilize o menu abaixo.");
+  await sendMenu(jid, session);
+}
+
+/* ===================================================================
    MENU PRINCIPAL
    =================================================================== */
 
 async function handleMenuPrincipal(action, jid, session) {
   const num = action.trim();
-  if (num === "1") action = "menu_agendar";
-  else if (num === "2") action = "menu_consultar";
-  else if (num === "3") action = "menu_servicos";
-  else if (num === "4") action = "menu_cancelar";
-  else if (num === "5") action = "menu_atendente";
+  if (num >= "1" && num <= "5") {
+    const phone = extractPhone(session.remote_jid);
+    const cliente = await listarClientePorTelefone(session.tenant_id, phone);
+    let temAgendamento = false;
+    if (cliente) {
+      const ags = await listarAgendamentosCliente(session.tenant_id, cliente.cliente_id);
+      temAgendamento = ags.length > 0;
+    }
+
+    const idx = parseInt(num, 10);
+    const opcoes = temAgendamento
+      ? ["menu_consultar", "menu_agendar", "menu_cancelar", "menu_atendente"]
+      : ["menu_agendar", "menu_servicos", "menu_atendente"];
+
+    if (idx >= 1 && idx <= opcoes.length) {
+      action = opcoes[idx - 1];
+    }
+  }
 
   switch (action) {
 
     case "menu_agendar": {
       const servicos = await listarServicos(session.tenant_id);
       if (!servicos.length) {
-        await sendWhatsAppMessage(jid, "Nenhum serviço disponível no momento.");
-        await sendMenu(jid, session);
+    await sendWhatsAppMessage(jid, "Nenhum serviço disponível no momento.");
+    await sendMenu(jid, session);
         return;
       }
 
@@ -525,32 +645,8 @@ async function handleMenuPrincipal(action, jid, session) {
     }
 
     case "menu_consultar": {
-      const phone = extractPhone(session.remote_jid);
-      const cliente = await listarClientePorTelefone(session.tenant_id, phone);
-
-      if (!cliente) {
-        await sendWhatsAppMessage(jid, "Você ainda não possui agendamentos. Utilize o menu para agendar um serviço.");
-        await sendMenu(jid, session);
-        return;
-      }
-
-      const agendamentos = await listarAgendamentosCliente(session.tenant_id, cliente.cliente_id);
-      if (!agendamentos.length) {
-        await sendWhatsAppMessage(jid, "Você não possui agendamentos futuros. Deseja agendar um serviço? Use o menu abaixo:");
-        await sendMenu(jid, session);
-        return;
-      }
-
-      let msg = "*Seus agendamentos futuros:*\n\n";
-      for (const a of agendamentos) {
-        msg += `📅 ${formatDateBr(a.data_agendamento)} às ${a.hora_agendamento}\n`;
-        msg += `✨ ${a.servico?.nome_servico ?? "Serviço"}\n`;
-        msg += `📍 ${a.status === "confirmado" ? "✅ Confirmado" : "⏳ Pendente"}\n\n`;
-      }
-
-      await sendWhatsAppMessage(jid, msg);
-      await sendWhatsAppMessage(jid, "Use o menu abaixo para agendar um novo serviço ou cancelar um agendamento.");
-      await sendMenu(jid, session);
+      await transicaoState(session.id, session.state, "CONSULTANDO_AGENDAMENTOS");
+      await handleConsultandoAgendamentos(action, jid, session);
       return;
     }
 
@@ -809,7 +905,7 @@ async function handleEscolhendoData(action, jid, session) {
     return;
   }
 
-  const horarios = await gerarHorariosDisponiveis(session.tenant_id, dataFormatada);
+  const horarios = await gerarHorariosDisponiveis(session.tenant_id, dataFormatada, stateData.servico_id);
   if (!horarios.length) {
     await sendWhatsAppMessage(jid, "Não há horários disponíveis nesta data. Escolha outra data.");
     return;
@@ -852,9 +948,9 @@ async function handleEscolhendoHorario(action, jid, session) {
     return false;
   }
 
-  const erroDisponivel = await validarDisponibilidadeImediata(session.tenant_id, stateData.data_agendamento, hora);
+  const erroDisponivel = await validarDisponibilidadeImediata(session.tenant_id, stateData.data_agendamento, hora, stateData.servico_id);
   if (erroDisponivel) {
-    const horariosAtualizados = await gerarHorariosDisponiveis(session.tenant_id, stateData.data_agendamento);
+    const horariosAtualizados = await gerarHorariosDisponiveis(session.tenant_id, stateData.data_agendamento, stateData.servico_id);
     if (!horariosAtualizados.length) {
       await sendWhatsAppMessage(jid, "Não há mais horários disponíveis nesta data.");
       await sendMenu(jid, session);
@@ -879,13 +975,13 @@ async function handleEscolhendoHorario(action, jid, session) {
     .single();
 
   const summary =
-    `📋 *Resumo do agendamento:*\n\n` +
-    `✨ Serviço: ${servicoInfo?.nome_servico ?? "Serviço"}\n` +
+    `📋 *Resumo do agendamento*\n\n` +
+    `🚗 Veículo: ${veiculoInfo ? `${veiculoInfo.marca} ${veiculoInfo.modelo} (${veiculoInfo.placa})` : "—"}\n` +
+    `🔧 Serviço: ${servicoInfo?.nome_servico ?? "Serviço"}\n` +
     `💰 Valor: ${formatMoney(servicoInfo?.preco_base ?? 0)}\n` +
     `⏱ Duração: ${servicoInfo?.duracao_min ?? "—"} min\n` +
-    `🚗 Veículo: ${veiculoInfo ? `${veiculoInfo.marca} ${veiculoInfo.modelo} (${veiculoInfo.placa})` : "—"}\n` +
     `📅 Data: ${formatDateBr(stateData.data_agendamento)}\n` +
-    `🕐 Horário: ${hora}\n\n` +
+    `🕒 Horário: ${hora}\n\n` +
     `Confirma o agendamento?`;
 
   await sendButtons(jid, summary, [
@@ -924,22 +1020,11 @@ async function handleConfirmandoAgendamento(action, jid, session) {
   }
 
   const erroDisponivel = await validarDisponibilidadeImediata(
-    session.tenant_id, stateData.data_agendamento, stateData.hora_agendamento
+    session.tenant_id, stateData.data_agendamento, stateData.hora_agendamento, stateData.servico_id
   );
 
   if (erroDisponivel) {
     await sendWhatsAppMessage(jid, "⚠️ Este horário foi ocupado enquanto você confirmava. Voltando ao menu.");
-    await sendMenu(jid, session);
-    return;
-  }
-
-  const duplicado = await verificarAgendamentoDuplicado(
-    session.tenant_id, session.cliente_id, stateData.servico_id,
-    stateData.data_agendamento, stateData.hora_agendamento
-  );
-
-  if (duplicado) {
-    await sendWhatsAppMessage(jid, "⚠️ Você já possui um agendamento neste horário. Voltando ao menu.");
     await sendMenu(jid, session);
     return;
   }
@@ -959,13 +1044,13 @@ async function handleConfirmandoAgendamento(action, jid, session) {
     : "—";
 
   const confirmMsg =
-    `✅ *Agendamento confirmado!*\n\n` +
-    `✨ Serviço: ${nomeServico}\n` +
+    `✅ *Agendamento confirmado com sucesso!*\n\n` +
+    `🔧 Serviço: ${nomeServico}\n` +
     `💰 Valor: ${formatMoney(valor)}\n` +
     `🚗 Veículo: ${veiculoStr}\n` +
     `📅 Data: ${formatDateBr(result.data_agendamento)}\n` +
-    `🕐 Horário: ${result.hora_agendamento}\n\n` +
-    `Seu agendamento foi registrado com sucesso! Em caso de imprevistos, cancele com antecedência mínima de ${ANTECEDENCIA_MINIMA_HORAS} horas.`;
+    `🕒 Horário: ${result.hora_agendamento}\n\n` +
+    `Se precisar alterar ou cancelar, utilize a opção "Consultar" no menu.`;
 
   await atualizarSessao(session.id, {
     state: "AGENDAMENTO_CONFIRMADO",
@@ -1002,13 +1087,6 @@ async function handleCancelandoAgendamento(action, jid, session) {
     return false;
   }
 
-  const erroValidacao = await validarAgendamentoNaoIniciado(agendamento.agendamento_id);
-  if (erroValidacao) {
-    await sendWhatsAppMessage(jid, erroValidacao);
-    await sendMenu(jid, session);
-    return;
-  }
-
   const msg =
     `Tem certeza que deseja *cancelar* o agendamento?\n\n` +
     `📅 ${formatDateBr(agendamento.data_agendamento)} às ${agendamento.hora_agendamento}\n` +
@@ -1039,32 +1117,13 @@ async function handleConfirmandoCancelamento(action, jid, session) {
     return false;
   }
 
-  const erroValidacao = await validarAgendamentoNaoIniciado(stateData.agendamento_id);
-  if (erroValidacao) {
-    await sendWhatsAppMessage(jid, erroValidacao);
+  try {
+    await atualizarAgendamento(stateData.agendamento_id, session.tenant_id, { status: "cancelado" });
+  } catch (err) {
+    await sendWhatsAppMessage(jid, err.message || "Erro ao cancelar agendamento. Tente novamente.");
     await sendMenu(jid, session);
     return;
   }
-
-  const { error } = await supabaseAdmin
-    .from("agendamentos")
-    .update({ status: "cancelado" })
-    .eq("agendamento_id", stateData.agendamento_id);
-
-  if (error) {
-    await sendWhatsAppMessage(jid, "Erro ao cancelar agendamento. Tente novamente.");
-    await sendMenu(jid, session);
-    return;
-  }
-
-  criarNotificacao({
-    tenantId: session.tenant_id,
-    tipo: "agendamento_cancelado",
-    titulo: "Agendamento cancelado via WhatsApp",
-    mensagem: `Cliente ${session.client_name} cancelou o agendamento via WhatsApp.`,
-    referenciaTipo: "agendamento",
-    referenciaId: stateData.agendamento_id,
-  }).catch(() => {});
 
   await sendWhatsAppMessage(jid, "✅ *Cancelamento realizado com sucesso!*\n\nSeu agendamento foi cancelado conforme solicitado.");
   await sendMenu(jid, session);
@@ -1075,7 +1134,15 @@ async function handleConfirmandoCancelamento(action, jid, session) {
    =================================================================== */
 
 async function handleFalandoComAtendente(action, jid, session) {
-  await sendWhatsAppMessage(jid, "Sua solicitação foi encaminhada. Em breve um atendente entrará em contato.");
+  criarNotificacao({
+    tenantId: session.tenant_id,
+    tipo: "chatbot_mensagem_cliente",
+    titulo: `Mensagem de ${session.client_name || "Cliente"}`,
+    mensagem: `Cliente enviou via WhatsApp: "${action}"`,
+    referenciaTipo: "chatbot",
+    referenciaId: session.id,
+  }).catch(() => {});
+  await sendWhatsAppMessage(jid, "Sua mensagem foi encaminhada ao atendente. Em breve vamos responder.");
 }
 
 /* ===================================================================
@@ -1242,6 +1309,12 @@ async function handleDigitandoVeiculoPlaca(action, jid, session) {
     return false;
   }
 
+  if (!session.cliente_id) {
+    await sendWhatsAppMessage(jid, "Erro: cliente não identificado. Voltando ao menu.");
+    await sendMenu(jid, session);
+    return;
+  }
+
   const veiculo = await criarVeiculoViaChat(session.tenant_id, session.cliente_id, stateData.marca, stateData.modelo, placa);
 
   if (!veiculo) {
@@ -1251,13 +1324,7 @@ async function handleDigitandoVeiculoPlaca(action, jid, session) {
   }
 
   await sendWhatsAppMessage(jid, `✅ Veículo *${stateData.marca} ${stateData.modelo} (${placa})* cadastrado!`);
-
-  if (session.cliente_id) {
-    await irParaData(jid, session, { ...stateData, veiculo_id: veiculo.veiculo_id });
-  } else {
-    await sendWhatsAppMessage(jid, "Erro: cliente não identificado. Voltando ao menu.");
-    await sendMenu(jid, session);
-  }
+  await irParaData(jid, session, { ...stateData, veiculo_id: veiculo.veiculo_id });
 }
 
 /* ===================================================================
@@ -1372,6 +1439,7 @@ async function sugerirAtendente(jid, session) {
 
 const STATE_HANDLERS = {
   "MENU_PRINCIPAL": handleMenuPrincipal,
+  "CONSULTANDO_AGENDAMENTOS": handleConsultandoAgendamentos,
   "ESCOLHENDO_SERVICO": handleEscolhendoServico,
   "ESCOLHENDO_VEICULO": handleEscolhendoVeiculo,
   "DIGITANDO_NOME": handleDigitandoNome,
@@ -1436,7 +1504,12 @@ async function handleEstado(state, action, session) {
   const handler = STATE_HANDLERS[state];
   if (handler) {
     const handled = await handler(action, jid, session);
-    if (handled !== false) return;
+    if (handled !== false) {
+      if (stateData.erros_consecutivos > 0) {
+        await atualizarSessao(session.id, { state_data: { ...stateData, erros_consecutivos: 0 } });
+      }
+      return;
+    }
   }
 
   const erros = (stateData.erros_consecutivos ?? 0) + 1;
@@ -1449,13 +1522,36 @@ async function handleEstado(state, action, session) {
   }
 }
 
+async function handleOperationalError(jid, session, err, context = "") {
+  logger.error({ err, context, sessionId: session?.id }, `Falha operacional: ${context}`);
+  try {
+    await sendWhatsAppMessage(jid, "❌ Ocorreu um erro inesperado. Voltando ao menu principal.");
+    if (session?.id) {
+      await sendMenu(jid, session);
+    }
+  } catch (fallbackErr) {
+    logger.error({ err: fallbackErr }, "Fallback error após falha operacional");
+  }
+}
+
 /* ===================================================================
    ENTRY POINT
    =================================================================== */
 
 export async function processMessage(tenantId, remoteJid, text, pushName) {
+  let session = null;
   try {
-    let session = await buscarSessao(tenantId, remoteJid);
+    session = await buscarSessao(tenantId, remoteJid);
+
+    if (session && await verificarSessaoExpirada(session)) {
+      logger.info({ sessionId: session.id, remoteJid }, "Sessão expirada por inatividade");
+      await supabaseAdmin
+        .from("chatbot_session")
+        .update({ ativo: false })
+        .eq("id", session.id);
+      await sendWhatsAppMessage(remoteJid, "⏰ Seu atendimento foi encerrado por inatividade. Caso deseje continuar, basta enviar uma mensagem.");
+      session = null;
+    }
 
     if (!session) {
       const phone = extractPhone(remoteJid);
@@ -1468,11 +1564,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
 
       await sendWhatsAppMessage(
         remoteJid,
-        `Olá, ${pushName}! 👋 Seja bem-vindo(a) à *Esteticar — Estética Automotiva*!`
-      );
-      await sendWhatsAppMessage(
-        remoteJid,
-        "Somos especialistas em cuidar do acabamento e proteção do seu veículo. 🚗✨\n\nPosso ajudar com *agendamentos*, *consultas* ou tirar qualquer dúvida sobre nossos serviços."
+        `🚗 Bem-vindo à *Esteticar*, ${pushName}! 👋\n\nSou o assistente virtual responsável pelos agendamentos e informações sobre nossos serviços especializados em estética automotiva.`
       );
       await sendMenu(remoteJid, session);
       return;
@@ -1487,23 +1579,50 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
 
     if (intent === "SAUDACAO") {
       if (session.state === "MENU_PRINCIPAL") {
-        await sendWhatsAppMessage(jid, `Olá, ${session.client_name || "cliente"}! 👋 Como posso ajudar você hoje?`);
         await sendMenu(jid, session);
         return;
       }
-      await sendWhatsAppMessage(jid, "Olá! 😊 Estou te ajudando agora, vamos continuar...");
+      if (ESTADOS_RECUPERAVEIS.includes(session.state) && !session.state_data?.recuperacao_exibida) {
+        const recoveryMsg = await montarMensagemRecuperacao(session);
+        if (recoveryMsg) {
+          await atualizarSessao(session.id, {
+            state_data: { ...(session.state_data ?? {}), recuperacao_exibida: true, aguardando_recuperacao: true },
+          });
+          session.state_data = { ...(session.state_data ?? {}), recuperacao_exibida: true, aguardando_recuperacao: true };
+          await sendButtons(remoteJid, recoveryMsg, [
+            { id: "continuar_fluxo", text: "✅ Continuar" },
+            { id: "reiniciar", text: "❌ Recomeçar" },
+          ], "Esteticar");
+          return;
+        }
+      }
+      await sendWhatsAppMessage(jid, "Estou aqui te ajudando — vamos continuar de onde paramos.");
+    } else if (session.state_data?.aguardando_recuperacao) {
+      const p = text.trim().toUpperCase();
+      await atualizarSessao(session.id, {
+        state_data: { ...session.state_data, aguardando_recuperacao: false, recuperacao_exibida: false },
+      });
+      session.state_data = { ...session.state_data, aguardando_recuperacao: false, recuperacao_exibida: false };
+      if (p !== "CONTINUAR_FLUXO" && text !== "continuar_fluxo") {
+        await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
+        session.state = "MENU_PRINCIPAL";
+        session.state_data = {};
+        await sendWhatsAppMessage(remoteJid, "Tudo bem! Vamos começar de novo.");
+        await sendMenu(remoteJid, session);
+        return;
+      }
     } else if (intent === "THANKS") {
-      await sendWhatsAppMessage(jid, "Fico feliz em ajudar! 😊 Se precisar de algo mais, é só chamar.");
+      await sendWhatsAppMessage(jid, "Disponha! Conte conosco sempre que precisar.");
       return;
     } else if (intent === "RESET") {
       await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
       session.state = "MENU_PRINCIPAL";
       session.state_data = {};
-      await sendWhatsAppMessage(jid, "🔄 Conversa reiniciada! Como posso te ajudar?");
+      await sendWhatsAppMessage(jid, "Conversa reiniciada. Como posso ajudar?");
       await sendMenu(jid, session);
       return;
     } else if (intent === "DESPEDIDA") {
-      await sendWhatsAppMessage(jid, "Até logo! 👋 Foi um prazer atender você. Cuide bem do seu carro! 🚗");
+      await sendWhatsAppMessage(jid, "Obrigado pelo contato! Cuide bem do seu veículo. 🚗");
       if (session.state !== "MENU_PRINCIPAL") {
         await sendMenu(jid, session);
       }
@@ -1569,17 +1688,6 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
 
     await handleEstado(session.state, text, session);
   } catch (err) {
-    logger.error({ err }, "UNCAUGHT ERROR processMessage");
-    try {
-      const jid = remoteJid || (session?.remote_jid);
-      if (jid) {
-        await sendWhatsAppMessage(jid, "❌ Ocorreu um erro inesperado. Voltando ao menu...");
-        if (session?.id) {
-          await sendMenu(jid, session);
-        }
-      }
-    } catch (err2) {
-      logger.error({ err: err2 }, "Fallback error processMessage");
-    }
+    await handleOperationalError(remoteJid, session, err, "doProcessMessage");
   }
 }

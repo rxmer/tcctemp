@@ -16,6 +16,18 @@ export async function criarOS({ agendamento_id, observacoes, tenantId }) {
     throw new AppError("Apenas agendamentos confirmados podem virar ordem de serviço", 400);
   }
 
+  const { data: osExistente } = await supabaseAdmin
+    .from("ordens_servico")
+    .select("os_id")
+    .eq("agendamento_id", agendamento_id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .maybeSingle();
+
+  if (osExistente) {
+    throw new AppError("Já existe uma ordem de serviço para este agendamento", 409);
+  }
+
   const { data: osData, error: osError } = await supabaseAdmin
     .from("ordens_servico")
     .insert({
@@ -112,6 +124,7 @@ export async function buscarOSCompleta(osId, tenantId) {
     `)
     .eq("os_id", osId)
     .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
     .single();
 
   if (error) throw new AppError("OS não encontrada", 404);
@@ -124,65 +137,103 @@ export async function buscarOSCompleta(osId, tenantId) {
 }
 
 export async function atualizarOS(id, tenantId, updates) {
-  if (updates.status === "finalizado") {
-    const { data: os, error: osErr } = await supabaseAdmin
+  if (updates.status) {
+    const { data: osAtual, error: osErr } = await supabaseAdmin
       .from("ordens_servico")
-      .select("valor_total")
+      .select("status, agendamento_id, valor_total")
       .eq("os_id", id)
       .eq("tenant_id", tenantId)
       .single();
 
-    if (osErr || !os) throw new AppError("OS não encontrada", 404);
+    if (osErr || !osAtual) throw new AppError("OS não encontrada", 404);
 
-    const { data: faturamentoExistente } = await supabaseAdmin
-      .from("faturamentos")
-      .select("faturamento_id")
-      .eq("os_id", id)
-      .maybeSingle();
+    if (osAtual.status === "finalizado") {
+      throw new AppError("Não é possível alterar uma OS finalizada", 400);
+    }
 
-    if (!faturamentoExistente) {
-      const { error: fatError } = await supabaseAdmin
+    if (osAtual.status === "cancelado") {
+      throw new AppError("Não é possível alterar uma OS cancelada", 400);
+    }
+
+    if (updates.status === "finalizado") {
+      const { data: itens } = await supabaseAdmin
+        .from("itens_ordem_servico")
+        .select("item_id")
+        .eq("os_id", id)
+        .eq("tenant_id", tenantId)
+        .is("deletado_em", null);
+
+      if (!itens || itens.length === 0) {
+        throw new AppError("Não é possível finalizar uma OS sem itens", 400);
+      }
+
+      const { error: updateOsError } = await supabaseAdmin
+        .from("ordens_servico")
+        .update({ status: "finalizado" })
+        .eq("os_id", id)
+        .eq("tenant_id", tenantId);
+
+      if (updateOsError) throw new AppError(`Erro ao finalizar OS: ${updateOsError.message}`);
+
+      const { error: errAgFinalizar } = await supabaseAdmin
+        .from("agendamentos")
+        .update({ status: "finalizado" })
+        .eq("agendamento_id", osAtual.agendamento_id)
+        .eq("tenant_id", tenantId);
+
+      if (errAgFinalizar) throw new AppError(`Erro ao finalizar agendamento: ${errAgFinalizar.message}`);
+
+      const { data: faturamentoExistente } = await supabaseAdmin
         .from("faturamentos")
-        .insert({
-          os_id: id,
-          valor_total: os.valor_total,
-          tenant_id: tenantId,
-        });
+        .select("faturamento_id")
+        .eq("os_id", id)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
 
-      if (fatError) throw new AppError(`Erro ao gerar faturamento: ${fatError.message}`);
+      if (!faturamentoExistente) {
+        const { error: fatError } = await supabaseAdmin
+          .from("faturamentos")
+          .insert({
+            os_id: id,
+            valor_total: osAtual.valor_total,
+            tenant_id: tenantId,
+          });
 
+        if (fatError) throw new AppError(`Erro ao gerar faturamento: ${fatError.message}`);
+
+        criarNotificacao({
+          tenantId,
+          tipo: "faturamento_gerado",
+          titulo: "Faturamento gerado",
+          mensagem: `OS #${id} finalizada - faturamento de R$ ${Number(osAtual.valor_total).toFixed(2)}`,
+          referenciaTipo: "ordem_servico",
+          referenciaId: id,
+        }).catch(() => {});
+      }
+
+      const { error: agUpError } = await supabaseAdmin
+        .from("agendamentos")
+        .update({ status: "finalizado" })
+        .eq("agendamento_id", osAtual.agendamento_id)
+        .eq("tenant_id", tenantId);
+
+      if (agUpError) throw new AppError(`Erro ao finalizar agendamento: ${agUpError.message}`);
+    }
+
+    if (updates.status === "cancelado") {
       criarNotificacao({
         tenantId,
-        tipo: "faturamento_gerado",
-        titulo: "Faturamento gerado",
-        mensagem: `OS #${id} finalizada - faturamento de R$ ${Number(os.valor_total).toFixed(2)}`,
+        tipo: "os_cancelada",
+        titulo: "OS cancelada",
+        mensagem: `Ordem de serviço #${id} foi cancelada`,
         referenciaTipo: "ordem_servico",
         referenciaId: id,
       }).catch(() => {});
-    }
-  }
 
-  if (updates.status === "cancelado") {
-    criarNotificacao({
-      tenantId,
-      tipo: "os_cancelada",
-      titulo: "OS cancelada",
-      mensagem: `Ordem de serviço #${id} foi cancelada`,
-      referenciaTipo: "ordem_servico",
-      referenciaId: id,
-    }).catch(() => {});
-    const { data: os, error: osErr } = await supabaseAdmin
-      .from("ordens_servico")
-      .select("agendamento_id")
-      .eq("os_id", id)
-      .eq("tenant_id", tenantId)
-      .single();
-
-    if (!osErr && os?.agendamento_id) {
       const { error: upErr } = await supabaseAdmin
         .from("agendamentos")
         .update({ status: "confirmado" })
-        .eq("agendamento_id", os.agendamento_id)
+        .eq("agendamento_id", osAtual.agendamento_id)
         .eq("tenant_id", tenantId);
       if (upErr) throw new AppError(`Erro ao reabrir agendamento: ${upErr.message}`);
     }
@@ -200,6 +251,19 @@ export async function atualizarOS(id, tenantId, updates) {
 }
 
 export async function deletarOS(id, tenantId) {
+  const { data: os, error: fetchError } = await supabaseAdmin
+    .from("ordens_servico")
+    .select("status")
+    .eq("os_id", id)
+    .eq("tenant_id", tenantId)
+    .single();
+
+  if (fetchError) throw new AppError("OS não encontrada", 404);
+
+  if (os.status === "finalizado") {
+    throw new AppError("Não é possível excluir uma OS finalizada", 400);
+  }
+
   const { error } = await supabaseAdmin
     .from("ordens_servico")
     .update({ deletado_em: new Date().toISOString() })
@@ -264,6 +328,7 @@ async function recalcularValorTotal(osId, tenantId) {
     .from("itens_ordem_servico")
     .select("quantidade, valor_unitario")
     .eq("os_id", osId)
+    .eq("tenant_id", tenantId)
     .is("deletado_em", null);
 
   const total = (itens ?? []).reduce((acc, item) => acc + item.quantidade * Number(item.valor_unitario), 0);

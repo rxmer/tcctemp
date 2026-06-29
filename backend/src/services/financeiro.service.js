@@ -52,6 +52,32 @@ export async function atualizarContaPagar(id, tenantId, updates) {
   return data;
 }
 
+export async function buscarContaPagar(id, tenantId) {
+  const { data, error } = await supabaseAdmin
+    .from("contas_pagar")
+    .select("*")
+    .eq("conta_id", id)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (error) throw new AppError(`Erro ao buscar conta: ${error.message}`);
+  if (!data) throw new AppError("Conta não encontrada", 404);
+  return data;
+}
+
+export async function buscarFaturamento(id, tenantId) {
+  const { data, error } = await supabaseAdmin
+    .from("faturamentos")
+    .select("*")
+    .eq("faturamento_id", id)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (error) throw new AppError(`Erro ao buscar faturamento: ${error.message}`);
+  if (!data) throw new AppError("Faturamento não encontrado", 404);
+  return data;
+}
+
 export async function deletarContaPagar(id, tenantId) {
   const { error } = await supabaseAdmin
     .from("contas_pagar")
@@ -103,8 +129,8 @@ export async function resumoFinanceiro(tenantId, filtros = {}) {
     .select("valor_total, pago")
     .eq("tenant_id", tenantId);
 
-  if (filtros.data_inicio) receitasQuery = receitasQuery.gte("criado_em", filtros.data_inicio);
-  if (filtros.data_fim) receitasQuery = receitasQuery.lte("criado_em", filtros.data_fim);
+  if (filtros.data_inicio) receitasQuery = receitasQuery.gte("criado_em", `${filtros.data_inicio}T00:00:00`);
+  if (filtros.data_fim) receitasQuery = receitasQuery.lte("criado_em", `${filtros.data_fim}T23:59:59`);
 
   const { data: receitas, error: recError } = await receitasQuery;
 

@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { financeiroService } from "../services/financeiro.service";
-import { Input, Button, PageHeader, Pagination } from "../components/ui";
-import styles from "../styles/pages/financeiro.module.css";
+import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
+import { BarChart3, DollarSign, FileText, TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, Pencil, Wallet } from "lucide-react";
 
 const formInitial = { descricao: "", valor: "", data_vencimento: "", observacoes: "" };
 
@@ -16,7 +17,7 @@ export function Financeiro() {
   const [faturamentos, setFaturamentos] = useState([]);
   const [form, setForm] = useState({ ...formInitial });
   const [editingId, setEditingId] = useState(null);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aba, setAba] = useState("resumo");
   const [filtroData, setFiltroData] = useState("");
@@ -174,22 +175,88 @@ export function Financeiro() {
     return `${d}/${m}/${y}`;
   }
 
+  const contasColumns = [
+    { key: "descricao", label: "Descrição", render: (c) => c.descricao },
+    { key: "valor", label: "Valor", render: (c) => formatMoney(c.valor) },
+    { key: "data_vencimento", label: "Vencimento", render: (c) => formatDate(c.data_vencimento) },
+    {
+      key: "status",
+      label: "Status",
+      render: (c) => (
+        <span className={crud.statusBadge} style={c.pago
+          ? { background: "rgba(34,197,94,0.1)", color: "#86efac", border: "1px solid rgba(34,197,94,0.2)" }
+          : { background: "rgba(245,158,11,0.1)", color: "#fcd34d", border: "1px solid rgba(245,158,11,0.2)" }
+        }>
+          {c.pago ? "Pago" : "Pendente"}
+        </span>
+      ),
+    },
+    {
+      key: "acoes",
+      label: "Ações",
+      width: "1px",
+      render: (c) => (
+        <ActionBtns>
+          {!c.pago && (
+            <ActionBtn title="Pagar" onClick={() => handlePagarConta(c.conta_id)}>
+              <CheckCircle2 size={14} />
+            </ActionBtn>
+          )}
+          <ActionBtn title="Editar" onClick={() => iniciarEdicao(c)}>
+            <Pencil size={14} />
+          </ActionBtn>
+        </ActionBtns>
+      ),
+    },
+  ];
+
+  const fatColumns = [
+    { key: "faturamento_id", label: "#" },
+    { key: "os_id", label: "OS", render: (f) => `OS #${f.os_id}` },
+    { key: "valor_total", label: "Valor", render: (f) => formatMoney(f.valor_total) },
+    { key: "data", label: "Data", render: (f) => formatDate(f.criado_em?.split("T")[0]) },
+    {
+      key: "status",
+      label: "Status",
+      render: (f) => (
+        <span className={crud.statusBadge} style={f.pago
+          ? { background: "rgba(34,197,94,0.1)", color: "#86efac", border: "1px solid rgba(34,197,94,0.2)" }
+          : { background: "rgba(245,158,11,0.1)", color: "#fcd34d", border: "1px solid rgba(245,158,11,0.2)" }
+        }>
+          {f.pago ? "Recebido" : "Pendente"}
+        </span>
+      ),
+    },
+    {
+      key: "acoes",
+      label: "Ações",
+      width: "1px",
+      render: (f) => (
+        !f.pago ? (
+          <ActionBtn title="Receber" onClick={() => handleReceberFaturamento(f.faturamento_id)}>
+            <Wallet size={14} />
+          </ActionBtn>
+        ) : null
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader title="Financeiro" subtitle="Controle financeiro da empresa"
         action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} /><span>{tenant?.nome}</span>
+          <div className={crud.tenantChip}>
+            <span className={crud.tenantDot} /><span>{tenant?.nome}</span>
           </div>
         }
       />
 
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
 
-      <div className={styles.filtros}>
-        <div className={styles.filtroGroup}>
-          <label className={styles.filtroLabel}>Filtrar por data</label>
-          <input type="date" className={styles.filtroInput} value={filtroData}
+      <div className={crud.filtros}>
+        <div className={crud.filtroGroup}>
+          <label className={crud.filtroLabel}>Filtrar por data</label>
+          <input type="date" className={crud.filtroInput} value={filtroData}
             onChange={(e) => setFiltroData(e.target.value)} />
         </div>
         {filtroData && (
@@ -197,51 +264,62 @@ export function Financeiro() {
         )}
       </div>
 
-      <div className={styles.abas}>
+      <div className={crud.filtros} style={{ gap: 0, borderBottom: "1px solid var(--border)", marginBottom: 24 }}>
         {["resumo", "contas", "faturamentos"].map((a) => (
-          <button key={a} className={`${styles.aba} ${aba === a ? styles.abaAtiva : ""}`}
+          <button key={a} className={crud.aba} style={{
+            padding: "10px 16px",
+            background: "none",
+            border: "none",
+            color: aba === a ? "var(--accent)" : "var(--text-secondary)",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            borderBottom: aba === a ? "2px solid var(--accent)" : "2px solid transparent",
+            transition: "all var(--transition)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
             onClick={() => setAba(a)}>
-            {a === "resumo" ? "📊 Resumo" : a === "contas" ? "💰 Contas a Pagar" : "📄 Faturamentos"}
+            {a === "resumo" ? <><BarChart3 size={14} /> Resumo</> : a === "contas" ? <><DollarSign size={14} /> Contas a Pagar</> : <><FileText size={14} /> Faturamentos</>}
           </button>
         ))}
       </div>
 
       {aba === "resumo" && resumo && (
-        <div className={styles.resumoGrid}>
-          <div className={styles.resumoCard}>
-            <div className={styles.resumoIcon}>📈</div>
-            <div className={styles.resumoValue}>{formatMoney(resumo.receitas.total)}</div>
-            <div className={styles.resumoLabel}>Total Receitas</div>
-            <div className={styles.resumoDet}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <Card style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+            <TrendingUp size={22} color="var(--accent)" />
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{formatMoney(resumo.receitas.total)}</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Total Receitas</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
               Recebido: {formatMoney(resumo.receitas.recebido)} · A receber: {formatMoney(resumo.receitas.a_receber)}
             </div>
-          </div>
-          <div className={styles.resumoCard}>
-            <div className={styles.resumoIcon}>📉</div>
-            <div className={styles.resumoValue}>{formatMoney(resumo.despesas.total)}</div>
-            <div className={styles.resumoLabel}>Total Despesas</div>
-            <div className={styles.resumoDet}>
+          </Card>
+          <Card style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+            <TrendingDown size={22} color="var(--error)" />
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{formatMoney(resumo.despesas.total)}</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Total Despesas</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
               Pago: {formatMoney(resumo.despesas.pago)} · A pagar: {formatMoney(resumo.despesas.a_pagar)}
             </div>
-          </div>
-          <div className={`${styles.resumoCard} ${resumo.saldo >= 0 ? styles.resumoPos : styles.resumoNeg}`}>
-            <div className={styles.resumoIcon}>{resumo.saldo >= 0 ? "✅" : "⚠️"}</div>
-            <div className={styles.resumoValue}>{formatMoney(resumo.saldo)}</div>
-            <div className={styles.resumoLabel}>Saldo</div>
-          </div>
+          </Card>
+          <Card style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8, alignItems: "center", borderColor: resumo.saldo >= 0 ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)" }}>
+            {resumo.saldo >= 0 ? <CheckCircle2 size={22} color="var(--success)" /> : <AlertTriangle size={22} color="var(--error)" />}
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, color: resumo.saldo >= 0 ? "#86efac" : "#fca5a5" }}>{formatMoney(resumo.saldo)}</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Saldo</div>
+          </Card>
         </div>
       )}
 
       {aba === "contas" && (
-        <div className={styles.contasLayout}>
-          <div className={styles.formCard}>
-            <div className={styles.cardHeader}>
-              <h2>{editingId ? "Editar conta" : "Nova conta a pagar"}</h2>
-            </div>
-            <form onSubmit={handleSubmit} className={styles.contaForm}>
+        <div className={crud.pageGrid}>
+          <Card>
+            <CardHeader title={editingId ? "Editar conta" : "Nova conta a pagar"} />
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Input label="Descrição" name="descricao" placeholder="Ex: Aluguel"
                 value={form.descricao} onChange={handleChange} required />
-              <div className={styles.row}>
+              <div className={crud.row}>
                 <Input label="Valor (R$)" name="valor" type="number" step="0.01" min="0"
                   placeholder="0,00" value={form.valor} onChange={handleChange} required />
                 <Input label="Vencimento" name="data_vencimento" type="date"
@@ -249,7 +327,7 @@ export function Financeiro() {
               </div>
               <Input label="Observações" name="observacoes" placeholder="Opcional"
                 value={form.observacoes} onChange={handleChange} />
-              <div className={styles.formActions}>
+              <div className={crud.formActions}>
                 <Button type="submit" fullWidth loading={saving}>
                   {editingId ? "Salvar" : "Cadastrar"}
                 </Button>
@@ -258,106 +336,38 @@ export function Financeiro() {
                 )}
               </div>
             </form>
-          </div>
+          </Card>
 
-          <div className={styles.listCard}>
-            <div className={styles.cardHeader}>
-              <h2>Contas cadastradas</h2>
-              <p>{totalContas} conta(s)</p>
-            </div>
-            {contas.length === 0 ? (
-              <div className={styles.emptyState}>Nenhuma conta cadastrada.</div>
+          <Card>
+            <CardHeader title="Contas cadastradas" subtitle={`${totalContas} conta(s)`} />
+            {loading ? (
+              <SkeletonTable columns={[3, 2, 2, 1.5, 1.5]} rows={5} />
             ) : (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Descrição</th>
-                      <th>Valor</th>
-                      <th>Vencimento</th>
-                      <th>Status</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contas.map((c) => (
-                      <tr key={c.conta_id}>
-                        <td>{c.descricao}</td>
-                        <td className={styles.valorCell}>{formatMoney(c.valor)}</td>
-                        <td>{formatDate(c.data_vencimento)}</td>
-                        <td>
-                          <span className={`${styles.statusBadge} ${c.pago ? styles.statusPago : styles.statusPendente}`}>
-                            {c.pago ? "Pago" : "Pendente"}
-                          </span>
-                        </td>
-                        <td>
-                          <div className={styles.actionBtns}>
-                            {!c.pago && (
-                              <button className={styles.actionBtn} title="Pagar"
-                                onClick={() => handlePagarConta(c.conta_id)}>✅</button>
-                            )}
-                            <button className={styles.actionBtn} title="Editar"
-                              onClick={() => iniciarEdicao(c)}>✏️</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <DataTable
+              columns={contasColumns}
+              rows={contas.map((c) => ({ ...c, id: c.conta_id }))}
+              emptyMessage="Nenhuma conta cadastrada."
+            />
             )}
             <Pagination page={pageContas} limit={LIMIT} total={totalContas} onPageChange={setPageContas} />
-          </div>
+          </Card>
         </div>
       )}
 
       {aba === "faturamentos" && (
-        <div className={styles.listCard}>
-          <div className={styles.cardHeader}>
-            <h2>Faturamentos</h2>
-            <p>{totalFat} registro(s)</p>
-          </div>
-          {faturamentos.length === 0 ? (
-            <div className={styles.emptyState}>Nenhum faturamento gerado ainda.</div>
+        <Card>
+          <CardHeader title="Faturamentos" subtitle={`${totalFat} registro(s)`} />
+          {loading ? (
+            <SkeletonTable columns={[1.5, 2, 2, 2, 1.5, 1.5]} rows={5} />
           ) : (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>OS</th>
-                    <th>Valor</th>
-                    <th>Data</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {faturamentos.map((f) => (
-                    <tr key={f.faturamento_id}>
-                      <td className={styles.osId}>{f.faturamento_id}</td>
-                      <td>OS #{f.os_id}</td>
-                      <td className={styles.valorCell}>{formatMoney(f.valor_total)}</td>
-                      <td>{formatDate(f.criado_em?.split("T")[0])}</td>
-                      <td>
-                        <span className={`${styles.statusBadge} ${f.pago ? styles.statusPago : styles.statusPendente}`}>
-                          {f.pago ? "Recebido" : "Pendente"}
-                        </span>
-                      </td>
-                      <td>
-                        {!f.pago && (
-                          <button className={styles.actionBtn} title="Receber"
-                            onClick={() => handleReceberFaturamento(f.faturamento_id)}>💰</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <DataTable
+            columns={fatColumns}
+            rows={faturamentos.map((f) => ({ ...f, id: f.faturamento_id }))}
+            emptyMessage="Nenhum faturamento gerado ainda."
+          />
           )}
           <Pagination page={pageFat} limit={LIMIT} total={totalFat} onPageChange={setPageFat} />
-        </div>
+        </Card>
       )}
     </>
   );

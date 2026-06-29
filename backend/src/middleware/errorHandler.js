@@ -1,9 +1,8 @@
 import { AppError } from "../utils/errors.js";
-import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 
 export function errorHandler(err, _req, res, _next) {
-  logger.error({ err, stack: env.nodeEnv === "development" ? err.stack : undefined }, err.message);
+  logger.error({ err }, err.message);
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ error: err.message });
@@ -19,10 +18,6 @@ export function errorHandler(err, _req, res, _next) {
 
   if (err?.code === "42P01") {
     return res.status(500).json({ error: "Erro interno do sistema. Tente novamente mais tarde." });
-  }
-
-  if (env.nodeEnv === "development") {
-    return res.status(500).json({ error: err.message, stack: err.stack });
   }
 
   res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });

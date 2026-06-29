@@ -40,9 +40,11 @@ export function Calendar({ agendamentos = [], selectedDate, onDateSelect, onMont
 
   const countMap = useMemo(() => {
     const m = {};
-    agendamentos.forEach((a) => {
-      m[a.data_agendamento] = (m[a.data_agendamento] || 0) + 1;
-    });
+    agendamentos
+      .filter((a) => a.status !== "cancelado")
+      .forEach((a) => {
+        m[a.data_agendamento] = (m[a.data_agendamento] || 0) + 1;
+      });
     return m;
   }, [agendamentos]);
 
@@ -95,7 +97,17 @@ export function Calendar({ agendamentos = [], selectedDate, onDateSelect, onMont
               <div
                 key={`${wi}-${di}`}
                 className={cls}
+                role="button"
+                tabIndex={0}
+                aria-label={`${day} de ${MONTHS[month]} ${year}${count > 0 ? `, ${count} agendamento(s)` : ""}`}
+                aria-pressed={ds === selectedDate}
                 onClick={() => onDateSelect(ds === selectedDate ? null : ds)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onDateSelect(ds === selectedDate ? null : ds);
+                  }
+                }}
               >
                 <span className={styles.dayNum}>{day}</span>
                 {count > 0 && <span className={styles.badge}>{count}</span>}

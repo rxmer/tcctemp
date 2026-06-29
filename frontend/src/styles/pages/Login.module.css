@@ -16,9 +16,9 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(232,93,4,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 70% 80%, rgba(232,93,4,0.06) 0%, transparent 50%),
-    var(--bg-surface);
+    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(212,168,67,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 70% 80%, rgba(212,168,67,0.08) 0%, transparent 50%),
+    linear-gradient(135deg, var(--bg-surface) 0%, #0a0a0a 100%);
   position: relative;
 }
 
@@ -37,6 +37,17 @@
   pointer-events: none;
 }
 
+.brandBg::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, transparent 0%, rgba(212,168,67,0.03) 100%);
+  pointer-events: none;
+}
+
 .brandContent {
   max-width: 380px;
   padding: 48px;
@@ -44,20 +55,20 @@
 }
 
 .brandIconWrapper {
-  width: 64px;
-  height: 64px;
-  background: rgba(232,93,4,0.12);
-  border: 1px solid rgba(232,93,4,0.25);
-  border-radius: 16px;
+  width: 68px;
+  height: 68px;
+  background: var(--accent-gradient);
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 28px;
+  box-shadow: 0 0 32px rgba(212, 168, 67, 0.35);
 }
 
 .brandTitle {
   font-family: var(--font-display);
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.02em;
@@ -75,7 +86,7 @@
 .brandFeatures {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .brandFeature {
@@ -84,10 +95,22 @@
   gap: 12px;
   font-size: 14px;
   color: var(--text-secondary);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+}
+
+.brandFeature:hover {
+  border-color: rgba(212, 168, 67, 0.2);
+  background: rgba(212, 168, 67, 0.04);
+  transform: translateX(4px);
 }
 
 .brandFeature svg {
   flex-shrink: 0;
+  color: var(--accent);
 }
 
 .splitForm {
@@ -97,6 +120,7 @@
   justify-content: center;
   padding: 48px;
   background: var(--bg-base);
+  background-image: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(212, 168, 67, 0.04) 0%, transparent 60%);
 }
 
 .formContainer {
@@ -109,10 +133,11 @@
 
 .formHeader h1 {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
+  letter-spacing: 0.01em;
 }
 
 .formHeader p {
@@ -145,4 +170,24 @@
   .splitForm {
     padding: 32px 24px;
   }
+}
+
+/* ── TEMA CLARO ────────────────────────────────────────────── */
+:global([data-theme="light"]) .brandBg {
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 40%, rgba(184, 148, 31, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 70% 80%, rgba(184, 148, 31, 0.05) 0%, transparent 50%),
+    linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
+}
+
+:global([data-theme="light"]) .brandFeature {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+:global([data-theme="light"]) .brandFeature:hover {
+  background: rgba(184, 148, 31, 0.05);
+}
+
+:global([data-theme="light"]) .splitForm {
+  background: var(--bg-base);
 }

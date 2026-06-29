@@ -27,18 +27,26 @@ export async function connect(req, res) {
     return res.json({ message: "Já conectado" });
   }
 
-  if (currentState === "reconnecting" || currentState === "awaiting_qr") {
+  if (currentState === "reconnecting" || currentState === "awaiting_qr" || currentState === "connecting") {
     return res.json({ message: "Já tentando conectar, aguarde..." });
   }
 
   const authDir = path.join(__dirname, "..", "..", "..", `baileys_auth_${tenantId}`);
-  if (fs.existsSync(authDir)) {
-    fs.rmSync(authDir, { recursive: true, force: true });
-    logger.info("Auth removida para nova conexão");
+  if (currentState === "disconnected" && fs.existsSync(authDir)) {
+    const state = baileysClient.getConnectionState();
+    if (state.error && (state.error.includes("loggedOut") || state.error.includes("substituída"))) {
+      fs.rmSync(authDir, { recursive: true, force: true });
+      logger.info("Auth removida — sessão foi deslogada");
+    }
   }
 
-  await baileysClient.startBaileys(tenantId);
-  res.json({ message: "Conectando..." });
+  try {
+    await baileysClient.startBaileys(tenantId);
+    res.json({ message: "Conectando..." });
+  } catch (err) {
+    logger.error({ err }, "Erro ao iniciar Baileys");
+    res.status(500).json({ error: "Erro ao iniciar conexão WhatsApp" });
+  }
 }
 
 export async function disconnect(req, res) {

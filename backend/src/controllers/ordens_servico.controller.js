@@ -20,8 +20,8 @@ export async function listar(req, res) {
   const { status, page, limit } = req.query;
   const filtros = {};
   if (status) filtros.status = status;
-  filtros.page = Number(page) || 1;
-  filtros.limit = Number(limit) || 20;
+  filtros.page = Math.max(1, Number(page) || 1);
+  filtros.limit = Math.min(100, Math.max(1, Number(limit) || 20));
 
   const result = await osService.listarOS(req.tenantId, filtros);
   res.json(result);

@@ -3,7 +3,7 @@ import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
 
 export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName }) {
-  const existing = await supabaseAdmin
+  const { data: existingData, error: existingError } = await supabaseAdmin
     .from("chatbot_session")
     .select("id")
     .eq("tenant_id", tenantId)
@@ -11,11 +11,13 @@ export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName
     .eq("ativo", true)
     .maybeSingle();
 
-  if (existing?.data?.id) {
+  if (existingError) logger.warn({ err: existingError }, "Erro ao buscar sessão existente");
+
+  if (existingData?.id) {
     const { data, error } = await supabaseAdmin
       .from("chatbot_session")
       .update({ ativo: false })
-      .eq("id", existing.data.id)
+      .eq("id", existingData.id)
       .select()
       .single();
 

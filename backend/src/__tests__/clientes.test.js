@@ -11,6 +11,10 @@ function mockQuery(overrides = {}) {
     update: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     is: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     neq: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -45,19 +49,19 @@ describe("clienteService", () => {
       }));
 
       await expect(
-        clienteService.criarCliente({ nome: "João", telefone: "11999999999", tenantId: TENANT_ID })
+        clienteService.criarCliente({ nome: "João", telefone: "5511999999999", tenantId: TENANT_ID })
       ).rejects.toThrow("Já existe um cliente com este telefone");
     });
 
     it("deve criar cliente com telefone unico", async () => {
-      const expected = { cliente_id: 2, nome: "Maria", telefone: "11988888888" };
+      const expected = { cliente_id: 2, nome: "Maria", telefone: "5511988888888" };
       supabaseAdmin.from.mockImplementation(() => mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         single: vi.fn().mockResolvedValue({ data: expected, error: null }),
       }));
 
       const result = await clienteService.criarCliente({
-        nome: "Maria", telefone: "11988888888", tenantId: TENANT_ID,
+        nome: "Maria", telefone: "5511988888888", tenantId: TENANT_ID,
       });
 
       expect(result).toEqual(expected);
@@ -70,7 +74,7 @@ describe("clienteService", () => {
       }));
 
       await expect(
-        clienteService.criarCliente({ nome: "X", telefone: "11977777777", tenantId: TENANT_ID })
+        clienteService.criarCliente({ nome: "X", telefone: "5511977777777", tenantId: TENANT_ID })
       ).rejects.toThrow("Erro ao criar cliente");
     });
   });
@@ -137,7 +141,7 @@ describe("clienteService", () => {
       }));
 
       await expect(
-        clienteService.atualizarCliente(1, TENANT_ID, { telefone: "11999999999" })
+        clienteService.atualizarCliente(1, TENANT_ID, { telefone: "5511999999999" })
       ).rejects.toThrow("Já existe outro cliente com este telefone");
     });
 
@@ -155,15 +159,29 @@ describe("clienteService", () => {
 
   describe("deletarCliente", () => {
     it("deve soft-deletar cliente", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery());
+      let cc = 0;
+      supabaseAdmin.from.mockImplementation(() => {
+        cc++;
+        const q = mockQuery();
+        q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
+        if (cc === 1) return q;
+        if (cc === 2) { q.then = (resolve) => resolve({ data: [], error: null }); return q; }
+        if (cc === 3) { q.then = (resolve) => resolve({ data: [], error: null, count: 0 }); return q; }
+        return mockQuery();
+      });
 
       await clienteService.deletarCliente(1, TENANT_ID);
     });
 
     it("deve lancar erro se delete falhar", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery({
-        then: (resolve) => resolve({ data: null, error: new Error("DB error") }),
-      }));
+      let cc = 0;
+      supabaseAdmin.from.mockImplementation(() => {
+        cc++;
+        const q = mockQuery();
+        q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
+        if (cc <= 3) return q;
+        return mockQuery({ then: (resolve) => resolve({ data: null, error: new Error("DB error") }) });
+      });
 
       await expect(clienteService.deletarCliente(1, TENANT_ID)).rejects.toThrow("Erro ao deletar cliente");
     });

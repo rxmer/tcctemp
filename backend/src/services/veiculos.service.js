@@ -42,7 +42,10 @@ export async function listarVeiculos(tenantId, { page = 1, limit = 20, search = 
     .is("deletado_em", null);
 
   if (search) {
-    query = query.or(`placa.ilike.%${search}%,marca.ilike.%${search}%,modelo.ilike.%${search}%`);
+    const s = search.replace(/[,%()\\;]/g, "").trim().slice(0, 100);
+    if (s) {
+      query = query.or(`placa.ilike.%${s}%,marca.ilike.%${s}%,modelo.ilike.%${s}%`);
+    }
   }
 
   const { data, error, count } = await query
@@ -82,6 +85,21 @@ export async function atualizarVeiculo(id, tenantId, updates) {
 }
 
 export async function deletarVeiculo(id, tenantId) {
+  const hoje = new Date().toISOString().split("T")[0];
+
+  const { count: agFuturos } = await supabaseAdmin
+    .from("agendamentos")
+    .select("*", { count: "exact", head: true })
+    .eq("veiculo_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .gte("data_agendamento", hoje)
+    .in("status", ["pendente", "confirmado", "em_andamento"]);
+
+  if (agFuturos > 0) {
+    throw new AppError("Não é possível excluir um veículo com agendamentos futuros", 400);
+  }
+
   const { error } = await supabaseAdmin
     .from("veiculos")
     .update({ deletado_em: new Date().toISOString() })

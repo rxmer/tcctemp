@@ -5,7 +5,8 @@ import { clientesService } from "../services/clientes.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
 import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
-import styles from "../styles/pages/veiculos.module.css";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
+import { Pencil, Trash2 } from "lucide-react";
 
 const formInitial = {
   placa: "",
@@ -35,55 +36,33 @@ export function Veiculos() {
   const LIMIT = 20;
 
   useEffect(() => {
-    let mounted = true;
-
-    async function init() {
-      try {
-        setLoading(true);
-        const [ve, cl] = await Promise.all([
-          veiculosService.listar({ page, limit: LIMIT, search }),
-          clientesService.listar({ limit: 9999 }),
-        ]);
-        if (!mounted) return;
-        setVeiculos(ve.data);
-        setTotal(ve.total);
-        setClientes(cl.data);
-      } catch (err) {
-        showFeedback("error", err.message);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    init();
-  }, []);
-
-  useEffect(() => {
-    veiculosService.listar({ page, limit: LIMIT, search }).then((result) => {
-      setVeiculos(result.data);
-      setTotal(result.total);
-    }).catch((err) => showFeedback("error", err.message));
+    carregarVeiculos();
   }, [page]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setPage(1);
-      veiculosService.listar({ page: 1, limit: LIMIT, search }).then((result) => {
-        setVeiculos(result.data);
-        setTotal(result.total);
-      }).catch((err) => showFeedback("error", err.message));
     }, 400);
     return () => clearTimeout(debounceRef.current);
   }, [search]);
 
+  useEffect(() => {
+    clientesService.listar({ limit: 9999 }).then((cl) => {
+      setClientes(cl.data);
+    }).catch(() => {});
+  }, []);
+
   async function carregarVeiculos() {
+    setLoading(true);
     try {
       const result = await veiculosService.listar({ page, limit: LIMIT, search });
       setVeiculos(result.data);
       setTotal(result.total);
     } catch (err) {
       showFeedback("error", err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -157,14 +136,50 @@ export function Veiculos() {
     }
   }
 
+  const columns = [
+    { key: "placa", label: "Placa", render: (v) => v.placa },
+    {
+      key: "marca_modelo",
+      label: "Marca / Modelo",
+      render: (v) => (
+        <>
+          <div>{v.marca}</div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{v.modelo}</div>
+        </>
+      ),
+    },
+    { key: "ano", label: "Ano", render: (v) => v.ano ?? "-" },
+    { key: "cor", label: "Cor", render: (v) => v.cor ?? "-" },
+    {
+      key: "cliente",
+      label: "Cliente",
+      render: (v) => clientes.find((c) => c.cliente_id === v.cliente_id)?.nome ?? "-",
+    },
+    {
+      key: "acoes",
+      label: "Ações",
+      width: "1px",
+      render: (v) => (
+        <ActionBtns>
+          <ActionBtn title="Editar" onClick={() => iniciarEdicao(v)}>
+            <Pencil size={14} />
+          </ActionBtn>
+          <ActionBtn title="Remover" danger onClick={() => handleDelete(v)}>
+            <Trash2 size={14} />
+          </ActionBtn>
+        </ActionBtns>
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader
         title="Veículos"
         subtitle="Gerencie os veículos dos seus clientes"
         action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} />
+          <div className={crud.tenantChip}>
+            <span className={crud.tenantDot} />
             <span>{tenant?.nome}</span>
           </div>
         }
@@ -172,15 +187,15 @@ export function Veiculos() {
 
       {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
 
-      <div className={styles.veicGrid}>
-        <div className={styles.formCard}>
-          <div className={styles.cardHeader}>
-            <h2>{editingId ? "Editar veículo" : "Novo veículo"}</h2>
-            <p>Preencha os dados abaixo</p>
-          </div>
+      <div className={crud.pageGrid}>
+        <Card>
+          <CardHeader
+            title={editingId ? "Editar veículo" : "Novo veículo"}
+            subtitle="Preencha os dados abaixo"
+          />
 
-          <form onSubmit={handleSubmit} className={styles.veicForm}>
-            <div className={styles.row}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div className={crud.row}>
               <Input
                 label="Placa"
                 name="placa"
@@ -225,11 +240,11 @@ export function Veiculos() {
               onChange={handleChange}
             />
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Cliente</label>
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Cliente</label>
               <select
                 name="cliente_id"
-                className={styles.fieldSelect}
+                className={`input-field ${crud.fieldSelect}`}
                 value={form.cliente_id}
                 onChange={handleChange}
                 required
@@ -243,7 +258,7 @@ export function Veiculos() {
               </select>
             </div>
 
-            <div className={styles.formActions}>
+            <div className={crud.formActions}>
               <Button type="submit" fullWidth loading={saving}>
                 {editingId ? "Salvar alterações" : "Cadastrar veículo"}
               </Button>
@@ -254,18 +269,18 @@ export function Veiculos() {
               )}
             </div>
           </form>
-        </div>
+        </Card>
 
-        <div className={styles.listCard}>
-          <div className={styles.cardHeader}>
-            <h2>Veículos cadastrados</h2>
-            <p>{total} veículo(s) encontrado(s)</p>
-          </div>
+        <Card>
+          <CardHeader
+            title="Veículos cadastrados"
+            subtitle={`${total} veículo(s) encontrado(s)`}
+          />
 
-          <div className={styles.searchBar}>
+          <div className={crud.searchBar}>
             <input
               type="text"
-              className={styles.searchInput}
+              className={crud.searchInput}
               placeholder="Buscar por placa, marca ou modelo..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -274,63 +289,15 @@ export function Veiculos() {
 
           {loading ? (
             <SkeletonTable columns={[2.5, 3, 3, 2, 2, 1.5]} rows={5} />
-          ) : veiculos.length === 0 ? (
-            <div className={styles.emptyState}>
-              Nenhum veículo cadastrado ainda.
-            </div>
           ) : (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Placa</th>
-                    <th>Marca / Modelo</th>
-                    <th>Ano</th>
-                    <th>Cor</th>
-                    <th>Cliente</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {veiculos.map((v) => {
-                    const cliente = clientes.find((c) => c.cliente_id === v.cliente_id);
-                    return (
-                    <tr key={v.veiculo_id}>
-                      <td className={styles.placaCell}>{v.placa}</td>
-                      <td>
-                        <div className={styles.veicMarca}>{v.marca}</div>
-                        <div className={styles.veicModelo}>{v.modelo}</div>
-                      </td>
-                      <td>{v.ano ?? "-"}</td>
-                      <td>{v.cor ?? "-"}</td>
-                      <td>{cliente?.nome ?? "-"}</td>
-                      <td>
-                        <div className={styles.actionBtns}>
-                          <button
-                            className={styles.actionBtn}
-                            title="Editar"
-                            onClick={() => iniciarEdicao(v)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            className={`${styles.actionBtn} ${styles.actionDelete}`}
-                            title="Remover"
-                            onClick={() => handleDelete(v)}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={columns}
+              rows={veiculos.map((v) => ({ ...v, id: v.veiculo_id }))}
+              emptyMessage="Nenhum veículo cadastrado ainda."
+            />
           )}
           <Pagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
-        </div>
+        </Card>
       </div>
       <ConfirmModal />
     </>

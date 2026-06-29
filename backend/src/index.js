@@ -6,6 +6,20 @@ import { initCache } from "./config/cache.js";
 import { verificarEEnviarLembretes } from "./services/lembretes.service.js";
 import { limparSessoesExpiradas } from "./chatbot/chatbot.session.js";
 
+process.on("unhandledRejection", (reason) => {
+  logger.error({ reason }, "Unhandled Rejection");
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "Uncaught Exception");
+  process.exit(1);
+});
+
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM recebido, encerrando...");
+  process.exit(0);
+});
+
 app.listen(env.port, async () => {
   await initCache();
   logger.info({ port: env.port }, "Backend iniciado");

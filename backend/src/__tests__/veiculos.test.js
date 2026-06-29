@@ -11,6 +11,8 @@ function mockQuery(overrides = {}) {
     update: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     is: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     neq: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -103,7 +105,14 @@ describe("veiculosService", () => {
 
   describe("deletarVeiculo", () => {
     it("deve soft-deletar veiculo", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery());
+      let cc = 0;
+      supabaseAdmin.from.mockImplementation(() => {
+        cc++;
+        const q = mockQuery();
+        q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
+        if (cc === 1) return q;
+        return mockQuery();
+      });
 
       await veiculosService.deletarVeiculo(1, TENANT_ID);
     });

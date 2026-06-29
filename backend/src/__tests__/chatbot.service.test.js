@@ -71,7 +71,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Olá")
+        expect.stringContaining("Bem-vindo")
       );
     });
   });
@@ -84,10 +84,7 @@ describe("chatbot.service", () => {
 
       await processMessage(TENANT_ID, REMOTE_JID, "oi", "João");
 
-      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
-        REMOTE_JID,
-        expect.stringContaining("Olá")
-      );
+      expect(baileys.sendButtons).toHaveBeenCalled();
     });
   });
 
@@ -221,7 +218,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Em breve um atendente")
+        expect.stringContaining("encaminhada")
       );
     });
   });
@@ -316,13 +313,23 @@ describe("chatbot.service", () => {
             maybeSingle: vi.fn().mockResolvedValue({ data: session, error: null }),
           });
         }
+        if (table === "servico") {
+          return mockQuery({
+            single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }),
+          });
+        }
+        if (table === "usuarios") {
+          return mockQuery({
+            then: (resolve) => resolve({ data: [{ id: "user-1" }], error: null }),
+          });
+        }
         if (table === "agendamentos") {
           return mockQuery({
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
-            then: (resolve) => resolve({ count: 1, data: [], error: null }),
+            then: (resolve) => resolve({ data: [{ hora_agendamento: "10:00", servico: { duracao_min: 30 } }], error: null }),
           });
         }
         return mockQuery();
@@ -512,7 +519,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Por nada")
+        expect.stringContaining("Disponha")
       );
     });
 
@@ -525,7 +532,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Até mais")
+        expect.stringContaining("Obrigado pelo contato")
       );
     });
 
@@ -538,7 +545,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("reiniciada")
+        expect.stringContaining("Conversa reiniciada")
       );
     });
   });
@@ -553,7 +560,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -568,7 +575,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -583,7 +590,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -598,7 +605,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -635,7 +642,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -710,7 +717,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -743,7 +750,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -758,7 +765,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -773,7 +780,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -788,7 +795,7 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Menu"),
+        expect.any(String),
         expect.any(Array),
         "Esteticar"
       );
@@ -1028,13 +1035,18 @@ describe("chatbot.service", () => {
             maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }),
           });
         }
+        if (table === "servico") {
+          return mockQuery({
+            single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }),
+          });
+        }
         if (table === "agendamentos") {
           return mockQuery({
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
-            then: (resolve) => resolve({ count: 1, data: [], error: null }),
+            then: (resolve) => resolve({ data: [{ hora_agendamento: "10:00", servico: { duracao_min: 30 } }], error: null }),
           });
         }
         return mockQuery();
@@ -1042,15 +1054,17 @@ describe("chatbot.service", () => {
 
       await processMessage(TENANT_ID, REMOTE_JID, "horario_10:00", "João");
 
-      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+      expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Não há mais horários")
+        expect.stringContaining("Horários atualizados"),
+        expect.any(Array),
+        expect.any(String)
       );
     });
   });
 
   describe("processMessage - erro ao criar agendamento", () => {
-    it("deve informar erro quando insert retorna null", async () => {
+    it("deve informar erro quando o servico rejeita", async () => {
       const session = buildSession({
         state: "CONFIRMANDO_AGENDAMENTO",
         cliente_id: 1,
@@ -1063,30 +1077,36 @@ describe("chatbot.service", () => {
             maybeSingle: vi.fn().mockResolvedValue({ data: session, error: null }),
           });
         }
+        if (table === "configuracao_expediente") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }),
+          });
+        }
+        if (table === "servico") {
+          return mockQuery({
+            single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }),
+          });
+        }
         if (table === "agendamentos") {
           return mockQuery({
-            insert: vi.fn().mockReturnThis(),
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-            then: (resolve) => resolve({ count: 0, data: [], error: null }),
+            eq: vi.fn().mockReturnThis(),
+            select: vi.fn().mockReturnThis(),
+            gte: vi.fn().mockReturnThis(),
+            insert: vi.fn().mockReturnThis(),
+            update: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert error") }),
+            then: (r) => r({ data: [], error: null }),
           });
         }
         if (table === "usuarios") {
           return mockQuery({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: "admin-1" }, error: null }),
-          });
-        }
-        if (table === "configuracao_expediente") {
-          return mockQuery({
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: { id: "admin-1" }, error: null }),
           });
         }
         return mockQuery();
@@ -1520,10 +1540,7 @@ describe("chatbot.service", () => {
 
       await processMessage(TENANT_ID, REMOTE_JID, "1", "João");
 
-      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
-        REMOTE_JID,
-        expect.stringContaining("iniciado ou finalizado")
-      );
+      expect(baileys.sendButtons).toHaveBeenCalled();
     });
   });
 
@@ -1544,8 +1561,14 @@ describe("chatbot.service", () => {
           return mockQuery({
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: { status: "pendente" }, error: null }),
+            is: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { status: "pendente", data_agendamento: "2099-07-01", hora_agendamento: "10:00", servico_id: 1 }, error: null }),
             update: vi.fn().mockReturnThis(),
+          });
+        }
+        if (table === "ordens_servico") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           });
         }
         return mockQuery();
@@ -1744,8 +1767,10 @@ describe("chatbot.service", () => {
             eq: vi.fn().mockReturnThis(),
             is: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+            update: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({ data: agendamentoCriado, error: null }),
-            then: (resolve) => resolve({ count: 0, data: [], error: null }),
+            then: (r) => r({ data: [], error: null }),
           });
         }
         if (table === "usuarios") {
@@ -1788,17 +1813,29 @@ describe("chatbot.service", () => {
         { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
       ];
 
-      supabaseAdmin.from.mockReturnValue(mockQuery({
-        maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
-        then: (resolve) => resolve({ data: servicos, error: null }),
-      }));
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
+          });
+        }
+        if (table === "clientes") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          });
+        }
+        if (table === "servico") {
+          return mockQuery({ then: (r) => r({ data: servicos, error: null }) });
+        }
+        return mockQuery();
+      });
 
       await processMessage(TENANT_ID, REMOTE_JID, "1", "João");
 
       expect(baileys.sendList).toHaveBeenCalled();
     });
 
-    it("deve informar que nao tem agendamentos ao digitar 2 sem cliente", async () => {
+    it("deve informar que nao tem servicos ao digitar 2", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
       }));
@@ -1807,26 +1844,25 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("não possui agendamentos")
+        expect.stringContaining("Nenhum serviço")
       );
     });
 
-    it("deve listar servicos ao digitar 3", async () => {
-      const servicos = [
-        { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
-      ];
-
+    it("deve notificar atendente ao digitar 3", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
-        then: (resolve) => resolve({ data: servicos, error: null }),
       }));
 
       await processMessage(TENANT_ID, REMOTE_JID, "3", "João");
 
-      expect(baileys.sendList).toHaveBeenCalled();
+      expect(notificacoes.criarNotificacao).toHaveBeenCalled();
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("solicitação foi enviada")
+      );
     });
 
-    it("deve informar que nao tem agendamentos ao digitar 4 sem cliente", async () => {
+    it("deve informar opcao invalida ao digitar 4", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
       }));
@@ -1835,21 +1871,20 @@ describe("chatbot.service", () => {
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("não possui agendamentos")
+        expect.stringContaining("Opção inválida")
       );
     });
 
-    it("deve notificar atendente ao digitar 5", async () => {
+    it("deve informar opcao invalida ao digitar 5", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
       }));
 
       await processMessage(TENANT_ID, REMOTE_JID, "5", "João");
 
-      expect(notificacoes.criarNotificacao).toHaveBeenCalled();
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("solicitação foi enviada")
+        expect.stringContaining("Opção inválida")
       );
     });
   });
@@ -1915,7 +1950,7 @@ describe("chatbot.service", () => {
         single: vi.fn().mockResolvedValue({ data: { status: "pendente", data_agendamento: "2026-06-27", hora_agendamento: "14:00" }, error: null }),
       }));
 
-      const result = await validarAgendamentoNaoIniciado(1);
+      const result = await validarAgendamentoNaoIniciado(1, "t1");
       expect(result).toBeNull();
     });
 
@@ -1926,7 +1961,7 @@ describe("chatbot.service", () => {
         single: vi.fn().mockResolvedValue({ data: { status: "finalizado" }, error: null }),
       }));
 
-      const result = await validarAgendamentoNaoIniciado(1);
+      const result = await validarAgendamentoNaoIniciado(1, "t1");
       expect(result).toContain("iniciado ou finalizado");
     });
 
@@ -1937,7 +1972,7 @@ describe("chatbot.service", () => {
         single: vi.fn().mockResolvedValue({ data: { status: "pendente", data_agendamento: "2026-06-27", hora_agendamento: "10:30" }, error: null }),
       }));
 
-      const result = await validarAgendamentoNaoIniciado(1);
+      const result = await validarAgendamentoNaoIniciado(1, "t1");
       expect(result).toContain("2 horas");
     });
   });

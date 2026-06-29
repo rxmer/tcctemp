@@ -4,6 +4,7 @@ import { useFeedback } from "../hooks/useFeedback";
 import { PageHeader, Button } from "../components/ui";
 import { QRCodeCanvas } from "qrcode.react";
 import styles from "../styles/pages/whatsapp.module.css";
+import { CheckCircle2, Loader2, Smartphone } from "lucide-react";
 
 const STATUS_LABELS = {
   disconnected: { label: "Desconectado", cls: styles.disconnected },
@@ -88,28 +89,28 @@ export function WhatsApp() {
               <QRCodeCanvas value={state.qrCode} size={280} level="M" />
             ) : state.status === "connected" ? (
               <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0" }}>
-                ✅
+                <CheckCircle2 size={48} color="var(--success)" />
                 <p style={{ fontSize: 16, marginTop: 8, color: "var(--text-secondary)" }}>
                   WhatsApp conectado
                 </p>
               </div>
             ) : state.status === "awaiting_qr" ? (
               <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
-                ⏳
+                <Loader2 size={48} className="spin" />
                 <p style={{ fontSize: 16, marginTop: 8 }}>
                   Gerando QR Code...
                 </p>
               </div>
             ) : state.status === "connecting" ? (
               <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
-                ⏳
+                <Loader2 size={48} className="spin" />
                 <p style={{ fontSize: 16, marginTop: 8 }}>
                   Pareamento concluído, conectando...
                 </p>
               </div>
             ) : (
               <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
-                📱
+                <Smartphone size={48} />
                 <p style={{ fontSize: 16, marginTop: 8 }}>
                   {state.status === "reconnecting"
                     ? "Reconectando..."

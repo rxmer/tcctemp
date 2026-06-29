@@ -45,6 +45,12 @@ export async function status(req, res) {
   res.json(resultado);
 }
 
+export async function clientesFrequentes(req, res) {
+  const filtros = extrairFiltros(req.query);
+  const resultado = await withCache(req.tenantId, filtros, relatoriosService.relatorioClientesFrequentes, "clientes");
+  res.json(resultado);
+}
+
 function extrairFiltros(query) {
   const filtros = {};
   if (query.data_inicio) filtros.data_inicio = query.data_inicio;

@@ -15,5 +15,6 @@ export const env = {
   port: process.env.PORT ?? 3001,
   supabaseUrl: requiredVars.SUPABASE_URL,
   supabaseServiceKey: requiredVars.SUPABASE_SERVICE_ROLE_KEY,
-  nodeEnv: process.env.NODE_ENV ?? "development",
+  nodeEnv: process.env.NODE_ENV ?? "production",
+  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
 };

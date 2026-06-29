@@ -19,7 +19,7 @@ export async function criar(req, res) {
 
 export async function listar(req, res) {
   const { page, limit, search } = req.query;
-  const result = await clienteService.listarClientes(req.tenantId, { page: Number(page) || 1, limit: Number(limit) || 20, search: search || "" });
+  const result = await clienteService.listarClientes(req.tenantId, { page: Math.max(1, Number(page) || 1), limit: Math.min(100, Math.max(1, Number(limit) || 20)), search: search || "" });
   res.json(result);
 }
 

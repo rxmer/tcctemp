@@ -1,25 +1,49 @@
 import { Outlet, useNavigate, NavLink } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../context/useAuth";
+import { useTheme } from "../context/ThemeContext";
 import { NotificacaoBell } from "./NotificacaoBell";
 import styles from "../styles/components/AppLayout.module.css";
+import {
+  LayoutDashboard,
+  Users,
+  Car,
+  Sparkles,
+  CalendarDays,
+  CalendarX2,
+  ClipboardList,
+  DollarSign,
+  UserCog,
+  Clock,
+  BarChart3,
+  MessageCircle,
+  LogOut,
+  Menu,
+  X,
+  Sun,
+  Moon,
+} from "lucide-react";
 
 const NAV_ITEMS = [
-  { icon: "⊞", label: "Dashboard", path: "/dashboard" },
-  { icon: "👥", label: "Clientes", path: "/clientes" },
-  { icon: "🚗", label: "Veículos", path: "/veiculos" },
-  { icon: "✨", label: "Serviços", path: "/servicos" },
-  { icon: "📅", label: "Agendamentos", path: "/agendamentos" },
-  { icon: "📋", label: "Ordem de Serviço", path: "/ordens-servico" },
-  { icon: "💰", label: "Financeiro", path: "/financeiro" },
-  { icon: "👤", label: "Funcionários", path: "/funcionarios", adminOnly: true },
-  { icon: "⏰", label: "Expediente", path: "/expediente", adminOnly: true },
-  { icon: "📊", label: "Relatórios", path: "/relatorios", adminOnly: true },
-  { icon: "💬", label: "WhatsApp", path: "/whatsapp", adminOnly: true },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: Users, label: "Clientes", path: "/clientes" },
+  { icon: Car, label: "Veículos", path: "/veiculos" },
+  { icon: Sparkles, label: "Serviços", path: "/servicos" },
+  { icon: CalendarDays, label: "Agendamentos", path: "/agendamentos" },
+  { icon: ClipboardList, label: "Ordem de Serviço", path: "/ordens-servico" },
+  { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
+  { icon: UserCog, label: "Funcionários", path: "/funcionarios", adminOnly: true },
+  { icon: Clock, label: "Expediente", path: "/expediente", adminOnly: true },
+  { icon: CalendarX2, label: "Feriados", path: "/feriados", adminOnly: true },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios", adminOnly: true },
+  { icon: MessageCircle, label: "WhatsApp", path: "/whatsapp", adminOnly: true },
 ];
 
 export function AppLayout() {
   const { tenant, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -32,19 +56,23 @@ export function AppLayout() {
 
   return (
     <div className={styles.dashLayout}>
-      <aside className={styles.sidebar}>
+      {sidebarOpen && <div className={styles.overlay} onClick={() => setSidebarOpen(false)} />}
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarBrand}>
           <div className={styles.brandIconSm}>
             <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
-              <path d="M4 20L8 8H20L24 20H4Z" stroke="#e85d04" strokeWidth="2" strokeLinejoin="round" />
-              <circle cx="9" cy="22" r="2" fill="#e85d04" />
-              <circle cx="19" cy="22" r="2" fill="#e85d04" />
+              <path d="M4 20L8 8H20L24 20H4Z" stroke="#d4a843" strokeWidth="2" strokeLinejoin="round" />
+              <circle cx="9" cy="22" r="2" fill="#d4a843" />
+              <circle cx="19" cy="22" r="2" fill="#d4a843" />
             </svg>
           </div>
           <div>
             <div className={styles.sidebarTenant}>{tenant?.nome}</div>
             <div className={styles.sidebarSub}>Sistema de Gestão</div>
           </div>
+          <button className={styles.closeBtn} onClick={() => setSidebarOpen(false)}>
+            <X size={20} />
+          </button>
           <NotificacaoBell />
         </div>
 
@@ -54,19 +82,28 @@ export function AppLayout() {
               key={item.label}
               to={item.path}
               className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+              onClick={() => setSidebarOpen(false)}
             >
-              <span className={styles.navIcon}>{item.icon}</span>
+              <item.icon size={18} className={styles.navIcon} />
               {item.label}
             </NavLink>
           ))}
         </nav>
 
+        <button className={styles.themeToggle} onClick={toggleTheme} title={theme === "dark" ? "Modo claro" : "Modo escuro"}>
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          {theme === "dark" ? "Modo claro" : "Modo escuro"}
+        </button>
+
         <button className={styles.sidebarLogout} onClick={handleLogout}>
-          <span>⎋</span> Sair
+          <LogOut size={16} /> Sair
         </button>
       </aside>
 
       <main className={styles.dashMain}>
+        <button className={styles.hamburger} onClick={() => setSidebarOpen(true)}>
+          <Menu size={22} />
+        </button>
         <Outlet />
       </main>
     </div>

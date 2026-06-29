@@ -3,7 +3,8 @@ import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { funcionariosService } from "../services/funcionarios.service";
 import { Input, Button, PageHeader } from "../components/ui";
-import styles from "../styles/pages/funcionarios.module.css";
+import { Card, CardHeader, styles as crud } from "../components/crud";
+import { Users, ShieldCheck } from "lucide-react";
 
 export function Funcionario() {
   const { tenant } = useAuth();
@@ -65,8 +66,8 @@ export function Funcionario() {
         title="Funcionários"
         subtitle="Cadastre e gerencie os usuários da sua empresa"
         action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} />
+          <div className={crud.tenantChip}>
+            <span className={crud.tenantDot} />
             <span>{tenant?.nome}</span>
           </div>
         }
@@ -74,18 +75,15 @@ export function Funcionario() {
 
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
 
-      <div className={styles.funcGrid}>
-        <div className={styles.formCard}>
-          <div className={styles.cardHeader}>
-            <h2>Novo funcionário</h2>
-            <p>Preencha os dados abaixo</p>
-          </div>
+      <div className={crud.pageGrid} style={{ gridTemplateColumns: "2fr 1fr" }}>
+        <Card>
+          <CardHeader title="Novo funcionário" subtitle="Preencha os dados abaixo" />
 
-          <form onSubmit={handleSubmit} className={styles.funcForm}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <Input label="Nome completo" name="nome" placeholder="Digite o nome" value={form.nome} onChange={handleChange} required />
             <Input label="E-mail" name="email" type="email" placeholder="Digite o e-mail" value={form.email} onChange={handleChange} required />
 
-            <div className={styles.row}>
+            <div className={crud.row}>
               <Input label="Senha" name="senha" type="password" placeholder="********" value={form.senha} onChange={handleChange} required />
               <Input label="Confirmar senha" name="confirmarSenha" type="password" placeholder="********" value={form.confirmarSenha} onChange={handleChange} required />
             </div>
@@ -94,30 +92,38 @@ export function Funcionario() {
               Cadastrar funcionário
             </Button>
           </form>
-        </div>
+        </Card>
 
-        <div className={styles.sideCard}>
-          <div className={styles.sideTitle}>👥 Controle de acesso</div>
+        <Card>
+          <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <Users size={16} /> Controle de acesso
+          </div>
 
-          <div className={styles.roleBox}>
-            <div className={styles.roleTitle}>Administrador</div>
-            <div className={styles.roleDesc}>
-              Possui acesso total ao sistema, configurações e gerenciamento.
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)", padding: 14 }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Administrador</div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
+                Possui acesso total ao sistema, configurações e gerenciamento.
+              </div>
+            </div>
+
+            <div style={{ background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)", padding: 14 }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Funcionário</div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
+                Pode acessar apenas funcionalidades operacionais.
+              </div>
+            </div>
+
+            <div style={{ background: "rgba(212,168,67,0.06)", borderRadius: "var(--radius-sm)", padding: 14, border: "1px solid rgba(212,168,67,0.14)" }}>
+              <div style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>
+                <ShieldCheck size={14} color="var(--accent)" /> Segurança multi-tenant
+              </div>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+                Todos os funcionários cadastrados serão vinculados automaticamente ao tenant atual.
+              </p>
             </div>
           </div>
-
-          <div className={styles.roleBox}>
-            <div className={styles.roleTitle}>Funcionário</div>
-            <div className={styles.roleDesc}>
-              Pode acessar apenas funcionalidades operacionais.
-            </div>
-          </div>
-
-          <div className={styles.securityBox}>
-            <div className={styles.securityTitle}>🔐 Segurança multi-tenant</div>
-            <p>Todos os funcionários cadastrados serão vinculados automaticamente ao tenant atual.</p>
-          </div>
-        </div>
+        </Card>
       </div>
     </>
   );

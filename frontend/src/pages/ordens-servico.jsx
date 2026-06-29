@@ -6,12 +6,19 @@ import { ordensServicoService } from "../services/ordens-servico.service";
 import { agendamentosService } from "../services/agendamentos.service";
 import { servicosService } from "../services/servicos.service";
 import { Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
-import styles from "../styles/pages/ordens-servico.module.css";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
+import { CheckCircle2, Clock, Trash2, ChevronRight, ChevronUp } from "lucide-react";
 
 const STATUS_MAP = {
   em_andamento: "Em andamento",
   finalizado: "Finalizado",
   cancelado: "Cancelado",
+};
+
+const STATUS_COLORS = {
+  em_andamento: { background: "rgba(59,130,246,0.1)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" },
+  finalizado: { background: "rgba(34,197,94,0.1)", color: "#86efac", border: "1px solid rgba(34,197,94,0.2)" },
+  cancelado: { background: "rgba(239,68,68,0.1)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.2)" },
 };
 
 export function OrdensServico() {
@@ -162,6 +169,10 @@ export function OrdensServico() {
   }
 
   async function selecionarOS(osId) {
+    if (selectedOs === osId) {
+      setSelectedOs(null);
+      return;
+    }
     try {
       const os = await ordensServicoService.buscarPorId(osId);
       setSelectedOs(os.os_id);
@@ -181,14 +192,40 @@ export function OrdensServico() {
 
   const osDetalhes = ordens.find((o) => o.os_id === selectedOs);
 
+  const columns = [
+    { key: "os_id", label: "#" },
+    { key: "cliente", label: "Cliente", render: (o) => o.agendamento?.cliente?.nome ?? "-" },
+    { key: "veiculo", label: "Veículo", render: (o) => o.agendamento?.veiculo?.placa ?? "-" },
+    { key: "valor_total", label: "Total", render: (o) => formatMoney(o.valor_total) },
+    {
+      key: "status",
+      label: "Status",
+      render: (o) => (
+        <span className={crud.statusBadge} style={STATUS_COLORS[o.status] ?? {}}>
+          {STATUS_MAP[o.status] ?? o.status}
+        </span>
+      ),
+    },
+    {
+      key: "ver",
+      label: "",
+      width: "1px",
+      render: (o) => (
+        <ActionBtn title="Ver detalhes" onClick={() => selecionarOS(o.os_id)}>
+          {selectedOs === o.os_id ? <ChevronUp size={14} /> : <ChevronRight size={14} />}
+        </ActionBtn>
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader
         title="Ordens de Serviço"
         subtitle="Gerencie as ordens de serviço"
         action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} />
+          <div className={crud.tenantChip}>
+            <span className={crud.tenantDot} />
             <span>{tenant?.nome}</span>
           </div>
         }
@@ -196,10 +233,10 @@ export function OrdensServico() {
 
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
 
-      <div className={styles.filtros}>
-        <div className={styles.filtroGroup}>
-          <label className={styles.filtroLabel}>Filtrar por status</label>
-          <select className={styles.filtroInput} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+      <div className={crud.filtros} style={{ justifyContent: "space-between" }}>
+        <div className={crud.filtroGroup}>
+          <label className={crud.filtroLabel}>Filtrar por status</label>
+          <select className={`input-field ${crud.filtroInput}`} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
             <option value="">Todas</option>
             {Object.entries(STATUS_MAP).map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
@@ -213,12 +250,12 @@ export function OrdensServico() {
       </div>
 
       {showCriar && (
-        <div className={styles.criarCard}>
-          <h3>Criar ordem de serviço</h3>
-          <form onSubmit={handleCriar} className={styles.criarForm}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Agendamento</label>
-              <select className={styles.fieldSelect} value={agendamentoId} onChange={(e) => setAgendamentoId(e.target.value)} required>
+        <Card>
+          <CardHeader title="Criar ordem de serviço" />
+          <form onSubmit={handleCriar} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Agendamento</label>
+              <select className={`input-field ${crud.fieldSelect}`} value={agendamentoId} onChange={(e) => setAgendamentoId(e.target.value)} required>
                 <option value="">Selecione um agendamento confirmado</option>
                 {agendamentos.map((a) => (
                   <option key={a.agendamento_id} value={a.agendamento_id}>
@@ -228,149 +265,104 @@ export function OrdensServico() {
               </select>
             </div>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Observações</label>
-              <textarea className={styles.fieldTextarea} rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="Opcional" />
+            <div className={crud.fieldGroup}>
+              <label className={crud.fieldLabel}>Observações</label>
+              <textarea className={`input-field ${crud.fieldTextarea}`} rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="Opcional" />
             </div>
 
             <Button type="submit" loading={saving} fullWidth>Criar OS</Button>
           </form>
-        </div>
+        </Card>
       )}
 
-      <div className={styles.osLayout}>
-        <div className={styles.listCard}>
-          <div className={styles.cardHeader}>
-            <h2>Ordens de Serviço</h2>
-            <p>{total} OS encontrada(s)</p>
-          </div>
+      <div className={crud.pageGrid} style={{ gridTemplateColumns: "1fr 1.2fr" }}>
+        <Card>
+          <CardHeader title="Ordens de Serviço" subtitle={`${total} OS encontrada(s)`} />
 
           {loading ? (
             <SkeletonTable columns={[2, 3, 3, 2.5, 2, 2]} rows={5} />
-          ) : ordens.length === 0 ? (
-            <div className={styles.emptyState}>Nenhuma OS encontrada.</div>
           ) : (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Cliente</th>
-                    <th>Veículo</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ordens.map((o) => (
-                    <tr key={o.os_id} className={selectedOs === o.os_id ? styles.rowActive : ""}>
-                      <td className={styles.osId}>{o.os_id}</td>
-                      <td>{o.agendamento?.cliente?.nome ?? "-"}</td>
-                      <td>{o.agendamento?.veiculo?.placa ?? "-"}</td>
-                      <td className={styles.valorCell}>{formatMoney(o.valor_total)}</td>
-                      <td>
-                        <span className={`${styles.statusBadge} ${styles[`status_${o.status}`]}`}>
-                          {STATUS_MAP[o.status] ?? o.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button className={styles.verBtn} onClick={() => selecionarOS(o.os_id)}>
-                          {selectedOs === o.os_id ? "▲" : "▶"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={columns}
+              rows={ordens.map((o) => ({ ...o, id: o.os_id }))}
+              emptyMessage="Nenhuma OS encontrada."
+            />
           )}
           <Pagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
-        </div>
+        </Card>
 
         {osDetalhes && (
-          <div className={styles.detalhesCard}>
-            <div className={styles.cardHeader}>
-              <h2>OS #{osDetalhes.os_id}</h2>
-              <p>
-                {osDetalhes.agendamento?.cliente?.nome ?? "N/A"} - {osDetalhes.agendamento?.veiculo?.placa ?? "N/A"}
-              </p>
-            </div>
+          <Card>
+            <CardHeader
+              title={`OS #${osDetalhes.os_id}`}
+              subtitle={`${osDetalhes.agendamento?.cliente?.nome ?? "N/A"} - ${osDetalhes.agendamento?.veiculo?.placa ?? "N/A"}`}
+            />
 
-            <div className={styles.detalhesInfo}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Status</span>
-                <span className={`${styles.statusBadge} ${styles[`status_${osDetalhes.status}`]}`}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span className={crud.statusBadge} style={STATUS_COLORS[osDetalhes.status] ?? {}}>
                   {STATUS_MAP[osDetalhes.status] ?? osDetalhes.status}
                 </span>
+
+                {osDetalhes.status === "em_andamento" && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button onClick={() => handleFinalizar(osDetalhes.os_id)}>Finalizar OS</Button>
+                    <Button variant="ghost" onClick={() => handleCancelar(osDetalhes.os_id)}>Cancelar</Button>
+                  </div>
+                )}
               </div>
 
-              {osDetalhes.status === "em_andamento" && (
-                <div className={styles.detalhesAcoes}>
-                  <Button onClick={() => handleFinalizar(osDetalhes.os_id)}>Finalizar OS</Button>
-                  <Button variant="ghost" onClick={() => handleCancelar(osDetalhes.os_id)}>Cancelar</Button>
-                </div>
-              )}
-
               {osDetalhes.faturamento && (
-                <div className={styles.faturamentoInfo}>
-                  <strong>Faturamento:</strong> {formatMoney(osDetalhes.faturamento.valor_total)}
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <strong style={{ color: "var(--text-primary)" }}>Faturamento:</strong> {formatMoney(osDetalhes.faturamento.valor_total)}
                   {" · "}
-                  {osDetalhes.faturamento.pago ? "✅ Pago" : "⏳ Pendente"}
+                  {osDetalhes.faturamento.pago ? <><CheckCircle2 size={14} color="var(--success)" /> Pago</> : <><Clock size={14} color="var(--warning)" /> Pendente</>}
                   {osDetalhes.faturamento.data_pagamento && ` · ${formatDate(osDetalhes.faturamento.data_pagamento)}`}
                 </div>
               )}
 
               {osDetalhes.observacoes && (
-                <div className={styles.obsBox}>
-                  <span className={styles.infoLabel}>Observações</span>
-                  <p>{osDetalhes.observacoes}</p>
+                <div style={{ background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)", padding: 12, fontSize: 13 }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Observações</span>
+                  <p style={{ marginTop: 4 }}>{osDetalhes.observacoes}</p>
                 </div>
               )}
-            </div>
 
-            <div className={styles.itensSection}>
-              <h3>Itens</h3>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Descrição</th>
-                    <th>Qtd</th>
-                    <th>Valor unit.</th>
-                    <th>Subtotal</th>
-                    {osDetalhes.status === "em_andamento" && <th></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {osDetalhes.itens?.map((item) => (
-                    <tr key={item.item_id}>
-                      <td>{item.descricao}</td>
-                      <td>{item.quantidade}</td>
-                      <td>{formatMoney(item.valor_unitario)}</td>
-                      <td>{formatMoney(item.quantidade * item.valor_unitario)}</td>
-                      {osDetalhes.status === "em_andamento" && (
-                        <td>
-                          <button className={styles.removeBtn} onClick={() => handleRemoveItem(item.item_id)}>🗑️</button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className={styles.totalRow}>
-                    <td colSpan={3}><strong>Total</strong></td>
-                    <td><strong>{formatMoney(osDetalhes.valor_total)}</strong></td>
-                    {osDetalhes.status === "em_andamento" && <td></td>}
-                  </tr>
-                </tfoot>
-              </table>
+              <div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Itens</h3>
+                <DataTable
+                  columns={[
+                    { key: "descricao", label: "Descrição" },
+                    { key: "quantidade", label: "Qtd" },
+                    { key: "valor_unitario", label: "Valor unit.", render: (item) => formatMoney(item.valor_unitario) },
+                    { key: "subtotal", label: "Subtotal", render: (item) => formatMoney(item.quantidade * item.valor_unitario) },
+                    ...(osDetalhes.status === "em_andamento" ? [{
+                      key: "remover",
+                      label: "",
+                      width: "1px",
+                      render: (item) => (
+                        <ActionBtn title="Remover" danger onClick={() => handleRemoveItem(item.item_id)}>
+                          <Trash2 size={14} />
+                        </ActionBtn>
+                      ),
+                    }] : []),
+                  ]}
+                  rows={(osDetalhes.itens ?? []).map((item) => ({ ...item, id: item.item_id }))}
+                  emptyMessage="Nenhum item adicionado."
+                />
+
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700 }}>
+                  Total: {formatMoney(osDetalhes.valor_total)}
+                </div>
+              </div>
 
               {osDetalhes.status === "em_andamento" && (
-                <div className={styles.addItemForm}>
-                  <h4>Adicionar item</h4>
-                  <div className={styles.addItemRow}>
+                <div style={{ background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)", padding: 16 }}>
+                  <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Adicionar item</h4>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <select
-                      className={styles.fieldSelect}
+                      className={`input-field ${crud.fieldSelect}`}
+                      style={{ flex: "1 1 180px" }}
                       value={novoItem.servico_id}
                       onChange={(e) => {
                         const servico = servicos.find((s) => s.servico_id === Number(e.target.value));
@@ -388,13 +380,14 @@ export function OrdensServico() {
                       ))}
                     </select>
                     <input
-                      className={styles.fieldInput}
+                      className="input-field"
+                      style={{ flex: "1 1 120px" }}
                       placeholder="Descrição"
                       value={novoItem.descricao}
                       onChange={(e) => setNovoItem((p) => ({ ...p, descricao: e.target.value }))}
                     />
                     <input
-                      className={styles.fieldInput}
+                      className="input-field"
                       type="number"
                       placeholder="Qtd"
                       style={{ width: 70 }}
@@ -403,7 +396,7 @@ export function OrdensServico() {
                       onChange={(e) => setNovoItem((p) => ({ ...p, quantidade: e.target.value }))}
                     />
                     <input
-                      className={styles.fieldInput}
+                      className="input-field"
                       type="number"
                       step="0.01"
                       placeholder="Valor"
@@ -417,7 +410,7 @@ export function OrdensServico() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         )}
       </div>
       <ConfirmModal />

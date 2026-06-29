@@ -1,10 +1,21 @@
 import * as agendamentoService from "../services/agendamentos.service.js";
 
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export async function criar(req, res) {
   const { cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes } = req.body;
 
   if (!cliente_id || !veiculo_id || !servico_id || !data_agendamento || !hora_agendamento) {
     return res.status(400).json({ error: "Cliente, veículo, serviço, data e hora são obrigatórios" });
+  }
+
+  if (!DATE_REGEX.test(data_agendamento)) {
+    return res.status(400).json({ error: "Data deve estar no formato YYYY-MM-DD" });
+  }
+
+  if (!TIME_REGEX.test(hora_agendamento)) {
+    return res.status(400).json({ error: "Hora deve estar no formato HH:MM" });
   }
 
   const agendamento = await agendamentoService.criarAgendamento({
@@ -29,8 +40,8 @@ export async function listar(req, res) {
   if (data_fim) filtros.data_fim = data_fim;
   if (status) filtros.status = status;
   if (cliente_id) filtros.cliente_id = Number(cliente_id);
-  filtros.page = Number(page) || 1;
-  filtros.limit = Number(limit) || 20;
+  filtros.page = Math.max(1, Number(page) || 1);
+  filtros.limit = Math.min(100, Math.max(1, Number(limit) || 20));
 
   const result = await agendamentoService.listarAgendamentos(req.tenantId, filtros);
   res.json(result);

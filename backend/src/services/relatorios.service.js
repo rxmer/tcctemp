@@ -43,10 +43,11 @@ export async function relatorioServicos(tenantId, { data_inicio, data_fim } = {}
   let query = supabaseAdmin
     .from("itens_ordem_servico")
     .select("quantidade, valor_unitario, servico:servico(nome_servico)")
-    .eq("tenant_id", tenantId);
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null);
 
-  if (data_inicio) query = query.gte("criado_em", data_inicio);
-  if (data_fim) query = query.lte("criado_em", data_fim);
+  if (data_inicio) query = query.gte("criado_em", `${data_inicio}T00:00:00`);
+  if (data_fim) query = query.lte("criado_em", `${data_fim}T23:59:59`);
 
   const { data, error } = await query;
   if (error) throw new AppError(`Erro ao gerar relatório de serviços: ${error.message}`);
@@ -131,13 +132,40 @@ export async function relatorioStatus(tenantId, { data_inicio, data_fim } = {}) 
   }));
 }
 
+export async function relatorioClientesFrequentes(tenantId, { data_inicio, data_fim, limit = 10 } = {}) {
+  let query = supabaseAdmin
+    .from("agendamentos")
+    .select("cliente:clientes!inner(cliente_id, nome, telefone)")
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null);
+
+  if (data_inicio) query = query.gte("data_agendamento", data_inicio);
+  if (data_fim) query = query.lte("data_agendamento", data_fim);
+
+  const { data, error } = await query;
+  if (error) throw new AppError(`Erro ao gerar relatório de clientes: ${error.message}`);
+
+  const clientes = {};
+  for (const a of data) {
+    const c = a.cliente;
+    if (!c?.cliente_id) continue;
+    if (!clientes[c.cliente_id]) {
+      clientes[c.cliente_id] = { cliente_id: c.cliente_id, nome: c.nome, telefone: c.telefone, quantidade: 0, receita: 0 };
+    }
+    clientes[c.cliente_id].quantidade++;
+  }
+
+  return Object.values(clientes).sort((a, b) => b.quantidade - a.quantidade).slice(0, limit);
+}
+
 export async function relatorioGeral(tenantId, filtros = {}) {
-  const [agendamentos, servicos, financeiro, statusCount] = await Promise.all([
+  const [agendamentos, servicos, financeiro, statusCount, clientesFrequentes] = await Promise.all([
     relatorioAgendamentos(tenantId, filtros),
     relatorioServicos(tenantId, filtros),
     relatorioFinanceiro(tenantId, filtros),
     relatorioStatus(tenantId, filtros),
+    relatorioClientesFrequentes(tenantId, filtros),
   ]);
 
-  return { agendamentos, servicos, financeiro, status: statusCount };
+  return { agendamentos, servicos, financeiro, status: statusCount, clientes_frequentes: clientesFrequentes };
 }

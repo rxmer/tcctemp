@@ -44,7 +44,7 @@ export async function gerarExcel(tenantId, filtros = {}) {
   const addHeaderRow = (ws, headers) => {
     const row = ws.addRow(headers);
     row.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 12 };
-    row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE85D04" } };
+    row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4A843" } };
     row.alignment = { horizontal: "center" };
     row.height = 24;
   };
@@ -146,23 +146,24 @@ export async function gerarPDF(tenantId, filtros = {}) {
 
     const drawRow = (cells, isHeader, y) => {
       let x = doc.page.margins.left;
-      const bg = isHeader ? "#E85D04" : undefined;
+      const bg = isHeader ? "#d4a843" : undefined;
 
       cells.forEach((text, i) => {
         const w = colWidths[i];
         if (bg) {
           doc.rect(x, y, w, lineH).fill(bg);
         }
-        doc.fillColor(isHeader ? "#FFFFFF" : "#F0F0F0");
+        doc.fillColor(isHeader ? "#FFFFFF" : "#222222");
         doc.font(isHeader ? "Helvetica-Bold" : "Helvetica");
         doc.fontSize(isHeader ? 10 : 9);
         doc.text(String(text), x + cellPad, y + cellPad, {
           width: w - cellPad * 2,
           ellipsis: true,
+          align: "left",
         });
         x += w;
       });
-      doc.fillColor("#222222");
+      doc.fillColor("#999999");
       doc.rect(doc.page.margins.left, y, tableWidth, lineH).stroke();
     };
 
@@ -182,23 +183,23 @@ export async function gerarPDF(tenantId, filtros = {}) {
   };
 
   /* ---------- Cabeçalho ---------- */
-  doc.fontSize(22).font("Helvetica-Bold").fillColor("#E85D04");
+  doc.fontSize(22).font("Helvetica-Bold").fillColor("#d4a843");
   doc.text("Relatório EstetiCar", { align: "center" });
   doc.moveDown(0.5);
 
-  doc.fontSize(11).font("Helvetica").fillColor("#888888");
+  doc.fontSize(11).font("Helvetica").fillColor("#666666");
   doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, { align: "center" });
   doc.moveDown(1);
 
   if (filtros.data_inicio) {
-    doc.fontSize(10).fillColor("#888888");
+    doc.fontSize(10).fillColor("#666666");
     doc.text(`Filtro: ${formatDateBR(filtros.data_inicio)} até ${formatDateBR(filtros.data_fim)}`, { align: "center" });
     doc.moveDown(1);
   }
 
   /* ---------- 1. Agendamentos ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#F0F0F0");
-  doc.text("Agendamentos por Período");
+  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+  doc.text("Agendamentos por Período", doc.page.margins.left, doc.y, { align: "left" });
   doc.moveDown(0.5);
 
   const agHeaders = ["Período", "Total", "Pend.", "Conf.", "E.A.", "Fin.", "Canc."];
@@ -216,8 +217,8 @@ export async function gerarPDF(tenantId, filtros = {}) {
   doc.y = y1 + 20;
 
   /* ---------- 2. Servicos ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#F0F0F0");
-  doc.text("Serviços Mais Realizados");
+  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+  doc.text("Serviços Mais Realizados", doc.page.margins.left, doc.y, { align: "left" });
   doc.moveDown(0.5);
 
   const seHeaders = ["Serviço", "Qtd", "Receita"];
@@ -227,8 +228,8 @@ export async function gerarPDF(tenantId, filtros = {}) {
   doc.y = y2 + 20;
 
   /* ---------- 3. Financeiro ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#F0F0F0");
-  doc.text("Financeiro");
+  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+  doc.text("Financeiro", doc.page.margins.left, doc.y, { align: "left" });
   doc.moveDown(0.5);
 
   const fiHeaders = ["Mês", "Receitas", "Despesas", "Saldo"];
@@ -243,8 +244,8 @@ export async function gerarPDF(tenantId, filtros = {}) {
   doc.y = y3 + 20;
 
   /* ---------- 4. Status ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#F0F0F0");
-  doc.text("Distribuição de Status");
+  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+  doc.text("Distribuição de Status", doc.page.margins.left, doc.y, { align: "left" });
   doc.moveDown(0.5);
 
   const stHeaders = ["Status", "Quantidade"];

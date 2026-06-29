@@ -25,8 +25,8 @@ export async function listarContas(req, res) {
   if (data_inicio) filtros.data_inicio = data_inicio;
   if (data_fim) filtros.data_fim = data_fim;
   if (pago !== undefined) filtros.pago = pago;
-  filtros.page = Number(page) || 1;
-  filtros.limit = Number(limit) || 20;
+  filtros.page = Math.max(1, Number(page) || 1);
+  filtros.limit = Math.min(100, Math.max(1, Number(limit) || 20));
 
   const result = await financeiroService.listarContasPagar(req.tenantId, filtros);
   res.json(result);
@@ -36,6 +36,11 @@ export async function atualizarConta(req, res) {
   const { id } = req.params;
   const { descricao, valor, data_vencimento, data_pagamento, pago, observacoes } = req.body;
 
+  const contaAtual = await financeiroService.buscarContaPagar(id, req.tenantId);
+  if (contaAtual.pago && (descricao !== undefined || valor !== undefined || data_vencimento !== undefined)) {
+    return res.status(400).json({ error: "Não é possível alterar descrição, valor ou vencimento de uma conta já paga" });
+  }
+
   const updates = {};
   if (descricao !== undefined) updates.descricao = descricao;
   if (valor !== undefined) updates.valor = valor;
@@ -44,15 +49,19 @@ export async function atualizarConta(req, res) {
   if (pago !== undefined) updates.pago = pago;
   if (observacoes !== undefined) updates.observacoes = observacoes;
 
-  const conta = await financeiroService.atualizarContaPagar(id, req.tenantId, updates);
-  res.json(conta);
+  const contaAtualizada = await financeiroService.atualizarContaPagar(id, req.tenantId, updates);
+  res.json(contaAtualizada);
 }
 
 export async function pagarConta(req, res) {
   const { id } = req.params;
+  const conta = await financeiroService.buscarContaPagar(id, req.tenantId);
+  if (conta.pago) {
+    return res.status(400).json({ error: "Esta conta já foi paga" });
+  }
   const hoje = new Date().toISOString().split("T")[0];
-  const conta = await financeiroService.atualizarContaPagar(id, req.tenantId, { pago: true, data_pagamento: hoje });
-  res.json(conta);
+  const result = await financeiroService.atualizarContaPagar(id, req.tenantId, { pago: true, data_pagamento: hoje });
+  res.json(result);
 }
 
 export async function deletarConta(req, res) {
@@ -67,8 +76,8 @@ export async function listarFaturamentos(req, res) {
   if (data_inicio) filtros.data_inicio = data_inicio;
   if (data_fim) filtros.data_fim = data_fim;
   if (pago !== undefined) filtros.pago = pago;
-  filtros.page = Number(page) || 1;
-  filtros.limit = Number(limit) || 20;
+  filtros.page = Math.max(1, Number(page) || 1);
+  filtros.limit = Math.min(100, Math.max(1, Number(limit) || 20));
 
   const result = await financeiroService.listarFaturamentos(req.tenantId, filtros);
   res.json(result);
@@ -77,8 +86,12 @@ export async function listarFaturamentos(req, res) {
 export async function receberFaturamento(req, res) {
   const { id } = req.params;
   const { data_pagamento } = req.body;
-  const fat = await financeiroService.registrarPagamentoFaturamento(id, req.tenantId, data_pagamento);
-  res.json(fat);
+  const fat = await financeiroService.buscarFaturamento(id, req.tenantId);
+  if (fat.pago) {
+    return res.status(400).json({ error: "Este faturamento já foi recebido" });
+  }
+  const result = await financeiroService.registrarPagamentoFaturamento(id, req.tenantId, data_pagamento);
+  res.json(result);
 }
 
 export async function resumo(req, res) {
