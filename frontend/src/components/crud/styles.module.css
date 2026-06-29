@@ -322,6 +322,68 @@
   }
 }
 
+@media (max-width: 768px) {
+  .tableWrapper table,
+  .tableWrapper thead,
+  .tableWrapper tbody,
+  .tableWrapper th,
+  .tableWrapper td,
+  .tableWrapper tr {
+    display: block;
+    box-sizing: border-box;
+  }
+
+  .tableWrapper thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .tableWrapper tr {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .tableWrapper td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .tableWrapper td:last-child {
+    border-bottom: none;
+  }
+
+  .tableWrapper td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .tableWrapper td[data-label="Ações"] {
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .tableWrapper td[data-label="Ações"]::before {
+    display: none;
+  }
+}
+
 /* ── TEMA CLARO ────────────────────────────────────────────── */
 :global([data-theme="light"]) .card {
   background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);

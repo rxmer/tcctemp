@@ -25,7 +25,7 @@ export function DataTable({ columns, rows, emptyMessage = "Nenhum registro encon
           {rows.map((row, idx) => (
             <tr key={row.id ?? idx}>
               {columns.map((col) => (
-                <td key={col.key} className={col.cellClass || ""}>
+                <td key={col.key} className={col.cellClass || ""} data-label={col.label}>
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}

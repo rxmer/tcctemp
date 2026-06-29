@@ -637,8 +637,7 @@ select.input-field option {
   }
 
   .tableWrapper, [class*="tableWrapper"], [class*="dataTable"] {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible !important;
   }
 
   th, td {
