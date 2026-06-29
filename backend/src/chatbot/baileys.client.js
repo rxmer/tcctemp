@@ -200,7 +200,7 @@ export async function startBaileys(tenantId) {
       if (!text || text === "") continue;
 
       const remoteJid = msg.key.remoteJid;
-      const pushName = msg.pushName ?? "Cliente";
+      const pushName = msg.pushName || "Cliente";
 
       logger.info({ remoteJid, text, pushName }, "Mensagem processada");
 

@@ -767,7 +767,7 @@ async function handleEscolhendoServico(action, jid, session) {
 
   if (!cliente) {
     if (phone.length >= 10 && isValidPhone(phone)) {
-      const nome = session.client_name || "";
+      const nome = session.client_name || "Cliente";
       if (nome.length >= 2) {
         cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
         if (cliente) {
@@ -1661,7 +1661,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
         }
 
         if (!cliente && isValidPhone(phone)) {
-          const nome = session.client_name || "";
+          const nome = session.client_name || "Cliente";
           if (nome.length >= 2) {
             cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
           }
