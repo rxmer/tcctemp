@@ -643,6 +643,10 @@ select.input-field option {
     padding: 12px !important;
     overflow-x: hidden;
   }
+
+  .responsiveGrid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (min-width: 769px) {

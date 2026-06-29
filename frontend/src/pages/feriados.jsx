@@ -71,7 +71,7 @@ export function Feriados() {
 
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.8fr", gap: 18 }}>
+      <div className="responsiveGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1.8fr", gap: 18 }}>
         <Card>
           <h2 style={{ fontSize: 18, fontFamily: "var(--font-display)", marginBottom: 16 }}>Nova data bloqueada</h2>
           <form onSubmit={handleAdicionar} style={{ display: "flex", flexDirection: "column", gap: 14 }}>

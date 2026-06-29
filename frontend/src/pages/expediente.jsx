@@ -97,7 +97,7 @@ export function Expediente() {
           <SkeletonCard lines={7} />
         ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, padding: "0 12px 8px", fontSize: 12, textTransform: "uppercase", color: "var(--text-secondary)", letterSpacing: "0.5px" }}>
+          <div className="responsiveGrid" style={{ display: "grid", gap: 12, padding: "0 12px 8px", fontSize: 12, textTransform: "uppercase", color: "var(--text-secondary)", letterSpacing: "0.5px", gridTemplateColumns: "2fr 1fr 1fr 1fr" }}>
             <span>Dia</span>
             <span>Aberto</span>
             <span>Abertura</span>
@@ -107,7 +107,7 @@ export function Expediente() {
           {dias.map((dia) => {
             const diaInfo = DIAS_SEMANA.find((d) => d.id === dia.dia_semana);
             return (
-              <div key={dia.dia_semana} style={{
+              <div className="responsiveGrid" key={dia.dia_semana} style={{
                 display: "grid",
                 gridTemplateColumns: "2fr 1fr 1fr 1fr",
                 gap: 12,

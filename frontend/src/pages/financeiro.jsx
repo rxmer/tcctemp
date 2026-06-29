@@ -287,7 +287,7 @@ export function Financeiro() {
       </div>
 
       {aba === "resumo" && resumo && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div className="responsiveGrid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
           <Card style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
             <TrendingUp size={22} color="var(--accent)" />
             <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{formatMoney(resumo.receitas.total)}</div>
