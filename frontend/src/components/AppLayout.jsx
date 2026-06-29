@@ -81,11 +81,7 @@ export function AppLayout() {
             <img src={empresa.logo_url} alt="Logo" style={{ width: 34, height: 34, borderRadius: 8, objectFit: "contain" }} />
           ) : (
           <div className={styles.brandIconSm}>
-            <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
-              <path d="M4 20L8 8H20L24 20H4Z" stroke="#d4a843" strokeWidth="2" strokeLinejoin="round" />
-              <circle cx="9" cy="22" r="2" fill="#d4a843" />
-              <circle cx="19" cy="22" r="2" fill="#d4a843" />
-            </svg>
+            <img src="/esteticar.png" alt="EstetiCar" style={{ width: 28, height: 28, objectFit: "contain" }} />
           </div>
           )}
           <div>

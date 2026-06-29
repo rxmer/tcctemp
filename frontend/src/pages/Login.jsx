@@ -40,29 +40,19 @@ export function Login() {
       <div className={styles.splitBrand}>
         <div className={styles.brandBg}>
           <div className={styles.brandContent}>
-            <div className={styles.brandIconWrapper}>
-              <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
-                <path
-                  d="M4 20L8 8H20L24 20H4Z"
-                  stroke="#e85d04"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-                <circle cx="9" cy="22" r="2" fill="#e85d04" />
-                <circle cx="19" cy="22" r="2" fill="#e85d04" />
-                <path d="M8 13H20" stroke="#e85d04" strokeWidth="1.5" />
-              </svg>
+            <div style={{ marginBottom: 24, display: "flex", justifyContent: "center" }}>
+              <img src="/esteticar.png" alt="EstetiCar" style={{ width: 160, height: 160, objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(212,168,67,0.4))" }} />
             </div>
             <h1 className={styles.brandTitle}>EstetiCar</h1>
             <p className={styles.brandTagline}>
-              Gestão inteligente para sua clínica de estética
+              Gestão inteligente para sua estética automotiva
             </p>
             <div className={styles.brandFeatures}>
               {[
-                "Agendamento de clientes",
-                "Controle financeiro",
-                "Gestão de equipe",
-                "Relatórios e analytics",
+                "Agendamento de serviços",
+                "Controle de ordens de serviço",
+                "Chatbot WhatsApp",
+                "Relatórios financeiros",
               ].map((text) => (
                 <div key={text} className={styles.brandFeature}>
                   <svg
@@ -70,7 +60,7 @@ export function Login() {
                     height="18"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#e85d04"
+                    stroke="#d4a843"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -89,7 +79,7 @@ export function Login() {
         <div className={styles.formContainer}>
           <div className={styles.formHeader}>
             <h1>Bem-vindo de volta</h1>
-            <p>Acesse o painel da sua estética</p>
+            <p>Acesse o painel da sua estética automotiva</p>
           </div>
 
           {erro && <Alert>{erro}</Alert>}
@@ -125,7 +115,7 @@ export function Login() {
           <p className={styles.authFooterText}>
             Não tem conta?{" "}
             <Link to="/cadastro" className="link">
-              Cadastrar estética
+              Cadastrar empresa
             </Link>
           </p>
         </div>
