@@ -4,9 +4,15 @@ import { criarSessao, buscarSessao, atualizarSessao } from "./chatbot.session.js
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
 import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const messageLocks = new Map();
 const empresaNomeCache = new Map();
+const lidPhoneCache = new Map();
 
 async function getEmpresaNome(tenantId) {
   if (empresaNomeCache.has(tenantId)) return empresaNomeCache.get(tenantId);
@@ -112,16 +118,32 @@ async function verificarSessaoExpirada(session) {
 
 function isAtLeast11Digits(num) {
   const digits = String(num).replace(/\D/g, "");
-  return /^\d{11,13}$/.test(digits);
+  return /^\d{10,15}$/.test(digits);
 }
 
 function extractPhone(remoteJid) {
-  return remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
+  const raw = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
+  if (!remoteJid.endsWith("@lid")) return raw;
+  const cacheKey = remoteJid;
+  if (lidPhoneCache.has(cacheKey)) return lidPhoneCache.get(cacheKey);
+  try {
+    const root = path.resolve(__dirname, "..", "..", "..");
+    const dirs = fs.readdirSync(root).filter((d) => d.startsWith("baileys_auth_"));
+    for (const dir of dirs) {
+      const mappingFile = path.join(root, dir, `lid-mapping-${raw}_reverse.json`);
+      if (fs.existsSync(mappingFile)) {
+        const phone = JSON.parse(fs.readFileSync(mappingFile, "utf8"));
+        lidPhoneCache.set(cacheKey, phone);
+        return phone;
+      }
+    }
+  } catch {}
+  return raw;
 }
 
 function isValidPhone(phone) {
   const digits = phone.replace(/\D/g, "");
-  return digits.length >= 12 && digits.length <= 13;
+  return digits.length >= 10 && digits.length <= 15;
 }
 
 function formatPhone(phone) {
@@ -256,7 +278,7 @@ async function gerarDatasDisponiveis(tenantId) {
 
 async function criarClienteViaChatbot(tenantId, nome, telefone) {
   telefone = telefone.replace(/\D/g, "").trim();
-  if (telefone.length < 12 || telefone.length > 13) return null;
+  if (telefone.length < 10 || telefone.length > 15) return null;
   const { data, error } = await supabaseAdmin
     .from("clientes")
     .insert({ nome, telefone, tenant_id: tenantId })
