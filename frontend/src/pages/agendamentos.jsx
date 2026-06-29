@@ -141,6 +141,7 @@ export function Agendamentos() {
   }
 
   function iniciarEdicao(ag) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setEditingId(ag.agendamento_id);
     setForm({
       cliente_id: String(ag.cliente_id),

@@ -70,6 +70,7 @@ export function Clientes() {
   }
 
   function iniciarEdicao(cliente) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setEditingId(cliente.cliente_id);
     setForm({
       nome: cliente.nome,

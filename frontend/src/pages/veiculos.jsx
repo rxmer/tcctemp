@@ -72,6 +72,7 @@ export function Veiculos() {
   }
 
   function iniciarEdicao(veiculo) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setEditingId(veiculo.veiculo_id);
     setForm({
       placa: veiculo.placa,

@@ -68,6 +68,7 @@ export function Servicos() {
   }
 
   function iniciarEdicao(servico) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setEditingId(servico.servico_id);
     setForm({
       nome_servico: servico.nome_servico,
