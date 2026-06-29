@@ -275,7 +275,7 @@ export function OrdensServico() {
         </Card>
       )}
 
-      <div className={crud.pageGrid} style={{ gridTemplateColumns: "1fr 1.2fr" }}>
+      <div className={crud.pageGrid + " responsiveGrid"} style={{ gridTemplateColumns: "1fr 1.2fr" }}>
         <Card>
           <CardHeader title="Ordens de Serviço" subtitle={`${total} OS encontrada(s)`} />
 

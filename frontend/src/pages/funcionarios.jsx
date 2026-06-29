@@ -123,7 +123,7 @@ export function Funcionario() {
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
       <ConfirmDialog />
 
-      <div className={crud.pageGrid} style={{ gridTemplateColumns: "1fr 1.5fr" }}>
+      <div className={crud.pageGrid + " responsiveGrid"} style={{ gridTemplateColumns: "1fr 1.5fr" }}>
         <Card>
           <CardHeader title="Novo funcionário" subtitle="Preencha os dados abaixo" />
 
