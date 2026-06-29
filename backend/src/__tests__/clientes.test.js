@@ -49,19 +49,19 @@ describe("clienteService", () => {
       }));
 
       await expect(
-        clienteService.criarCliente({ nome: "João", telefone: "5511999999999", tenantId: TENANT_ID })
+        clienteService.criarCliente({ nome: "João", telefone: "11999999999", tenantId: TENANT_ID })
       ).rejects.toThrow("Já existe um cliente com este telefone");
     });
 
     it("deve criar cliente com telefone unico", async () => {
-      const expected = { cliente_id: 2, nome: "Maria", telefone: "5511988888888" };
+      const expected = { cliente_id: 2, nome: "Maria", telefone: "11988888888" };
       supabaseAdmin.from.mockImplementation(() => mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         single: vi.fn().mockResolvedValue({ data: expected, error: null }),
       }));
 
       const result = await clienteService.criarCliente({
-        nome: "Maria", telefone: "5511988888888", tenantId: TENANT_ID,
+        nome: "Maria", telefone: "11988888888", tenantId: TENANT_ID,
       });
 
       expect(result).toEqual(expected);
@@ -74,7 +74,7 @@ describe("clienteService", () => {
       }));
 
       await expect(
-        clienteService.criarCliente({ nome: "X", telefone: "5511977777777", tenantId: TENANT_ID })
+        clienteService.criarCliente({ nome: "X", telefone: "11977777777", tenantId: TENANT_ID })
       ).rejects.toThrow("Erro ao criar cliente");
     });
   });
@@ -141,7 +141,7 @@ describe("clienteService", () => {
       }));
 
       await expect(
-        clienteService.atualizarCliente(1, TENANT_ID, { telefone: "5511999999999" })
+        clienteService.atualizarCliente(1, TENANT_ID, { telefone: "11999999999" })
       ).rejects.toThrow("Já existe outro cliente com este telefone");
     });
 

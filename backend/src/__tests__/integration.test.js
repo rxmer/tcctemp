@@ -101,7 +101,7 @@ describe("Integração - Clientes", () => {
 
   it("GET /api/clientes retorna lista", async () => {
     const clientes = [
-      { cliente_id: 1, nome: "João", telefone: "5511999999999" },
+      { cliente_id: 1, nome: "João", telefone: "11999999999" },
     ];
     supabaseAdmin.from.mockReturnValue(mockQuery());
     supabaseAdmin.from.mockReturnValueOnce({
@@ -117,7 +117,7 @@ describe("Integração - Clientes", () => {
   });
 
   it("POST /api/clientes cria cliente", async () => {
-    const novoCliente = { cliente_id: 1, nome: "Maria", telefone: "5511988888888" };
+    const novoCliente = { cliente_id: 1, nome: "Maria", telefone: "11988888888" };
     supabaseAdmin.from.mockReturnValue({
       ...mockQuery(),
       single: vi.fn().mockResolvedValue({ data: novoCliente, error: null }),
@@ -126,7 +126,7 @@ describe("Integração - Clientes", () => {
     const res = await request(app)
       .post("/api/clientes")
       .set("Authorization", "Bearer valid-token")
-      .send({ nome: "Maria", telefone: "5511988888888" });
+      .send({ nome: "Maria", telefone: "11988888888" });
 
     expect(res.status).toBe(201);
   });

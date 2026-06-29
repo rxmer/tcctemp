@@ -13,11 +13,11 @@ export function validate(schema, data) {
 export const schemas = {
   criarCliente: z.object({
     nome: z.string().min(2, "Nome deve ter no mínimo 2 caracteres").max(100),
-    telefone: z.string().regex(/^\d{12,13}$/, "Telefone inválido — deve conter 12 ou 13 dígitos (55 + DDD + número)").optional().nullable(),
+    telefone: z.string().regex(/^\d{10,11}$/, "Telefone inválido — deve conter 10 ou 11 dígitos").optional().nullable(),
     email: z.string().email("E-mail inválido").max(100).optional().nullable(),
   }).transform((data) => ({
     ...data,
-    telefone: data.telefone ? data.telefone.replace(/\D/g, "") : null,
+    telefone: data.telefone ? data.telefone.replace(/\D/g, "").replace(/^55/, "") : null,
   })),
 
   criarVeiculo: z.object({

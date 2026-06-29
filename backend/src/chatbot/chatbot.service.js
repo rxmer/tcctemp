@@ -123,27 +123,32 @@ function isAtLeast11Digits(num) {
 
 function extractPhone(remoteJid) {
   const raw = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
-  if (!remoteJid.endsWith("@lid")) return raw;
-  const cacheKey = remoteJid;
-  if (lidPhoneCache.has(cacheKey)) return lidPhoneCache.get(cacheKey);
-  try {
-    const root = path.resolve(__dirname, "..", "..", "..");
-    const dirs = fs.readdirSync(root).filter((d) => d.startsWith("baileys_auth_"));
-    for (const dir of dirs) {
-      const mappingFile = path.join(root, dir, `lid-mapping-${raw}_reverse.json`);
-      if (fs.existsSync(mappingFile)) {
-        const phone = JSON.parse(fs.readFileSync(mappingFile, "utf8"));
-        lidPhoneCache.set(cacheKey, phone);
-        return phone;
-      }
+  let phone = raw;
+  if (!remoteJid.endsWith("@lid")) phone = raw;
+  else {
+    const cacheKey = remoteJid;
+    if (lidPhoneCache.has(cacheKey)) phone = lidPhoneCache.get(cacheKey);
+    else {
+      try {
+        const root = path.resolve(__dirname, "..", "..", "..");
+        const dirs = fs.readdirSync(root).filter((d) => d.startsWith("baileys_auth_"));
+        for (const dir of dirs) {
+          const mappingFile = path.join(root, dir, `lid-mapping-${raw}_reverse.json`);
+          if (fs.existsSync(mappingFile)) {
+            phone = JSON.parse(fs.readFileSync(mappingFile, "utf8"));
+            lidPhoneCache.set(cacheKey, phone);
+            break;
+          }
+        }
+      } catch {}
     }
-  } catch {}
-  return raw;
+  }
+  return phone.replace(/^55/, "");
 }
 
 function isValidPhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  return digits.length >= 10 && digits.length <= 15;
+  const digits = phone.replace(/\D/g, "").replace(/^55/, "");
+  return digits.length >= 10 && digits.length <= 11;
 }
 
 function formatPhone(phone) {
@@ -277,8 +282,8 @@ async function gerarDatasDisponiveis(tenantId) {
 }
 
 async function criarClienteViaChatbot(tenantId, nome, telefone) {
-  telefone = telefone.replace(/\D/g, "").trim();
-  if (telefone.length < 10 || telefone.length > 15) return null;
+  telefone = telefone.replace(/\D/g, "").replace(/^55/, "").trim();
+  if (telefone.length < 10 || telefone.length > 11) return null;
   const { data, error } = await supabaseAdmin
     .from("clientes")
     .insert({ nome, telefone, tenant_id: tenantId })

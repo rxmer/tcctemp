@@ -7,12 +7,12 @@ export async function buscar(req, res) {
 
 export async function salvar(req, res) {
   const { nome_fantasia, cnpj, telefone, email, endereco, logo_url } = req.body;
-  const tel = telefone ? telefone.replace(/\D/g, "") : null;
+  const tel = telefone ? telefone.replace(/\D/g, "").replace(/^55/, "") : null;
   const result = await configuracaoService.salvarConfiguracao({
     tenantId: req.tenantId,
     nome_fantasia,
     cnpj: cnpj ? cnpj.replace(/\D/g, "") : null,
-    telefone: tel && tel.length <= 11 ? `55${tel}` : tel,
+    telefone: tel,
     email: email || null,
     endereco: endereco || null,
     logo_url: logo_url || null,

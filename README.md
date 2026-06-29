@@ -118,8 +118,9 @@ CREATE TABLE IF NOT EXISTS configuracao_empresa (
   atualizado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Lembrete tentativas (se não foi executado antes)
-ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS lembrete_tentativas INTEGER DEFAULT 0;
+-- Remover DDI 55 dos telefones existentes (2026)
+UPDATE clientes SET telefone = RIGHT(telefone, LENGTH(telefone) - 2) WHERE telefone LIKE '55%' AND LENGTH(telefone) >= 12;
+UPDATE configuracao_empresa SET telefone = RIGHT(telefone, LENGTH(telefone) - 2) WHERE telefone LIKE '55%' AND LENGTH(telefone) >= 12;
 ```
 
 ### 7. Testes

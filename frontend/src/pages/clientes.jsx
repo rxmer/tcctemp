@@ -89,7 +89,7 @@ export function Clientes() {
     const telefone = form.telefone ? form.telefone.replace(/\D/g, "") : null;
     const payload = {
       nome: form.nome,
-      telefone: telefone && telefone.length <= 11 ? `55${telefone}` : telefone,
+      telefone: form.telefone ? form.telefone.replace(/\D/g, "").replace(/^55/, "") : null,
       email: form.email || null,
     };
 

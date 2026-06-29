@@ -7,6 +7,7 @@ import { useConfirm } from "../hooks/useConfirm";
 import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import { Pencil, Trash2 } from "lucide-react";
+import { formatPhone } from "../utils/formatPhone";
 
 const formInitial = {
   placa: "",
@@ -252,7 +253,7 @@ export function Veiculos() {
                 <option value="">Selecione um cliente</option>
                 {clientes.map((c) => (
                   <option key={c.cliente_id} value={c.cliente_id}>
-                    {c.nome} {c.telefone ? `(${c.telefone})` : ""}
+                    {c.nome} {c.telefone ? `(${formatPhone(c.telefone)})` : ""}
                   </option>
                 ))}
               </select>

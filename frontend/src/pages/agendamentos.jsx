@@ -10,6 +10,7 @@ import { Input, Button, PageHeader, Pagination, Calendar, SkeletonTable } from "
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import styles from "../styles/pages/agendamentos.module.css";
 import { List, CalendarDays, Pencil, Trash2, CheckCircle2, Play, CheckSquare, XCircle, ArrowRight, Smartphone, Clock } from "lucide-react";
+import { formatPhone } from "../utils/formatPhone";
 
 const STATUS_MAP = {
   pendente: "Pendente",
@@ -319,7 +320,7 @@ export function Agendamentos() {
                 <option value="">Selecione um cliente</option>
                 {clientes.map((c) => (
                   <option key={c.cliente_id} value={c.cliente_id}>
-                    {c.nome} {c.telefone ? `(${c.telefone})` : ""}
+                    {c.nome} {c.telefone ? `(${formatPhone(c.telefone)})` : ""}
                   </option>
                 ))}
               </select>

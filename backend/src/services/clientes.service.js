@@ -3,9 +3,9 @@ import { AppError } from "../utils/errors.js";
 
 export async function criarCliente({ nome, telefone, email, tenantId }) {
   if (telefone) {
-    telefone = telefone.replace(/\D/g, "");
-    if (telefone.length < 12 || telefone.length > 13) {
-      throw new AppError("Telefone deve conter 12 ou 13 dígitos (55 + DDD + número)", 400);
+    telefone = telefone.replace(/\D/g, "").replace(/^55/, "");
+    if (telefone.length < 10 || telefone.length > 11) {
+      throw new AppError("Telefone deve conter 10 ou 11 dígitos", 400);
     }
     const { data: existing } = await supabaseAdmin
       .from("clientes")
@@ -56,9 +56,9 @@ export async function listarClientes(tenantId, { page = 1, limit = 20, search = 
 
 export async function atualizarCliente(id, tenantId, updates) {
   if (updates.telefone) {
-    updates.telefone = updates.telefone.replace(/\D/g, "");
-    if (updates.telefone.length < 12 || updates.telefone.length > 13) {
-      throw new AppError("Telefone deve conter 12 ou 13 dígitos (55 + DDD + número)", 400);
+    updates.telefone = updates.telefone.replace(/\D/g, "").replace(/^55/, "");
+    if (updates.telefone.length < 10 || updates.telefone.length > 11) {
+      throw new AppError("Telefone deve conter 10 ou 11 dígitos", 400);
     }
     const { data: existing } = await supabaseAdmin
       .from("clientes")

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { supabaseAdmin } from "../config/supabase.js";
 
 const TENANT_ID = "tenant-1";
-const REMOTE_JID = "5511999999999@s.whatsapp.net";
+const REMOTE_JID = "11999999999@s.whatsapp.net";
 const SESSION_ID = "session-uuid-1";
 
 vi.mock("../chatbot/baileys.client.js", () => ({
@@ -45,7 +45,7 @@ function buildSession(overrides = {}) {
     id: SESSION_ID,
     tenant_id: TENANT_ID,
     remote_jid: REMOTE_JID,
-    client_phone: "5511999999999",
+    client_phone: "11999999999",
     client_name: "João",
     cliente_id: null,
     state: "MENU_PRINCIPAL",
@@ -349,7 +349,7 @@ describe("chatbot.service", () => {
       const servicos = [
         { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
       ];
-      const novoCliente = { cliente_id: 99, nome: "João", telefone: "5511999999999" };
+      const novoCliente = { cliente_id: 99, nome: "João", telefone: "11999999999" };
 
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
@@ -388,7 +388,7 @@ describe("chatbot.service", () => {
       const servicos = [
         { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
       ];
-      const novoCliente = { cliente_id: 99, nome: "João", telefone: "5511999999999" };
+      const novoCliente = { cliente_id: 99, nome: "João", telefone: "11999999999" };
 
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
@@ -427,7 +427,7 @@ describe("chatbot.service", () => {
       const servicos = [
         { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
       ];
-      const clienteExistente = { cliente_id: 1, nome: "João", telefone: "5511999999999" };
+      const clienteExistente = { cliente_id: 1, nome: "João", telefone: "11999999999" };
 
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
@@ -468,7 +468,7 @@ describe("chatbot.service", () => {
       const servicos = [
         { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
       ];
-      const clienteExistente = { cliente_id: 1, nome: "João", telefone: "5511999999999" };
+      const clienteExistente = { cliente_id: 1, nome: "João", telefone: "11999999999" };
       const veiculos = [
         { veiculo_id: 10, placa: "ABC1234", marca: "Fiat", modelo: "Uno" },
       ];
@@ -1185,7 +1185,7 @@ describe("chatbot.service", () => {
         }
         if (table === "clientes") {
           return mockQuery({
-            single: vi.fn().mockResolvedValue({ data: { cliente_id: 1, nome: "João Silva", telefone: "5511999999999" }, error: null }),
+            single: vi.fn().mockResolvedValue({ data: { cliente_id: 1, nome: "João Silva", telefone: "11999999999" }, error: null }),
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           });
         }
@@ -1230,7 +1230,7 @@ describe("chatbot.service", () => {
         }
         if (table === "clientes") {
           return mockQuery({
-            single: vi.fn().mockResolvedValue({ data: { cliente_id: 1, nome: "João", telefone: "5511999999999" }, error: null }),
+            single: vi.fn().mockResolvedValue({ data: { cliente_id: 1, nome: "João", telefone: "11999999999" }, error: null }),
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           });
         }
@@ -1242,7 +1242,7 @@ describe("chatbot.service", () => {
         return mockQuery();
       });
 
-      await processMessage(TENANT_ID, REMOTE_JID, "5511999999999", "João");
+      await processMessage(TENANT_ID, REMOTE_JID, "11999999999", "João");
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
