@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { datasBloqueadasService } from "../services/datas-bloqueadas.service";
-import { Input, Button, PageHeader, SkeletonCard } from "../components/ui";
+import { Input, Button, PageHeader, SkeletonCard, Card } from "../components/ui";
 import { Trash2 } from "lucide-react";
 
 export function Feriados() {

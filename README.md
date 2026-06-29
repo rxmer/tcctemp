@@ -48,9 +48,12 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Relatórios** — agendamentos por período, serviços mais realizados, receitas vs despesas, status, clientes frequentes
 - **Expediente** — horários por dia da semana
 - **Feriados** — bloqueio de datas especiais
+- **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone
 - **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão, transferência para atendente
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas)
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas
+- **Validação de entrada** — schemas Zod em todas as rotas de criação
+- **Máscara de telefone** — formatação `(11) 99999-9999` em todo o sistema
 
 ## Regras de Negócio
 
@@ -99,12 +102,34 @@ npm run dev
 2. Escaneie o QR Code com o WhatsApp do negócio
 3. O chatbot estará ativo para os clientes
 
-### 6. Testes
+### 6. Migrações SQL (executar no SQL Editor do Supabase)
+
+```sql
+-- Configuração da empresa
+CREATE TABLE IF NOT EXISTS configuracao_empresa (
+  tenant_id UUID PRIMARY KEY,
+  nome_fantasia TEXT,
+  cnpj TEXT,
+  telefone TEXT,
+  email TEXT,
+  endereco TEXT,
+  logo_url TEXT,
+  criado_em TIMESTAMPTZ DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Lembrete tentativas (se não foi executado antes)
+ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS lembrete_tentativas INTEGER DEFAULT 0;
+```
+
+### 7. Testes
 
 ```bash
 cd backend
 npm test
 ```
+
+> **241 testes automatizados** (Vitest) — 17 arquivos de teste, 0 falhas.
 
 ## O que falta para produção
 
@@ -112,7 +137,6 @@ npm test
 - [ ] **Domínio próprio** — configurar domínio + SSL
 - [ ] **Variáveis de ambiente** — configurar `NODE_ENV=production`, `CORS_ORIGIN` com o domínio
 - [ ] **Swagger/OpenAPI** — documentar todos os endpoints da API
-- [ ] **README** — este arquivo
 - [ ] **Esquema SQL** — extrair dump das migrations do Supabase para um arquivo `schema.sql`
 - [ ] **Backup automático** — configurar backup diário do banco (Supabase já faz, mas verificar retenção)
 - [ ] **WhatsApp Business API** — substituir Baileys pela API oficial do WhatsApp Business para maior estabilidade (opcional)

@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import * as relatoriosService from "./relatorios.service.js";
+import { supabaseAdmin } from "../config/supabase.js";
 
 function formatMoney(value) {
   return Number(value).toLocaleString("pt-BR", {
@@ -37,8 +38,16 @@ export async function gerarExcel(tenantId, filtros = {}) {
   const dados = await relatoriosService.relatorioGeral(tenantId, filtros);
   const agrupar = filtros.agrupar_por || "dia";
 
+  const { data: empresa } = await supabaseAdmin
+    .from("configuracao_empresa")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  const nomeEmpresa = empresa?.nome_fantasia || "EstetiCar";
+
   const wb = new ExcelJS.Workbook();
-  wb.creator = "EstetiCar";
+  wb.creator = nomeEmpresa;
   wb.created = new Date();
 
   const addHeaderRow = (ws, headers) => {
@@ -127,12 +136,21 @@ export async function gerarPDF(tenantId, filtros = {}) {
   const dados = await relatoriosService.relatorioGeral(tenantId, filtros);
   const agrupar = filtros.agrupar_por || "dia";
 
+  const { data: empresa } = await supabaseAdmin
+    .from("configuracao_empresa")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  const nomeEmpresa = empresa?.nome_fantasia || "EstetiCar";
+  const docTitle = `Relatório ${nomeEmpresa}`;
+
   const doc = new PDFDocument({
     size: "A4",
     margins: { top: 40, bottom: 40, left: 40, right: 40 },
     info: {
-      Title: "Relatório EstetiCar",
-      Author: "EstetiCar",
+      Title: docTitle,
+      Author: nomeEmpresa,
     },
   });
 
@@ -183,9 +201,42 @@ export async function gerarPDF(tenantId, filtros = {}) {
   };
 
   /* ---------- Cabeçalho ---------- */
-  doc.fontSize(22).font("Helvetica-Bold").fillColor("#d4a843");
-  doc.text("Relatório EstetiCar", { align: "center" });
-  doc.moveDown(0.5);
+  const pageWidth = doc.page.width;
+  const marginLeft = doc.page.margins.left;
+  const marginRight = doc.page.margins.right;
+  const contentWidth = pageWidth - marginLeft - marginRight;
+  const leftCol = marginLeft;
+  const rightCol = marginLeft + 100;
+  const infoWidth = contentWidth - 100;
+
+  if (empresa?.logo_url) {
+    try {
+      doc.image(empresa.logo_url, leftCol, doc.y, { width: 70 });
+    } catch {}
+  }
+
+  const infoY = doc.y + (empresa?.logo_url ? 5 : 0);
+  const savedY = doc.y;
+
+  doc.fontSize(20).font("Helvetica-Bold").fillColor("#d4a843");
+  doc.text(docTitle, rightCol, infoY, { width: infoWidth, align: "left" });
+  doc.moveDown(0.2);
+
+  if (empresa?.cnpj) {
+    doc.fontSize(9).font("Helvetica").fillColor("#666666");
+    doc.text(`CNPJ: ${empresa.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}`, { width: infoWidth, align: "left" });
+  }
+  if (empresa?.endereco) {
+    doc.fontSize(9).font("Helvetica").fillColor("#666666");
+    doc.text(empresa.endereco, { width: infoWidth, align: "left" });
+  }
+  if (empresa?.telefone || empresa?.email) {
+    const contato = [empresa.telefone ? `Tel: ${empresa.telefone}` : "", empresa.email ? `E-mail: ${empresa.email}` : ""].filter(Boolean).join(" · ");
+    doc.fontSize(9).font("Helvetica").fillColor("#666666");
+    doc.text(contato, { width: infoWidth, align: "left" });
+  }
+
+  doc.y = Math.max(doc.y, savedY + (empresa?.logo_url ? 70 : 0)) + 15;
 
   doc.fontSize(11).font("Helvetica").fillColor("#666666");
   doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, { align: "center" });

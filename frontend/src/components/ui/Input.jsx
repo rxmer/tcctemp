@@ -5,7 +5,8 @@ export function Input({ label, error, className = "", id, mask, onChange, value,
 
   function handleChange(e) {
     if (mask === "phone") {
-      e.target.value = maskPhone(e.target.value);
+      const raw = e.target.value.replace(/\D/g, "").slice(0, 11);
+      e.target.value = maskPhone(raw);
     }
     onChange?.(e);
   }

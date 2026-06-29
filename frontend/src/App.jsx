@@ -19,6 +19,7 @@ const OrdensServico = lazy(() => import("./pages/ordens-servico").then((m) => ({
 const Financeiro = lazy(() => import("./pages/financeiro").then((m) => ({ default: m.Financeiro })));
 const Expediente = lazy(() => import("./pages/expediente").then((m) => ({ default: m.Expediente })));
 const Feriados = lazy(() => import("./pages/feriados").then((m) => ({ default: m.Feriados })));
+const ConfiguracaoEmpresa = lazy(() => import("./pages/configuracao-empresa").then((m) => ({ default: m.ConfiguracaoEmpresa })));
 const Relatorios = lazy(() => import("./pages/relatorios").then((m) => ({ default: m.Relatorios })));
 const Funcionario = lazy(() => import("./pages/funcionarios").then((m) => ({ default: m.Funcionario })));
 const WhatsApp = lazy(() => import("./pages/whatsapp").then((m) => ({ default: m.WhatsApp })));
@@ -54,6 +55,7 @@ export default function App() {
                   <Route path="/funcionarios" element={<Funcionario />} />
                   <Route path="/expediente" element={<Expediente />} />
                   <Route path="/feriados" element={<Feriados />} />
+                  <Route path="/configuracao-empresa" element={<ConfiguracaoEmpresa />} />
                   <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="/whatsapp" element={<WhatsApp />} />
                   <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />

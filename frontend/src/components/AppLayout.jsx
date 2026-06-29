@@ -1,8 +1,9 @@
 import { Outlet, useNavigate, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/ThemeContext";
 import { NotificacaoBell } from "./NotificacaoBell";
+import { configuracaoEmpresaService } from "../services/configuracao-empresa.service";
 import styles from "../styles/components/AppLayout.module.css";
 import {
   LayoutDashboard,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   CalendarDays,
   CalendarX2,
+  Settings,
   ClipboardList,
   DollarSign,
   UserCog,
@@ -35,6 +37,7 @@ const NAV_ITEMS = [
   { icon: UserCog, label: "Funcionários", path: "/funcionarios", adminOnly: true },
   { icon: Clock, label: "Expediente", path: "/expediente", adminOnly: true },
   { icon: CalendarX2, label: "Feriados", path: "/feriados", adminOnly: true },
+  { icon: Settings, label: "Empresa", path: "/configuracao-empresa", adminOnly: true },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", adminOnly: true },
   { icon: MessageCircle, label: "WhatsApp", path: "/whatsapp", adminOnly: true },
 ];
@@ -44,6 +47,16 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [empresa, setEmpresa] = useState(null);
+
+  useEffect(() => {
+    configuracaoEmpresaService.buscar().then((d) => setEmpresa(d)).catch(() => {});
+    function handler() {
+      configuracaoEmpresaService.buscar().then((d) => setEmpresa(d)).catch(() => {});
+    }
+    window.addEventListener("empresa-salva", handler);
+    return () => window.removeEventListener("empresa-salva", handler);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -59,6 +72,9 @@ export function AppLayout() {
       {sidebarOpen && <div className={styles.overlay} onClick={() => setSidebarOpen(false)} />}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarBrand}>
+          {empresa?.logo_url ? (
+            <img src={empresa.logo_url} alt="Logo" style={{ width: 34, height: 34, borderRadius: 8, objectFit: "contain" }} />
+          ) : (
           <div className={styles.brandIconSm}>
             <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
               <path d="M4 20L8 8H20L24 20H4Z" stroke="#d4a843" strokeWidth="2" strokeLinejoin="round" />
@@ -66,8 +82,9 @@ export function AppLayout() {
               <circle cx="19" cy="22" r="2" fill="#d4a843" />
             </svg>
           </div>
+          )}
           <div>
-            <div className={styles.sidebarTenant}>{tenant?.nome}</div>
+            <div className={styles.sidebarTenant}>{empresa?.nome_fantasia || tenant?.nome}</div>
             <div className={styles.sidebarSub}>Sistema de Gestão</div>
           </div>
           <button className={styles.closeBtn} onClick={() => setSidebarOpen(false)}>

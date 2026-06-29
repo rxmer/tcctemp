@@ -6,6 +6,24 @@ import { criarNotificacao } from "../services/notificacoes.service.js";
 import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
 
 const messageLocks = new Map();
+const empresaNomeCache = new Map();
+
+async function getEmpresaNome(tenantId) {
+  if (empresaNomeCache.has(tenantId)) return empresaNomeCache.get(tenantId);
+  try {
+    const { data } = await supabaseAdmin
+      .from("configuracao_empresa")
+      .select("nome_fantasia")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    const nome = data?.nome_fantasia || "Esteticar";
+    empresaNomeCache.set(tenantId, nome);
+    setTimeout(() => empresaNomeCache.delete(tenantId), 5 * 60 * 1000);
+    return nome;
+  } catch {
+    return "Esteticar";
+  }
+}
 
 function formatMoney(value) {
   return Number(value).toLocaleString("pt-BR", {
@@ -390,6 +408,7 @@ function gerarButtonsDatas(datas) {
 }
 
 async function sendMenu(jid, session) {
+  const empresaNome = await getEmpresaNome(session.tenant_id);
   const phone = extractPhone(session.remote_jid);
   const cliente = await listarClientePorTelefone(session.tenant_id, phone);
   let temAgendamento = false;
@@ -412,7 +431,7 @@ async function sendMenu(jid, session) {
         { id: "menu_atendente", text: "👤 Falar com Atendente" },
       ];
 
-  await sendButtons(jid, "🚗 *Esteticar* — Como posso ajudar?", botoes, "Esteticar");
+  await sendButtons(jid, `🚗 *${empresaNome}* — Como posso ajudar?`, botoes, empresaNome);
   await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
 }
 
@@ -1562,9 +1581,11 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
         clientName: pushName,
       });
 
+      const empresaNome = await getEmpresaNome(tenantId);
+
       await sendWhatsAppMessage(
         remoteJid,
-        `🚗 Bem-vindo à *Esteticar*, ${pushName}! 👋\n\nSou o assistente virtual responsável pelos agendamentos e informações sobre nossos serviços especializados em estética automotiva.`
+        `🚗 Bem-vindo à *${empresaNome}*, ${pushName}! 👋\n\nSou o assistente virtual responsável pelos agendamentos e informações sobre nossos serviços de estética automotiva.`
       );
       await sendMenu(remoteJid, session);
       return;
