@@ -19,6 +19,7 @@ let connectionState = {
   status: "disconnected",
   qrCode: null,
   error: null,
+  lastDisconnectReason: null,
 };
 
 let onMessageHandler = null;
@@ -117,6 +118,7 @@ export async function startBaileys(tenantId) {
         return;
       }
 
+      connectionState.lastDisconnectReason = statusCode ?? null;
       const isLoggedOut = statusCode === DisconnectReason.loggedOut;
       const isTimedOut = statusCode === DisconnectReason.timedOut;
       const isConnectionClosed = statusCode === DisconnectReason.connectionClosed;
