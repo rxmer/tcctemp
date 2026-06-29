@@ -366,7 +366,7 @@ export async function atualizarAgendamento(id, tenantId, updates) {
     criarNotificacao({
       tenantId,
       tipo: `agendamento_${updates.status}`,
-      titulo: `Agendamento ${updates.status}`,
+      titulo: `Agendamento ${statusLabel[updates.status] || updates.status}`,
       mensagem: `Agendamento ${nomeRel} alterado para "${statusLabel[updates.status] || updates.status}"`,
       referenciaTipo: "agendamento",
       referenciaId: id,
