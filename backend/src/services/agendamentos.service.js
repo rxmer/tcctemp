@@ -79,7 +79,7 @@ export async function listarAgendamentosCliente(tenantId, clienteId, statusFilte
   return data ?? [];
 }
 
-export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes, tenantId, criadoPor }) {
+export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes, tenantId, criadoPor, fonte }) {
   const hoje = new Date().toISOString().split("T")[0];
   if (data_agendamento < hoje) {
     throw new AppError("Não é possível agendar para uma data passada", 400);
@@ -184,11 +184,12 @@ export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, dat
   }
 
   const nomeCliente = data.cliente?.nome ?? "Cliente";
+  const fonteMsg = fonte ? ` (${fonte})` : "";
   criarNotificacao({
     tenantId,
     tipo: "agendamento_criado",
-    titulo: "Novo agendamento",
-    mensagem: `Agendamento para ${nomeCliente} em ${data.data_agendamento} às ${data.hora_agendamento}`,
+    titulo: `Novo agendamento${fonteMsg}`,
+    mensagem: `Agendamento para ${nomeCliente} em ${data.data_agendamento} às ${data.hora_agendamento}${fonteMsg}`,
     referenciaTipo: "agendamento",
     referenciaId: data.agendamento_id,
   }).catch(() => {});

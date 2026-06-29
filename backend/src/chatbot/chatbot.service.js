@@ -347,6 +347,7 @@ async function criarAgendamentoViaChat(session, stateData) {
       observacoes: "Criado via WhatsApp",
       tenantId: session.tenant_id,
       criadoPor: adminUser.id,
+      fonte: "WhatsApp",
     });
 
     return data;
