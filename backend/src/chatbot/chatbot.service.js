@@ -686,7 +686,7 @@ async function handleMenuPrincipal(action, jid, session) {
         rowId: `servico_${s.servico_id}`,
       }));
 
-      await sendList(jid, "*Selecione o serviço desejado:*", "Ver Serviços", [{ title: "Serviços", rows }], "Esteticar");
+      await sendList(jid, "*Selecione o serviço desejado:*", "Ver Serviços", [{ title: "Serviços", rows }], session.empresaNome);
       await atualizarSessao(session.id, { state: "ESCOLHENDO_SERVICO", state_data: { servicos } });
       return;
     }
@@ -707,7 +707,7 @@ async function handleMenuPrincipal(action, jid, session) {
           description: `${formatMoney(s.preco_base)} — ${s.duracao_min} min`,
           rowId: `servico_${s.servico_id}`,
         }));
-        await sendList(jid, "*✨ Serviços disponíveis:*\nToque em um serviço para agendar", "Ver Serviços", [{ title: "Serviços", rows }], "Esteticar");
+        await sendList(jid, "*✨ Serviços disponíveis:*\nToque em um serviço para agendar", "Ver Serviços", [{ title: "Serviços", rows }], session.empresaNome);
         await atualizarSessao(session.id, { state: "ESCOLHENDO_SERVICO", state_data: { servicos } });
         return;
       }
@@ -738,7 +738,7 @@ async function handleMenuPrincipal(action, jid, session) {
         rowId: `cancelar_${a.agendamento_id}`,
       }));
 
-      await sendList(jid, "*Selecione o agendamento que deseja cancelar:*", "Ver Agendamentos", [{ title: "Agendamentos", rows }], "Esteticar");
+      await sendList(jid, "*Selecione o agendamento que deseja cancelar:*", "Ver Agendamentos", [{ title: "Agendamentos", rows }], session.empresaNome);
       await atualizarSessao(session.id, { state: "CANCELANDO_AGENDAMENTO", state_data: { agendamentos } });
       return;
     }
@@ -815,7 +815,7 @@ async function handleEscolhendoServico(action, jid, session) {
 
   if (!veiculos.length) {
     const sections = gerarSectionsMarcas();
-    await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, "Esteticar");
+    await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
     await atualizarSessao(session.id, {
       state: "DIGITANDO_VEICULO_MARCA",
       state_data: { servico_id: servico.servico_id, cliente_id: cliente.cliente_id },
@@ -830,7 +830,7 @@ async function handleEscolhendoServico(action, jid, session) {
   }));
   rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
 
-  await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], "Esteticar");
+  await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
   await atualizarSessao(session.id, {
     state: "ESCOLHENDO_VEICULO",
     state_data: { servico_id: servico.servico_id, veiculos },
@@ -847,7 +847,7 @@ async function handleEscolhendoVeiculo(action, jid, session) {
 
   if (action === "veiculo_novo") {
     const sections = gerarSectionsMarcas();
-    await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, "Esteticar");
+    await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
     await atualizarSessao(session.id, {
       state: "DIGITANDO_VEICULO_MARCA",
       state_data: { servico_id: stateData.servico_id },
@@ -866,7 +866,7 @@ async function handleEscolhendoVeiculo(action, jid, session) {
       veiculo = veiculos[idx];
     } else if (idx === veiculos.length) {
       const sections = gerarSectionsMarcas();
-      await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, "Esteticar");
+      await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
       await atualizarSessao(session.id, {
         state: "DIGITANDO_VEICULO_MARCA",
         state_data: { servico_id: stateData.servico_id },
@@ -895,7 +895,7 @@ async function irParaData(jid, session, stateData) {
     return false;
   }
   const buttons = gerarButtonsDatas(datas);
-  await sendButtons(jid, "*📅 Selecione a data desejada:*", buttons, "Esteticar");
+  await sendButtons(jid, "*📅 Selecione a data desejada:*", buttons, session.empresaNome);
   await atualizarSessao(session.id, {
     state: "ESCOLHENDO_DATA",
     state_data: { ...stateData, datas_disponiveis: datas },
@@ -922,14 +922,14 @@ async function handleEscolhendoData(action, jid, session) {
       await sendMenu(jid, session);
       return;
     }
-    await sendButtons(jid, "*📅 Selecione a data desejada:*", gerarButtonsDatas(datas), "Esteticar");
+    await sendButtons(jid, "*📅 Selecione a data desejada:*", gerarButtonsDatas(datas), session.empresaNome);
     await atualizarSessao(session.id, { state: "ESCOLHENDO_DATA", state_data: { ...stateData, datas_disponiveis: datas } });
     return;
   }
 
   if (!dataFormatada) {
     if (datas.length > 0) {
-      await sendButtons(jid, "*📅 Selecione a data desejada:*", gerarButtonsDatas(datas), "Esteticar");
+      await sendButtons(jid, "*📅 Selecione a data desejada:*", gerarButtonsDatas(datas), session.empresaNome);
       return;
     }
     await sendWhatsAppMessage(jid, "Selecione uma data válida.");
@@ -938,7 +938,7 @@ async function handleEscolhendoData(action, jid, session) {
 
   if (datas.length > 0 && !datas.includes(dataFormatada)) {
     await sendWhatsAppMessage(jid, "Data não disponível. Selecione uma abaixo:");
-    await sendButtons(jid, "*📅 Datas disponíveis:*", gerarButtonsDatas(datas), "Esteticar");
+    await sendButtons(jid, "*📅 Datas disponíveis:*", gerarButtonsDatas(datas), session.empresaNome);
     return;
   }
 
@@ -959,7 +959,7 @@ async function handleEscolhendoData(action, jid, session) {
 
   await sendButtons(jid,
     `📅 *${formatDateBr(dataFormatada)} (${DIAS_SEMANA[dataObj.getDay()]})*\n\nSelecione o horário:`,
-    horariosButtons, "Esteticar"
+    horariosButtons, session.empresaNome
   );
 
   await atualizarSessao(session.id, {
@@ -1000,7 +1000,7 @@ async function handleEscolhendoHorario(action, jid, session) {
       return;
     }
     const horariosButtons = horariosAtualizados.map((h) => ({ id: `horario_${h}`, text: h }));
-    await sendButtons(jid, "🔄 *Horários atualizados*\nSelecione o novo horário:", horariosButtons, "Esteticar");
+    await sendButtons(jid, "🔄 *Horários atualizados*\nSelecione o novo horário:", horariosButtons, session.empresaNome);
     await atualizarSessao(session.id, { state: "ESCOLHENDO_HORARIO", state_data: { ...stateData, horarios: horariosAtualizados } });
     return;
   }
@@ -1030,7 +1030,7 @@ async function handleEscolhendoHorario(action, jid, session) {
   await sendButtons(jid, summary, [
     { id: "confirmar", text: "✅ Confirmar" },
     { id: "cancelar", text: "❌ Cancelar" },
-  ], "Esteticar");
+  ], session.empresaNome);
 
   await atualizarSessao(session.id, {
     state: "CONFIRMANDO_AGENDAMENTO",
@@ -1138,7 +1138,7 @@ async function handleCancelandoAgendamento(action, jid, session) {
   await sendButtons(jid, msg, [
     { id: "confirmar_cancelamento", text: "✅ Sim, cancelar" },
     { id: "cancelar", text: "❌ Não, voltar" },
-  ], "Esteticar");
+  ], session.empresaNome);
 
   await atualizarSessao(session.id, {
     state: "CONFIRMANDO_CANCELAMENTO",
@@ -1249,7 +1249,7 @@ async function encaminharParaVeiculo(jid, session, clienteId, servicoId, nome) {
 
   if (!veiculos.length) {
     const sections = gerarSectionsMarcas();
-    await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, "Esteticar");
+    await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
     await atualizarSessao(session.id, {
       state: "DIGITANDO_VEICULO_MARCA",
       state_data: { servico_id: servicoId },
@@ -1264,7 +1264,7 @@ async function encaminharParaVeiculo(jid, session, clienteId, servicoId, nome) {
   }));
   rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
 
-  await sendList(jid, "*Selecione o veículo para o agendamento:*", "Ver Veículos", [{ title: "Veículos", rows }], "Esteticar");
+  await sendList(jid, "*Selecione o veículo para o agendamento:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
   await atualizarSessao(session.id, {
     state: "ESCOLHENDO_VEICULO",
     state_data: { servico_id: servicoId, veiculos },
@@ -1286,7 +1286,7 @@ async function handleDigitandoVeiculoMarca(action, jid, session) {
     const typed = action.trim();
     if (typed.length < 2) {
       const sections = gerarSectionsMarcas();
-      await sendList(jid, "Selecione a *marca* do veículo na lista ou digite:", "Ver Marcas", sections, "Esteticar");
+      await sendList(jid, "Selecione a *marca* do veículo na lista ou digite:", "Ver Marcas", sections, session.empresaNome);
       return false;
     }
     marca = typed;
@@ -1297,7 +1297,7 @@ async function handleDigitandoVeiculoMarca(action, jid, session) {
   if (MARCAS_CARROS[marca]) {
     const modelSections = gerarSectionsModelos(marca);
     if (modelSections) {
-      await sendList(jid, `Selecione o *modelo* para ${marca}:`, "Ver Modelos", modelSections, "Esteticar");
+      await sendList(jid, `Selecione o *modelo* para ${marca}:`, "Ver Modelos", modelSections, session.empresaNome);
       await atualizarSessao(session.id, { state: "DIGITANDO_VEICULO_MODELO", state_data: { ...stateData, marca } });
       return;
     }
@@ -1324,7 +1324,7 @@ async function handleDigitandoVeiculoModelo(action, jid, session) {
       if (stateData.marca && MARCAS_CARROS[stateData.marca]) {
         const modelSections = gerarSectionsModelos(stateData.marca);
         if (modelSections) {
-          await sendList(jid, `Selecione o *modelo* para ${stateData.marca}:`, "Ver Modelos", modelSections, "Esteticar");
+          await sendList(jid, `Selecione o *modelo* para ${stateData.marca}:`, "Ver Modelos", modelSections, session.empresaNome);
           return;
         }
       }
@@ -1396,7 +1396,7 @@ async function handleBack(currentState, jid, session) {
           rowId: `veiculo_${v.veiculo_id}`,
         }));
         rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
-        await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], "Esteticar");
+        await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
         await atualizarSessao(session.id, { state: "ESCOLHENDO_VEICULO", state_data: { servico_id: stateData.servico_id, veiculos: stateData.veiculos } });
       } else {
         await sendMenu(jid, session);
@@ -1408,7 +1408,7 @@ async function handleBack(currentState, jid, session) {
         await handleBack("DIGITANDO_VEICULO_MARCA", jid, session);
       } else {
         const sections = gerarSectionsMarcas();
-        await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, "Esteticar");
+        await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
         await atualizarSessao(session.id, { state: "DIGITANDO_VEICULO_MARCA", state_data: { ...stateData, marca: undefined } });
       }
       return;
@@ -1417,7 +1417,7 @@ async function handleBack(currentState, jid, session) {
       if (stateData.marca && MARCAS_CARROS[stateData.marca]) {
         const modelSections = gerarSectionsModelos(stateData.marca);
         if (modelSections) {
-          await sendList(jid, `Selecione o *modelo* para ${stateData.marca}:`, "Ver Modelos", modelSections, "Esteticar");
+          await sendList(jid, `Selecione o *modelo* para ${stateData.marca}:`, "Ver Modelos", modelSections, session.empresaNome);
           await atualizarSessao(session.id, { state: "DIGITANDO_VEICULO_MODELO", state_data: { ...stateData, modelo: undefined } });
           return;
         }
@@ -1434,7 +1434,7 @@ async function handleBack(currentState, jid, session) {
           rowId: `veiculo_${v.veiculo_id}`,
         }));
         rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
-        await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], "Esteticar");
+        await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
         await atualizarSessao(session.id, { state: "ESCOLHENDO_VEICULO", state_data: { servico_id: stateData.servico_id, veiculos: stateData.veiculos } });
       } else {
         await sendMenu(jid, session);
@@ -1443,7 +1443,7 @@ async function handleBack(currentState, jid, session) {
 
     case "ESCOLHENDO_HORARIO":
       if (stateData.datas_disponiveis?.length > 0) {
-        await sendButtons(jid, "*📅 Selecione a data desejada:*", gerarButtonsDatas(stateData.datas_disponiveis), "Esteticar");
+        await sendButtons(jid, "*📅 Selecione a data desejada:*", gerarButtonsDatas(stateData.datas_disponiveis), session.empresaNome);
         await atualizarSessao(session.id, { state: "ESCOLHENDO_DATA", state_data: stateData });
       } else {
         await sendMenu(jid, session);
@@ -1467,7 +1467,7 @@ async function sugerirAtendente(jid, session) {
   await sendButtons(jid, "🤔 Não entendi. Deseja falar com um *atendente humano*?", [
     { id: "sim_atendente", text: "Sim, quero atendente" },
     { id: "nao_atendente", text: "Não, continuar" },
-  ], "Esteticar");
+  ], session.empresaNome);
   await atualizarSessao(session.id, {
     state_data: { ...session.state_data, aguardando_resposta_atendente: true },
   });
@@ -1582,6 +1582,9 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
   let session = null;
   try {
     session = await buscarSessao(tenantId, remoteJid);
+    const empresaNome = await getEmpresaNome(tenantId);
+
+    if (session) session.empresaNome = empresaNome;
 
     if (session && await verificarSessaoExpirada(session)) {
       logger.info({ sessionId: session.id, remoteJid }, "Sessão expirada por inatividade");
@@ -1601,8 +1604,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
         clientPhone: phone,
         clientName: pushName,
       });
-
-      const empresaNome = await getEmpresaNome(tenantId);
+      session.empresaNome = empresaNome;
 
       await sendWhatsAppMessage(
         remoteJid,
@@ -1634,7 +1636,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
           await sendButtons(remoteJid, recoveryMsg, [
             { id: "continuar_fluxo", text: "✅ Continuar" },
             { id: "reiniciar", text: "❌ Recomeçar" },
-          ], "Esteticar");
+          ], session.empresaNome);
           return;
         }
       }
@@ -1694,7 +1696,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
 
           if (!veiculos.length) {
             const sections = gerarSectionsMarcas();
-            await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, "Esteticar");
+            await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
             await atualizarSessao(session.id, {
               state: "DIGITANDO_VEICULO_MARCA",
               state_data: { servico_id: servicoDetectado.servico_id },
@@ -1709,7 +1711,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
           }));
           rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
 
-          await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], "Esteticar");
+          await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
           await atualizarSessao(session.id, {
             state: "ESCOLHENDO_VEICULO",
             state_data: { servico_id: servicoDetectado.servico_id, veiculos },
