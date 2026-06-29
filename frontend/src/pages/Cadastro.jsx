@@ -72,17 +72,7 @@ export function Cadastro() {
     <div className={styles.authLayout}>
       <div className={styles.authBrand}>
         <div className={styles.brandIcon}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path
-              d="M4 20L8 8H20L24 20H4Z"
-              stroke="#e85d04"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-            <circle cx="9" cy="22" r="2" fill="#e85d04" />
-            <circle cx="19" cy="22" r="2" fill="#e85d04" />
-            <path d="M8 13H20" stroke="#e85d04" strokeWidth="1.5" />
-          </svg>
+          <img src="/esteticar.png" alt="EstetiCar" style={{ width: 28, height: 28, objectFit: "contain" }} />
         </div>
         <span className={styles.brandName}>EstetiCar</span>
       </div>
