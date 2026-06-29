@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { logger } from "../config/logger.js";
 
 export async function signup({ nomeEmpresa, nome, email, senha }) {
   const slug = `${nomeEmpresa
@@ -48,6 +49,14 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id).catch(() => {});
     await supabaseAdmin.from("tenants").delete().eq("id", tenantData.id);
     throw new AppError(`Erro ao salvar perfil: ${insertError.message}`);
+  }
+
+  const { error: configError } = await supabaseAdmin
+    .from("configuracao_empresa")
+    .insert({ tenant_id: tenantData.id, nome_fantasia: nomeEmpresa, email });
+
+  if (configError) {
+    logger.warn({ err: configError }, "Erro ao criar configuracao_empresa inicial");
   }
 
   return {
