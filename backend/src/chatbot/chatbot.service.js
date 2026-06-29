@@ -766,14 +766,10 @@ async function handleEscolhendoServico(action, jid, session) {
   let cliente = await listarClientePorTelefone(session.tenant_id, phone);
 
   if (!cliente) {
-    if (phone.length >= 10 && isValidPhone(phone)) {
-      const nome = session.client_name || "Cliente";
-      if (nome.length >= 2) {
-        cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
-        if (cliente) {
-          await sendWhatsAppMessage(jid, `✅ Cliente *${nome}* identificado!`);
-        }
-      }
+    const nome = session.client_name || "Cliente";
+    cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
+    if (cliente) {
+      await sendWhatsAppMessage(jid, `✅ Cliente *${nome}* identificado!`);
     }
   }
 
@@ -781,7 +777,7 @@ async function handleEscolhendoServico(action, jid, session) {
     await sendWhatsAppMessage(jid, `Para agendar *${servico.nome_servico}*, preciso do seu nome completo:`);
     await atualizarSessao(session.id, {
       state: "DIGITANDO_NOME",
-      state_data: { servico_id: servico.servico_id, telefone_invalido: !isValidPhone(phone) },
+      state_data: { servico_id: servico.servico_id },
     });
     return;
   }
@@ -1657,11 +1653,9 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
           cliente = await listarClientePorTelefone(session.tenant_id, phone);
         }
 
-        if (!cliente && isValidPhone(phone)) {
+        if (!cliente) {
           const nome = session.client_name || "Cliente";
-          if (nome.length >= 2) {
-            cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
-          }
+          cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
         }
 
         if (cliente) {
@@ -1698,7 +1692,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
         await sendWhatsAppMessage(jid, `Identifiquei que você quer *${servicoDetectado.nome_servico}*! Para agendar, preciso do seu nome completo:`);
         await atualizarSessao(session.id, {
           state: "DIGITANDO_NOME",
-          state_data: { servico_id: servicoDetectado.servico_id, telefone_invalido: !isValidPhone(phone) },
+          state_data: { servico_id: servicoDetectado.servico_id },
         });
         return;
       }
