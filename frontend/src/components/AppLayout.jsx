@@ -114,7 +114,7 @@ export function AppLayout() {
           {theme === "dark" ? "Modo claro" : "Modo escuro"}
         </button>
 
-        <NavLink to="/perfil" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}>
+        <NavLink to="/perfil" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`} onClick={() => setSidebarOpen(false)}>
           <UserCircle size={18} className={styles.navIcon} />
           Meu Perfil
         </NavLink>

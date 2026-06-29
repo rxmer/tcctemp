@@ -616,13 +616,22 @@ select.input-field option {
 
 /* ── RESPONSIVIDADE ──────────────────────────────────────────── */
 @media (max-width: 768px) {
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   .page-grid { grid-template-columns: 1fr !important; }
   .card-grid { grid-template-columns: 1fr !important; }
-  .data-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   [class*="pageGrid"] { grid-template-columns: 1fr !important; }
+
+  .responsiveGrid {
+    grid-template-columns: 1fr !important;
+  }
 
   .card, [class*="card"], [class*="Card"] {
     padding: 16px !important;
+    max-width: 100% !important;
   }
 
   input, select, textarea, .input-field, [class*="filtroInput"] {
@@ -632,20 +641,23 @@ select.input-field option {
     box-sizing: border-box;
   }
 
-  .tableWrapper, [class*="tableWrapper"], [class*="dataTable"], table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
+  .tableWrapper, [class*="tableWrapper"], [class*="dataTable"] {
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  th, td {
+    white-space: nowrap;
   }
 
   .dashMain, [class*="dashMain"] {
     padding: 12px !important;
-    overflow-x: hidden;
   }
 
-  .responsiveGrid {
-    grid-template-columns: 1fr !important;
+  [class*="statGrid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
   }
 }
 
