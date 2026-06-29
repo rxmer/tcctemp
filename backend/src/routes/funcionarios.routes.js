@@ -8,3 +8,5 @@ funcionariosRoutes.use(authenticate);
 
 funcionariosRoutes.post("/", requireAdmin, funcionariosController.criar);
 funcionariosRoutes.get("/", funcionariosController.listar);
+funcionariosRoutes.put("/:id", requireAdmin, funcionariosController.atualizar);
+funcionariosRoutes.delete("/:id", requireAdmin, funcionariosController.deletar);

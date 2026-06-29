@@ -31,3 +31,16 @@ export async function listar(req, res) {
   const funcionarios = await funcionariosService.listarFuncionarios(req.tenantId);
   res.json(funcionarios);
 }
+
+export async function atualizar(req, res) {
+  const { id } = req.params;
+  const { nome, email } = req.body;
+  const result = await funcionariosService.atualizarFuncionario(id, { nome, email });
+  res.json(result);
+}
+
+export async function deletar(req, res) {
+  const { id } = req.params;
+  await funcionariosService.deletarFuncionario(id);
+  res.json({ message: "Funcionário excluído com sucesso" });
+}

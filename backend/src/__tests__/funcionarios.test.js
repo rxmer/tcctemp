@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { supabaseAdmin } from "../config/supabase.js";
-import { criarFuncionario, listarFuncionarios } from "../services/funcionarios.service.js";
+import { criarFuncionario, listarFuncionarios, atualizarFuncionario, deletarFuncionario } from "../services/funcionarios.service.js";
 
 function mockQuery(overrides = {}) {
   return {
@@ -105,6 +105,45 @@ describe("funcionariosService", () => {
       }));
 
       await expect(listarFuncionarios(TENANT_ID)).rejects.toThrow("Erro ao listar funcionários");
+    });
+  });
+
+  describe("atualizarFuncionario", () => {
+    it("deve atualizar nome com sucesso", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery());
+
+      const result = await atualizarFuncionario("user-1", { nome: "Maria Atualizada" });
+
+      expect(result.nome).toBe("Maria Atualizada");
+    });
+
+    it("deve lancar erro se update falhar", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        eq: vi.fn().mockReturnThis(),
+        then: (resolve) => resolve({ data: null, error: new Error("DB error") }),
+      }));
+
+      await expect(atualizarFuncionario("user-1", { nome: "Maria" })).rejects.toThrow("Erro ao atualizar funcionário");
+    });
+  });
+
+  describe("deletarFuncionario", () => {
+    it("deve deletar funcionario com sucesso", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery());
+      supabaseAdmin.auth.admin.deleteUser.mockResolvedValue({});
+
+      const result = await deletarFuncionario("user-1");
+
+      expect(result.id).toBe("user-1");
+    });
+
+    it("deve lancar erro se delete falhar", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        eq: vi.fn().mockReturnThis(),
+        then: (resolve) => resolve({ data: null, error: new Error("DB error") }),
+      }));
+
+      await expect(deletarFuncionario("user-1")).rejects.toThrow("Erro ao excluir funcionário");
     });
   });
 });

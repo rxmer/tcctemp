@@ -51,3 +51,29 @@ export async function listarFuncionarios(tenantId) {
     throw new AppError(`Erro ao listar funcionários: ${error.message}`);
   return data;
 }
+
+export async function atualizarFuncionario(id, { nome, email }) {
+  const updates = {};
+  if (nome) updates.nome = nome;
+
+  if (email) {
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, { email });
+    if (authError) throw new AppError(`Erro ao atualizar e-mail: ${authError.message}`);
+    updates.email = email;
+  }
+
+  if (Object.keys(updates).length === 0) return { id };
+
+  const { error } = await supabaseAdmin.from("usuarios").update(updates).eq("id", id);
+  if (error) throw new AppError(`Erro ao atualizar funcionário: ${error.message}`);
+
+  return { id, ...updates };
+}
+
+export async function deletarFuncionario(id) {
+  const { error: deleteError } = await supabaseAdmin.from("usuarios").delete().eq("id", id);
+  if (deleteError) throw new AppError(`Erro ao excluir funcionário: ${deleteError.message}`);
+
+  await supabaseAdmin.auth.admin.deleteUser(id).catch(() => {});
+  return { id };
+}
