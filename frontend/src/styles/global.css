@@ -620,6 +620,29 @@ select.input-field option {
   .card-grid { grid-template-columns: 1fr !important; }
   .data-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   [class*="pageGrid"] { grid-template-columns: 1fr !important; }
+
+  .card, [class*="card"], [class*="Card"] {
+    padding: 16px !important;
+  }
+
+  input, select, textarea, .input-field, [class*="filtroInput"] {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .tableWrapper, [class*="tableWrapper"], [class*="dataTable"], table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashMain, [class*="dashMain"] {
+    padding: 12px !important;
+    overflow-x: hidden;
+  }
 }
 
 @media (min-width: 769px) {
