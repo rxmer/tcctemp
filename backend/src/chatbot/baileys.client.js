@@ -46,9 +46,11 @@ export function getAuthDir(tenantId) {
 
 export async function startBaileys(tenantId) {
   if (socket) {
+    socketId++;
     await stopBaileys(true);
   }
 
+  intentionalDisconnect = false;
   currentTenantId = tenantId;
   const authDir = getAuthDir(tenantId);
 
