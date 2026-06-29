@@ -50,12 +50,17 @@ export function AppLayout() {
   const [empresa, setEmpresa] = useState(null);
 
   useEffect(() => {
-    configuracaoEmpresaService.buscar().then((d) => setEmpresa(d)).catch(() => {});
-    function handler() {
-      configuracaoEmpresaService.buscar().then((d) => setEmpresa(d)).catch(() => {});
+    function fetchEmpresa() {
+      configuracaoEmpresaService.buscar().then((d) => {
+        setEmpresa(d);
+        if (d?.nome_fantasia) {
+          document.title = `${d.nome_fantasia} — Gestão de Estética Automotiva`;
+        }
+      }).catch(() => {});
     }
-    window.addEventListener("empresa-salva", handler);
-    return () => window.removeEventListener("empresa-salva", handler);
+    fetchEmpresa();
+    window.addEventListener("empresa-salva", fetchEmpresa);
+    return () => window.removeEventListener("empresa-salva", fetchEmpresa);
   }, []);
 
   const handleLogout = async () => {
