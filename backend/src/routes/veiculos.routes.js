@@ -6,7 +6,7 @@ export const veiculosRoutes = Router();
 
 veiculosRoutes.use(authenticate);
 
-veiculosRoutes.post("/", requireAdmin, veiculosController.criar);
+veiculosRoutes.post("/", veiculosController.criar);
 veiculosRoutes.get("/", veiculosController.listar);
-veiculosRoutes.put("/:id", requireAdmin, veiculosController.atualizar);
+veiculosRoutes.put("/:id", veiculosController.atualizar);
 veiculosRoutes.delete("/:id", requireAdmin, veiculosController.deletar);

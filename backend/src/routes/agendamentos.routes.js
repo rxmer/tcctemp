@@ -6,7 +6,7 @@ export const agendamentoRoutes = Router();
 
 agendamentoRoutes.use(authenticate);
 
-agendamentoRoutes.post("/", requireAdmin, agendamentoController.criar);
+agendamentoRoutes.post("/", agendamentoController.criar);
 agendamentoRoutes.get("/", agendamentoController.listar);
 agendamentoRoutes.put("/:id", agendamentoController.atualizar);
 agendamentoRoutes.delete("/:id", requireAdmin, agendamentoController.deletar);

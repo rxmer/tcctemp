@@ -10,7 +10,7 @@ ordemServicoRoutes.post("/", osController.criar);
 ordemServicoRoutes.get("/", osController.listar);
 ordemServicoRoutes.get("/:id", osController.buscarPorId);
 ordemServicoRoutes.put("/:id", osController.atualizar);
-ordemServicoRoutes.delete("/:id", osController.deletar);
+ordemServicoRoutes.delete("/:id", requireAdmin, osController.deletar);
 
 ordemServicoRoutes.post("/:id/itens", osController.adicionarItem);
-ordemServicoRoutes.delete("/:id/itens/:itemId", osController.removerItem);
+ordemServicoRoutes.delete("/:id/itens/:itemId", requireAdmin, osController.removerItem);
