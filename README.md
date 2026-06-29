@@ -23,7 +23,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 │   │   ├── routes/        # Definição de rotas
 │   │   ├── middleware/     # Auth, validação, erros
 │   │   ├── chatbot/       # Chatbot WhatsApp
-│   │   ├── config/        # Configurações (Supabase, cache, logger)
+│   │   ├── config/        # Configurações (Supabase, cache, logger, swagger)
 │   │   ├── utils/         # Helpers e validação Zod
 │   │   └── __tests__/     # Testes automatizados (Vitest)
 │   └── .env.example
@@ -39,21 +39,23 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 
 ## Funcionalidades
 
-- **Clientes** — cadastro, edição, exclusão com validação de telefone único
+- **Clientes** — cadastro, edição, exclusão (admin), validação de telefone único
 - **Veículos** — vinculados a clientes, placa única, impedir exclusão com agendamentos futuros
-- **Serviços** — catálogo com preço base e duração, ativar/desativar
+- **Serviços** — catálogo com preço base e duração, ativar/desativar (admin)
 - **Agendamentos** — calendário + lista, conflito com duração, expediente, feriados, fluxo de status
 - **Ordens de Serviço** — vinculadas a agendamentos, itens, geração automática de faturamento
-- **Financeiro** — contas a pagar, faturamentos, resumo com saldo
-- **Relatórios** — agendamentos por período, serviços mais realizados, receitas vs despesas, status, clientes frequentes
-- **Expediente** — horários por dia da semana
-- **Feriados** — bloqueio de datas especiais
-- **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone
+- **Financeiro** — contas a pagar, faturamentos, resumo com saldo (admin)
+- **Relatórios** — agendamentos por período, serviços mais realizados, receitas vs despesas, status, clientes frequentes (admin)
+- **Expediente** — horários por dia da semana (admin)
+- **Feriados** — bloqueio de datas especiais (admin)
+- **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
 - **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão, transferência para atendente
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas)
-- **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas
+- **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`
 - **Validação de entrada** — schemas Zod em todas as rotas de criação
 - **Máscara de telefone** — formatação `(11) 99999-9999` em todo o sistema
+- **Responsividade** — layout adaptável para mobile (≤ 768px), tabelas viram cards
+- **API documentada** — Swagger/OpenAPI em `/api-docs`
 
 ## Regras de Negócio
 
@@ -74,7 +76,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 
 ### 2. Supabase
 
-Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql` ou no SQL Editor do Supabase).
+Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`). Migrações adicionais estão em `docs/migration-*.sql`.
 
 ### 3. Backend
 
@@ -102,26 +104,14 @@ npm run dev
 2. Escaneie o QR Code com o WhatsApp do negócio
 3. O chatbot estará ativo para os clientes
 
-### 6. Migrações SQL (executar no SQL Editor do Supabase)
+### 6. Migrações SQL
 
-```sql
--- Configuração da empresa
-CREATE TABLE IF NOT EXISTS configuracao_empresa (
-  tenant_id UUID PRIMARY KEY,
-  nome_fantasia TEXT,
-  cnpj TEXT,
-  telefone TEXT,
-  email TEXT,
-  endereco TEXT,
-  logo_url TEXT,
-  criado_em TIMESTAMPTZ DEFAULT NOW(),
-  atualizado_em TIMESTAMPTZ DEFAULT NOW()
-);
+As migrações estão versionadas em `docs/`:
 
--- Remover DDI 55 dos telefones existentes (2026)
-UPDATE clientes SET telefone = RIGHT(telefone, LENGTH(telefone) - 2) WHERE telefone LIKE '55%' AND LENGTH(telefone) >= 12;
-UPDATE configuracao_empresa SET telefone = RIGHT(telefone, LENGTH(telefone) - 2) WHERE telefone LIKE '55%' AND LENGTH(telefone) >= 12;
-```
+- `docs/schema.sql` — schema completo do banco
+- `docs/migration-*.sql` — migrações incrementais
+
+Para criar as tabelas, execute o conteúdo do `docs/schema.sql` no SQL Editor do Supabase.
 
 ### 7. Testes
 
@@ -130,19 +120,19 @@ cd backend
 npm test
 ```
 
-> **241 testes automatizados** (Vitest) — 17 arquivos de teste, 0 falhas.
+> **245 testes automatizados** (Vitest) — 17 arquivos de teste, 0 falhas.
 
 ## O que falta para produção
 
 - [ ] **Deploy** — backend em Railway/Render, frontend na Vercel, banco no Supabase (já está)
 - [ ] **Domínio próprio** — configurar domínio + SSL
 - [ ] **Variáveis de ambiente** — configurar `NODE_ENV=production`, `CORS_ORIGIN` com o domínio
-- [ ] **Swagger/OpenAPI** — documentar todos os endpoints da API
-- [ ] **Esquema SQL** — extrair dump das migrations do Supabase para um arquivo `schema.sql`
+- [x] **Swagger/OpenAPI** — disponível em `/api-docs`
+- [x] **Esquema SQL** — versionado em `docs/schema.sql`
 - [ ] **Backup automático** — configurar backup diário do banco (Supabase já faz, mas verificar retenção)
 - [ ] **WhatsApp Business API** — substituir Baileys pela API oficial do WhatsApp Business para maior estabilidade (opcional)
 - [ ] **Monitoramento** — configurar logs centralizados e alertas de erro
-- [ ] **Rate limiting** — ajustar limites conforme necessidade (já implementado com `express-rate-limit`)
+- [x] **Rate limiting** — implementado com `express-rate-limit`
 
 ## Licença
 
