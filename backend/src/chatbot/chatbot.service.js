@@ -1179,25 +1179,22 @@ async function handleDigitandoNome(action, jid, session) {
 
   const phone = extractPhone(session.remote_jid);
 
-  if (stateData.telefone_invalido || !isValidPhone(phone)) {
-    await sendWhatsAppMessage(jid, `Obrigado, ${nome}! Agora informe seu *telefone com DDD* (ex: 5511999999999):`);
-    await atualizarSessao(session.id, {
-      state: "DIGITANDO_TELEFONE",
-      client_name: nome,
-      state_data: { ...stateData, nome_cliente: nome },
-    });
-    return;
+  if (isValidPhone(phone)) {
+    let cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
+    if (cliente) {
+      await atualizarSessao(session.id, { cliente_id: cliente.cliente_id, client_name: nome });
+      await sendWhatsAppMessage(jid, `✅ Cliente *${nome}* identificado!`);
+      await encaminharParaVeiculo(jid, session, cliente.cliente_id, stateData.servico_id, nome);
+      return;
+    }
   }
 
-  let cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
-  if (!cliente) {
-    await sendWhatsAppMessage(jid, "Erro ao criar cadastro. Tente novamente.");
-    await sendMenu(jid, session);
-    return;
-  }
-
-  await atualizarSessao(session.id, { cliente_id: cliente.cliente_id, client_name: nome });
-  await encaminharParaVeiculo(jid, session, cliente.cliente_id, stateData.servico_id, nome);
+  await sendWhatsAppMessage(jid, `Obrigado, ${nome}! Agora informe seu *telefone com DDD* (ex: 5511999999999):`);
+  await atualizarSessao(session.id, {
+    state: "DIGITANDO_TELEFONE",
+    client_name: nome,
+    state_data: { ...stateData, nome_cliente: nome },
+  });
 }
 
 async function handleDigitandoTelefone(action, jid, session) {
