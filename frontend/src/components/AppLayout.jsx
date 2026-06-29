@@ -13,6 +13,7 @@ import {
   CalendarDays,
   CalendarX2,
   Settings,
+  UserCircle,
   ClipboardList,
   DollarSign,
   UserCog,
@@ -112,6 +113,11 @@ export function AppLayout() {
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           {theme === "dark" ? "Modo claro" : "Modo escuro"}
         </button>
+
+        <NavLink to="/perfil" className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}>
+          <UserCircle size={18} className={styles.navIcon} />
+          Meu Perfil
+        </NavLink>
 
         <button className={styles.sidebarLogout} onClick={handleLogout}>
           <LogOut size={16} /> Sair

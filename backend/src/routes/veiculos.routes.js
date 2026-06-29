@@ -1,12 +1,12 @@
 import { Router } from "express";
 import * as veiculosController from "../controllers/veiculos.controller.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireAdmin } from "../middleware/auth.js";
 
 export const veiculosRoutes = Router();
 
 veiculosRoutes.use(authenticate);
 
-veiculosRoutes.post("/", veiculosController.criar);
+veiculosRoutes.post("/", requireAdmin, veiculosController.criar);
 veiculosRoutes.get("/", veiculosController.listar);
-veiculosRoutes.put("/:id", veiculosController.atualizar);
-veiculosRoutes.delete("/:id", veiculosController.deletar);
+veiculosRoutes.put("/:id", requireAdmin, veiculosController.atualizar);
+veiculosRoutes.delete("/:id", requireAdmin, veiculosController.deletar);

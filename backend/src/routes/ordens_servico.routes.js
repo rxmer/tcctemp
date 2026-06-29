@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as osController from "../controllers/ordens_servico.controller.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireAdmin } from "../middleware/auth.js";
 
 export const ordemServicoRoutes = Router();
 
