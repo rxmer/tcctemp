@@ -166,7 +166,7 @@ export function Agendamentos() {
       veiculo_id: Number(form.veiculo_id),
       servico_id: Number(form.servico_id),
       data_agendamento: form.data_agendamento,
-      hora_agendamento: form.hora_agendamento + ":00",
+      hora_agendamento: form.hora_agendamento,
       observacoes: form.observacoes || null,
     };
 
