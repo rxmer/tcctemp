@@ -254,7 +254,7 @@ export function Veiculos() {
                 <option value="">Selecione um cliente</option>
                 {clientes.map((c) => (
                   <option key={c.cliente_id} value={c.cliente_id}>
-                    {c.nome} {c.telefone ? `(${formatPhone(c.telefone)})` : ""}
+                    {c.nome} {c.telefone ? formatPhone(c.telefone) : ""}
                   </option>
                 ))}
               </select>
