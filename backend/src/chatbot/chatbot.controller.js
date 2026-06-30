@@ -13,21 +13,26 @@ baileysClient.setOnMessageHandler(processMessage);
 
 export async function getStatus(req, res) {
   const state = baileysClient.getConnectionState();
+  const response = state.tenantId !== req.tenantId
+    ? { status: "disconnected", qrCode: null, error: null, tenantId: req.tenantId, lastDisconnectReason: null }
+    : state;
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.set("Pragma", "no-cache");
   res.set("Expires", "0");
-  res.json(state);
+  res.json(response);
 }
 
 export async function connect(req, res) {
   const { tenantId } = req;
 
-  const currentState = baileysClient.getConnectionState().status;
-  if (currentState === "connected") {
+  const currentState = baileysClient.getConnectionState();
+  const isOwner = currentState.tenantId === tenantId;
+
+  if (isOwner && currentState.status === "connected") {
     return res.json({ message: "Já conectado" });
   }
 
-  if (currentState === "reconnecting" || currentState === "awaiting_qr" || currentState === "connecting") {
+  if (isOwner && (currentState.status === "reconnecting" || currentState.status === "awaiting_qr" || currentState.status === "connecting")) {
     return res.json({ message: "Já tentando conectar, aguarde..." });
   }
 
