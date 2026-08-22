@@ -51,8 +51,11 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
 - **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão, transferência para atendente
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas)
-- **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`
-- **Validação de entrada** — schemas Zod em todas as rotas de criação
+- **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
+- **Multi-tenant** — isolamento total por `tenant_id` derivado do token JWT em todas as consultas
+- **Validação de entrada** — schemas Zod em todas as rotas de escrita (criação e atualização)
+- **Segurança** — Helmet, CORS restrito, rate limiting (global + login + exportações), sanitização de erros internos, logs sem dados pessoais, Swagger apenas fora de produção
+- **Manutenção automática** — limpeza de notificações antigas (>30 dias), expiração de sessões do chatbot, lembretes com tolerância para reinicialização do servidor
 - **Máscara de telefone** — formatação `(11) 99999-9999` em todo o sistema
 - **Responsividade** — layout adaptável para mobile (≤ 768px), tabelas viram cards
 - **API documentada** — Swagger/OpenAPI em `/api-docs`
@@ -76,7 +79,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 
 ### 2. Supabase
 
-Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`). Migrações adicionais estão em `docs/migration-*.sql`.
+Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`).
 
 ### 3. Backend
 
@@ -104,35 +107,30 @@ npm run dev
 2. Escaneie o QR Code com o WhatsApp do negócio
 3. O chatbot estará ativo para os clientes
 
-### 6. Migrações SQL
+### 6. Banco de Dados
 
-As migrações estão versionadas em `docs/`:
-
-- `docs/schema.sql` — schema completo do banco
-- `docs/migration-*.sql` — migrações incrementais
-
-Para criar as tabelas, execute o conteúdo do `docs/schema.sql` no SQL Editor do Supabase.
+O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, execute o conteúdo no SQL Editor do Supabase.
 
 ### 7. Testes
 
 ```bash
-cd backend
-npm test
+cd backend && npm test    # 248 testes (17 arquivos)
+cd frontend && npm test   # 222 testes (34 arquivos)
 ```
 
-> **245 testes automatizados** (Vitest) — 17 arquivos de teste, 0 falhas.
+> **470 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
 - [ ] **Deploy** — backend em Railway/Render, frontend na Vercel, banco no Supabase (já está)
 - [ ] **Domínio próprio** — configurar domínio + SSL
-- [ ] **Variáveis de ambiente** — configurar `NODE_ENV=production`, `CORS_ORIGIN` com o domínio
-- [x] **Swagger/OpenAPI** — disponível em `/api-docs`
+- [ ] **Variáveis de ambiente** — configurar `NODE_ENV=production`, `CORS_ORIGIN` com o domínio (Swagger e `/api-docs` ficam desabilitados automaticamente em produção)
 - [x] **Esquema SQL** — versionado em `docs/schema.sql`
 - [ ] **Backup automático** — configurar backup diário do banco (Supabase já faz, mas verificar retenção)
 - [ ] **WhatsApp Business API** — substituir Baileys pela API oficial do WhatsApp Business para maior estabilidade (opcional)
 - [ ] **Monitoramento** — configurar logs centralizados e alertas de erro
-- [x] **Rate limiting** — implementado com `express-rate-limit`
+- [x] **Rate limiting** — implementado com `express-rate-limit` (+ `trust proxy` para funcionar atrás de proxy/reverse proxy)
+- [x] **Auditoria de segurança** — validação completa com Zod, controle de acesso por perfil em todas as rotas, sanitização de erros, headers de segurança
 
 ## Licença
 
