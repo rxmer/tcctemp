@@ -48,7 +48,7 @@ const NAV_GROUPS = [
     icon: DollarSign,
     adminOnly: true,
     items: [
-      { label: "Visão Geral", path: "/financeiro" },
+      { label: "Visão Geral", path: "/financeiro", exact: true },
       { label: "Contas a Pagar", path: "/financeiro/contas-pagar" },
       { label: "Faturamentos", path: "/financeiro/faturamentos" },
     ],
@@ -58,7 +58,7 @@ const NAV_GROUPS = [
     icon: MessageCircle,
     adminOnly: true,
     items: [
-      { label: "Conexão", path: "/whatsapp" },
+      { label: "Conexão", path: "/whatsapp", exact: true },
       { label: "Conversas", path: "/whatsapp/conversas" },
       { label: "Comunicados", path: "/comunicados" },
     ],
@@ -68,7 +68,7 @@ const NAV_GROUPS = [
     icon: BarChart3,
     adminOnly: true,
     items: [
-      { label: "Visão Geral", path: "/relatorios" },
+      { label: "Visão Geral", path: "/relatorios", exact: true },
       { label: "Agendamentos", path: "/relatorios/agendamentos" },
       { label: "Serviços", path: "/relatorios/servicos" },
       { label: "Receitas vs Despesas", path: "/relatorios/financeiro" },
@@ -211,6 +211,7 @@ export function AppLayout() {
                       <NavLink
                         key={item.path}
                         to={item.path}
+                        end={item.exact}
                         className={({ isActive }) => `${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ""}`}
                       >
                         {item.label}
@@ -284,6 +285,7 @@ export function AppLayout() {
                         <NavLink
                           key={item.path}
                           to={item.path}
+                          end={item.exact}
                           className={({ isActive }) => `${styles.mobileItem} ${isActive ? styles.mobileItemActive : ""}`}
                         >
                           {item.label}
