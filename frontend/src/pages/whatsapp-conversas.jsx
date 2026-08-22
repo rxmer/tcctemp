@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { PageHeader, SkeletonCard } from "../components/ui";
@@ -17,10 +18,17 @@ function formatDate(dateStr) {
   });
 }
 
+function estadoLabel(estado) {
+  if (!estado) return "";
+  const t = estado.replace(/_/g, " ").toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 export function WhatsAppConversas() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const { feedback, showFeedback } = useFeedback();
+  const navigate = useNavigate();
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -65,11 +73,13 @@ export function WhatsAppConversas() {
         ) : (
           <div className={styles.sessionsGrid}>
             {sessions.map((s) => (
-              <div key={s.id} className={styles.sessionCard}>
+              <div key={s.id} className={`${styles.sessionCard} ${styles.convCard}`}
+                onClick={() => navigate(`/whatsapp/conversas/${s.id}`)}
+                title="Abrir conversa">
                 <div className={styles.sessionName}>{s.client_name ?? "Cliente"}</div>
                 <div className={styles.sessionPhone}>{formatPhone(s.client_phone) || "—"}</div>
                 <div className={styles.sessionMeta}>
-                  <span>Estado: {s.state}</span>
+                  <span className={styles.estadoBadge}>{estadoLabel(s.state)}</span>
                   <span>•</span>
                   <span>{formatDate(s.ultima_atividade)}</span>
                 </div>

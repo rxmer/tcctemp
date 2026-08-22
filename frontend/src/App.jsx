@@ -30,6 +30,7 @@ const RelatorioClientes = lazy(() => import("./pages/relatorios-clientes").then(
 const Funcionario = lazy(() => import("./pages/funcionarios").then((m) => ({ default: m.Funcionario })));
 const WhatsApp = lazy(() => import("./pages/whatsapp").then((m) => ({ default: m.WhatsApp })));
 const WhatsAppConversas = lazy(() => import("./pages/whatsapp-conversas").then((m) => ({ default: m.WhatsAppConversas })));
+const ConversaDetalhe = lazy(() => import("./pages/whatsapp-conversa-detalhe").then((m) => ({ default: m.ConversaDetalhe })));
 const Comunicados = lazy(() => import("./pages/comunicados").then((m) => ({ default: m.Comunicados })));
 const Perfil = lazy(() => import("./pages/perfil").then((m) => ({ default: m.Perfil })));
 
@@ -73,6 +74,7 @@ export default function App() {
                   <Route path="/financeiro/faturamentos" element={<Faturamentos />} />
                   <Route path="/whatsapp" element={<WhatsApp />} />
                   <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />
+                  <Route path="/whatsapp/conversas/:id" element={<ConversaDetalhe />} />
                   <Route path="/comunicados" element={<Comunicados />} />
                 </Route>
                 <Route path="/perfil" element={<Perfil />} />

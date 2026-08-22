@@ -194,6 +194,99 @@ describe("chatbot.session", () => {
     });
   });
 
+  describe("registrarMensagem", () => {
+    it("deve inserir mensagem na tabela chatbot_mensagem", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        then: (resolve) => resolve({ data: null, error: null }),
+      }));
+
+      await sessionService.registrarMensagem({
+        tenantId: TENANT_ID,
+        sessionId: SESSION_ID,
+        remetente: "cliente",
+        texto: "Olá",
+      });
+
+      expect(supabaseAdmin.from).toHaveBeenCalledWith("chatbot_mensagem");
+    });
+
+    it("nao deve lancar erro se insert falhar", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        then: (resolve) => resolve({ data: null, error: new Error("Insert error") }),
+      }));
+
+      await expect(
+        sessionService.registrarMensagem({
+          tenantId: TENANT_ID,
+          sessionId: SESSION_ID,
+          remetente: "bot",
+          texto: "Oi",
+        })
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe("registrarMensagemPorJid", () => {
+    it("deve registrar mensagem da sessao encontrada", async () => {
+      const sessao = { id: SESSION_ID, tenant_id: TENANT_ID };
+
+      const query1 = mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: sessao, error: null }),
+      });
+      const query2 = mockQuery({
+        then: (resolve) => resolve({ data: null, error: null }),
+      });
+
+      supabaseAdmin.from
+        .mockReturnValueOnce(query1)
+        .mockReturnValueOnce(query2);
+
+      await sessionService.registrarMensagemPorJid(REMOTE_JID, "Texto", "atendente");
+
+      expect(query2.insert).toHaveBeenCalledWith({
+        tenant_id: TENANT_ID,
+        session_id: SESSION_ID,
+        remetente: "atendente",
+        texto: "Texto",
+      });
+    });
+
+    it("deve ignorar quando nao ha sessao para o jid", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }));
+
+      await sessionService.registrarMensagemPorJid(REMOTE_JID, "Texto");
+
+      expect(supabaseAdmin.from).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("listarMensagens", () => {
+    it("deve listar mensagens da sessao ordenadas", async () => {
+      const expected = [{ id: "m1", remetente: "cliente", texto: "Olá" }];
+      const orderMock = vi.fn().mockReturnThis();
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        order: orderMock,
+        limit: vi.fn().mockResolvedValue({ data: expected, error: null }),
+      }));
+
+      const result = await sessionService.listarMensagens(TENANT_ID, SESSION_ID);
+      expect(result).toEqual(expected);
+      expect(orderMock).toHaveBeenCalledWith("criado_em", { ascending: true });
+    });
+
+    it("deve lancar erro na falha", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        limit: vi.fn().mockResolvedValue({ data: null, error: new Error("List error") }),
+      }));
+
+      await expect(
+        sessionService.listarMensagens(TENANT_ID, SESSION_ID)
+      ).rejects.toThrow("Erro ao listar mensagens");
+    });
+  });
+
   describe("limparSessoesExpiradas", () => {
     it("deve reiniciar sessoes expiradas", async () => {
       const expiradas = [

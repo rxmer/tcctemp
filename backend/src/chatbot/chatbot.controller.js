@@ -10,6 +10,9 @@ import { processMessage } from "./chatbot.service.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 baileysClient.setOnMessageHandler(processMessage);
+baileysClient.setOnOutgoingMessage((jid, text, origem) =>
+  sessionService.registrarMensagemPorJid(jid, text, origem || "bot")
+);
 
 export async function getStatus(req, res) {
   const state = baileysClient.getConnectionState();
@@ -111,8 +114,26 @@ export async function sendReply(req, res) {
     return res.status(404).json({ error: "Sessão não encontrada" });
   }
 
-  await baileysClient.sendWhatsAppMessage(session.remote_jid, mensagem.trim());
+  await baileysClient.sendWhatsAppMessage(session.remote_jid, mensagem.trim(), "atendente");
   res.json({ message: "Mensagem enviada" });
+}
+
+export async function getMensagens(req, res) {
+  const { id } = req.params;
+
+  const { data: session, error } = await supabaseAdmin
+    .from("chatbot_session")
+    .select("id")
+    .eq("id", id)
+    .eq("tenant_id", req.tenantId)
+    .single();
+
+  if (error) {
+    return res.status(404).json({ error: "Sessão não encontrada" });
+  }
+
+  const mensagens = await sessionService.listarMensagens(req.tenantId, session.id);
+  res.json(mensagens);
 }
 
 export async function resetSession(req, res) {

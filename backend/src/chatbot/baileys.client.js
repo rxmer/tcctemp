@@ -250,9 +250,22 @@ export async function stopBaileys(keepState = false) {
   }
 }
 
-export async function sendWhatsAppMessage(jid, text) {
+let onOutgoingMessage = null;
+
+export function setOnOutgoingMessage(fn) {
+  onOutgoingMessage = fn;
+}
+
+export async function sendWhatsAppMessage(jid, text, origem = "bot") {
   if (!socket) throw new Error("WhatsApp não conectado");
   await socket.sendMessage(jid, { text });
+  if (onOutgoingMessage) {
+    try {
+      await onOutgoingMessage(jid, text, origem);
+    } catch (err) {
+      logger.warn({ err }, "Erro ao registrar mensagem enviada no histórico");
+    }
+  }
 }
 
 export async function sendButtons(jid, text, buttons, footer) {

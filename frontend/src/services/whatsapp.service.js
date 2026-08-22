@@ -22,4 +22,11 @@ export const whatsappService = {
       method: "POST",
       body: JSON.stringify({ mensagem }),
     }),
+
+  getMensagens: (id) => apiFetch(`/api/chatbot/sessions/${id}/mensagens?_=${Date.now()}`),
+
+  resetSessao: (id) =>
+    apiFetch(`/api/chatbot/sessions/${id}/reset`, {
+      method: "POST",
+    }),
 };

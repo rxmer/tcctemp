@@ -183,3 +183,123 @@
     grid-template-columns: 1fr;
   }
 }
+
+.convCard {
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+}
+
+.convCard:hover {
+  border-color: var(--accent);
+}
+
+.estadoBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.convBubbles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  min-height: 260px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.bubbleRow {
+  display: flex;
+}
+
+.bubbleRowCliente {
+  justify-content: flex-start;
+}
+
+.bubbleRowAtendente {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubbleCliente {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-bottom-left-radius: 2px;
+}
+
+.bubbleBot {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: var(--text-primary);
+  border-bottom-right-radius: 2px;
+}
+
+.bubbleAtendente {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: var(--text-primary);
+  border-bottom-right-radius: 2px;
+}
+
+.bubbleAutor {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.bubbleHora {
+  display: block;
+  font-size: 10px;
+  opacity: 0.6;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.convInputRow {
+  display: flex;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+}
+
+.convInput {
+  flex: 1;
+  resize: none;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  min-height: 44px;
+}
+
+.convInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.convAcoes {
+  display: flex;
+  gap: 10px;
+}

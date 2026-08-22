@@ -52,6 +52,19 @@ describe("whatsappService", () => {
     });
   });
 
+  it("getMensagens chama apiFetch com id e timestamp", () => {
+    whatsappService.getMensagens("abc-123");
+    const url = apiFetch.mock.calls[0][0];
+    expect(url).toMatch(/^\/api\/chatbot\/sessions\/abc-123\/mensagens\?_=\d+$/);
+  });
+
+  it("resetSessao chama apiFetch com POST", () => {
+    whatsappService.resetSessao("session-1");
+    expect(apiFetch).toHaveBeenCalledWith("/api/chatbot/sessions/session-1/reset", {
+      method: "POST",
+    });
+  });
+
   it("getStatus retorna o resultado de apiFetch", async () => {
     const mockData = { connected: true };
     apiFetch.mockResolvedValue(mockData);

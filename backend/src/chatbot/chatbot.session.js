@@ -78,6 +78,45 @@ export async function listarSessoes(tenantId) {
   return data;
 }
 
+export async function registrarMensagem({ tenantId, sessionId, remetente, texto }) {
+  const { error } = await supabaseAdmin
+    .from("chatbot_mensagem")
+    .insert({
+      tenant_id: tenantId,
+      session_id: sessionId,
+      remetente,
+      texto,
+    });
+
+  if (error) logger.warn({ err: error }, "Erro ao registrar mensagem do chatbot");
+}
+
+export async function registrarMensagemPorJid(remoteJid, texto, remetente = "bot") {
+  const { data } = await supabaseAdmin
+    .from("chatbot_session")
+    .select("id, tenant_id")
+    .eq("remote_jid", remoteJid)
+    .order("ultima_atividade", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data?.id) return;
+  await registrarMensagem({ tenantId: data.tenant_id, sessionId: data.id, remetente, texto });
+}
+
+export async function listarMensagens(tenantId, sessionId) {
+  const { data, error } = await supabaseAdmin
+    .from("chatbot_mensagem")
+    .select("id, remetente, texto, criado_em")
+    .eq("tenant_id", tenantId)
+    .eq("session_id", sessionId)
+    .order("criado_em", { ascending: true })
+    .limit(300);
+
+  if (error) throw new AppError(`Erro ao listar mensagens: ${error.message}`);
+  return data;
+}
+
 export async function desativarSessao(sessionId) {
   const { error } = await supabaseAdmin
     .from("chatbot_session")

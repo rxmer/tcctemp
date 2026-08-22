@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
-import { criarSessao, buscarSessao, atualizarSessao } from "./chatbot.session.js";
+import { criarSessao, buscarSessao, atualizarSessao, registrarMensagem } from "./chatbot.session.js";
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
 import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
@@ -1607,6 +1607,8 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
       });
       session.empresaNome = empresaNome;
 
+      await registrarMensagem({ tenantId, sessionId: session.id, remetente: "cliente", texto: text });
+
       await sendWhatsAppMessage(
         remoteJid,
         `🚗 Bem-vindo à *${empresaNome}*, ${pushName}! 👋\n\nSou o assistente virtual responsável pelos agendamentos e informações sobre nossos serviços de estética automotiva.`
@@ -1618,6 +1620,8 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
     if (session.ultima_mensagem !== text) {
       await atualizarSessao(session.id, { ultima_mensagem: text });
     }
+
+    await registrarMensagem({ tenantId, sessionId: session.id, remetente: "cliente", texto: text });
 
     const jid = remoteJid;
     const intent = detectNaturalLanguage(text);
