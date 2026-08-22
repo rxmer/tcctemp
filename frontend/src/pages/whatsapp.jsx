@@ -43,7 +43,7 @@ export function WhatsApp() {
     mounted.current = true;
     carregarStatus();
     const fast = ["awaiting_qr", "connecting", "reconnecting"].includes(state.status);
-    const interval = setInterval(carregarStatus, fast ? 3000 : 10000);
+    const interval = setInterval(carregarStatus, fast ? 1000 : 10000);
     return () => {
       mounted.current = false;
       clearInterval(interval);
@@ -56,6 +56,8 @@ export function WhatsApp() {
       await whatsappService.connect();
       showFeedback("success", "Conectando ao WhatsApp...");
       await carregarStatus();
+      setTimeout(() => { if (mounted.current) carregarStatus(); }, 600);
+      setTimeout(() => { if (mounted.current) carregarStatus(); }, 1500);
     } catch (err) {
       showFeedback("error", err.message);
     } finally {
