@@ -5,18 +5,9 @@ import { Financeiro } from "../pages/financeiro";
 
 vi.mock("../context/useAuth", () => ({ useAuth: vi.fn() }));
 vi.mock("../services/financeiro.service", () => ({
-  financeiroService: { resumo: vi.fn(), listarContas: vi.fn(), listarFaturamentos: vi.fn(), criarConta: vi.fn() },
+  financeiroService: { resumo: vi.fn() },
 }));
 vi.mock("../hooks/useFeedback", () => ({ useFeedback: vi.fn() }));
-vi.mock("../styles/pages/financeiro.module.css", () => ({
-  default: {
-    finGrid: "finGrid", resumoCard: "resumoCard", resumoTitle: "resumoTitle", resumoValue: "resumoValue",
-    tabs: "tabs", tab: "tab", tabActive: "tabActive", formCard: "formCard", cardHeader: "cardHeader",
-    finForm: "finForm", formActions: "formActions", listCard: "listCard", tableWrapper: "tableWrapper",
-    table: "table", emptyState: "emptyState", tenantChip: "tenantChip", tenantDot: "tenantDot",
-    statusPago: "statusPago", statusPendente: "statusPendente",
-  },
-}));
 
 import { useAuth } from "../context/useAuth";
 import { financeiroService } from "../services/financeiro.service";
@@ -26,7 +17,7 @@ function renderPage() {
   return render(<MemoryRouter><Financeiro /></MemoryRouter>);
 }
 
-describe("Financeiro page", () => {
+describe("Financeiro page (visão geral)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ tenant: { id: "t1", nome: "Esteticar" } });
@@ -36,20 +27,11 @@ describe("Financeiro page", () => {
       despesas: { total: 500, pago: 300, a_pagar: 200 },
       saldo: 500,
     });
-    financeiroService.listarContas.mockResolvedValue({ data: [], total: 0 });
-    financeiroService.listarFaturamentos.mockResolvedValue({ data: [], total: 0 });
   });
 
-  it("renderiza titulo", async () => {
+  it("renderiza titulo", () => {
     renderPage();
     expect(screen.getByText("Financeiro")).toBeInTheDocument();
-  });
-
-  it("renderiza abas", async () => {
-    renderPage();
-    expect(screen.getByText(/resumo/i)).toBeInTheDocument();
-    expect(screen.getByText(/contas a pagar/i)).toBeInTheDocument();
-    expect(screen.getByText(/faturamentos/i)).toBeInTheDocument();
   });
 
   it("carrega resumo ao montar", async () => {
@@ -60,6 +42,20 @@ describe("Financeiro page", () => {
   it("exibe dados do resumo", async () => {
     renderPage();
     await waitFor(() => { expect(screen.getByText(/total receitas/i)).toBeInTheDocument(); });
+    expect(screen.getByText(/saldo/i)).toBeInTheDocument();
+  });
+
+  it("envia filtro de data ao selecionar", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    const { container } = renderPage();
+    const input = container.querySelector('input[type="date"]');
+    fireEvent.change(input, { target: { value: "2026-01-15" } });
+    await waitFor(() => {
+      expect(financeiroService.resumo).toHaveBeenLastCalledWith({
+        data_inicio: "2026-01-15",
+        data_fim: "2026-01-15",
+      });
+    });
   });
 
   it("mostra erro ao carregar", async () => {

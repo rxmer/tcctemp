@@ -17,10 +17,16 @@ const Veiculos = lazy(() => import("./pages/veiculos").then((m) => ({ default: m
 const Agendamentos = lazy(() => import("./pages/agendamentos").then((m) => ({ default: m.Agendamentos })));
 const OrdensServico = lazy(() => import("./pages/ordens-servico").then((m) => ({ default: m.OrdensServico })));
 const Financeiro = lazy(() => import("./pages/financeiro").then((m) => ({ default: m.Financeiro })));
+const ContasPagar = lazy(() => import("./pages/financeiro-contas").then((m) => ({ default: m.ContasPagar })));
+const Faturamentos = lazy(() => import("./pages/financeiro-faturamentos").then((m) => ({ default: m.Faturamentos })));
 const Expediente = lazy(() => import("./pages/expediente").then((m) => ({ default: m.Expediente })));
 const Feriados = lazy(() => import("./pages/feriados").then((m) => ({ default: m.Feriados })));
 const ConfiguracaoEmpresa = lazy(() => import("./pages/configuracao-empresa").then((m) => ({ default: m.ConfiguracaoEmpresa })));
 const Relatorios = lazy(() => import("./pages/relatorios").then((m) => ({ default: m.Relatorios })));
+const RelatorioAgendamentos = lazy(() => import("./pages/relatorios-agendamentos").then((m) => ({ default: m.RelatorioAgendamentos })));
+const RelatorioServicos = lazy(() => import("./pages/relatorios-servicos").then((m) => ({ default: m.RelatorioServicos })));
+const RelatorioFinanceiro = lazy(() => import("./pages/relatorios-financeiro").then((m) => ({ default: m.RelatorioFinanceiro })));
+const RelatorioClientes = lazy(() => import("./pages/relatorios-clientes").then((m) => ({ default: m.RelatorioClientes })));
 const Funcionario = lazy(() => import("./pages/funcionarios").then((m) => ({ default: m.Funcionario })));
 const WhatsApp = lazy(() => import("./pages/whatsapp").then((m) => ({ default: m.WhatsApp })));
 const WhatsAppConversas = lazy(() => import("./pages/whatsapp-conversas").then((m) => ({ default: m.WhatsAppConversas })));
@@ -58,7 +64,13 @@ export default function App() {
                   <Route path="/feriados" element={<Feriados />} />
                   <Route path="/configuracao-empresa" element={<ConfiguracaoEmpresa />} />
                   <Route path="/relatorios" element={<Relatorios />} />
+                  <Route path="/relatorios/agendamentos" element={<RelatorioAgendamentos />} />
+                  <Route path="/relatorios/servicos" element={<RelatorioServicos />} />
+                  <Route path="/relatorios/financeiro" element={<RelatorioFinanceiro />} />
+                  <Route path="/relatorios/clientes" element={<RelatorioClientes />} />
                   <Route path="/financeiro" element={<Financeiro />} />
+                  <Route path="/financeiro/contas-pagar" element={<ContasPagar />} />
+                  <Route path="/financeiro/faturamentos" element={<Faturamentos />} />
                   <Route path="/whatsapp" element={<WhatsApp />} />
                   <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />
                   <Route path="/comunicados" element={<Comunicados />} />
