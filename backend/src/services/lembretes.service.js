@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import { sendWhatsAppMessage, getConnectionState } from "../chatbot/baileys.client.js";
+import { dataLocalISO } from "../utils/data.js";
 
 function formatDateBR(dateStr) {
   if (!dateStr) return "";
@@ -19,7 +20,7 @@ export async function verificarEEnviarLembretes() {
   const agora = new Date();
   const daquiUmaHora = new Date(agora.getTime() + 60 * 60 * 1000);
 
-  const hoje = agora.toISOString().split("T")[0];
+  const hoje = dataLocalISO(agora);
   const agoraMin = agora.getHours() * 60 + agora.getMinutes();
   const daquiMin = daquiUmaHora.getHours() * 60 + daquiUmaHora.getMinutes();
 
@@ -41,11 +42,12 @@ export async function verificarEEnviarLembretes() {
   const agendamentosFiltrados = agendamentos.filter((ag) => {
     const [h, m] = ag.hora_agendamento.split(":").map(Number);
     const agMin = h * 60 + m;
+    const GRACE_MIN = 30;
 
     if (daquiMin > agoraMin) {
-      return agMin >= agoraMin && agMin <= daquiMin;
+      return agMin >= agoraMin - GRACE_MIN && agMin <= daquiMin;
     } else {
-      return agMin >= agoraMin || agMin <= daquiMin;
+      return agMin >= agoraMin - GRACE_MIN || agMin <= daquiMin;
     }
   });
 

@@ -52,7 +52,9 @@ export async function listarFuncionarios(tenantId) {
   return data;
 }
 
-export async function atualizarFuncionario(id, { nome, email }) {
+export async function atualizarFuncionario(id, { nome, email }, tenantId) {
+  await garantirFuncionarioDoTenant(id, tenantId);
+
   const updates = {};
   if (nome) updates.nome = nome;
 
@@ -64,14 +66,42 @@ export async function atualizarFuncionario(id, { nome, email }) {
 
   if (Object.keys(updates).length === 0) return { id };
 
-  const { error } = await supabaseAdmin.from("usuarios").update(updates).eq("id", id);
+  const { error } = await supabaseAdmin
+    .from("usuarios")
+    .update(updates)
+    .eq("id", id)
+    .eq("tenant_id", tenantId);
   if (error) throw new AppError(`Erro ao atualizar funcionário: ${error.message}`);
 
   return { id, ...updates };
 }
 
-export async function deletarFuncionario(id) {
-  const { error: deleteError } = await supabaseAdmin.from("usuarios").delete().eq("id", id);
+async function garantirFuncionarioDoTenant(id, tenantId) {
+  const { data, error } = await supabaseAdmin
+    .from("usuarios")
+    .select("id, perfil")
+    .eq("id", id)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  if (error || !data) throw new AppError("Funcionário não encontrado", 404);
+  if (data.perfil === "admin") {
+    throw new AppError("Não é possível gerenciar uma conta de administrador", 403);
+  }
+}
+
+export async function deletarFuncionario(id, tenantId, solicitanteId) {
+  if (id === solicitanteId) {
+    throw new AppError("Não é possível excluir a sua própria conta", 400);
+  }
+
+  await garantirFuncionarioDoTenant(id, tenantId);
+
+  const { error: deleteError } = await supabaseAdmin
+    .from("usuarios")
+    .delete()
+    .eq("id", id)
+    .eq("tenant_id", tenantId);
   if (deleteError) throw new AppError(`Erro ao excluir funcionário: ${deleteError.message}`);
 
   await supabaseAdmin.auth.admin.deleteUser(id).catch(() => {});

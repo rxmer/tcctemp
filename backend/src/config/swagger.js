@@ -10,8 +10,8 @@ const options = {
         "API de gestão para estéticas automotivas de pequeno porte.\n\n" +
         "Projeto de TCC — Curso de Tecnologia em Desenvolvimento de Sistemas.\n\n" +
         "## Autenticação\n\n" +
-        "Todas as rotas `/api/*` exigem token JWT no header `Authorization: Bearer <token>`.\n" +
-        "Obtenha o token via `POST /api/auth/login`.\n\n" +
+        "Todas as rotas `/api/*` exigem token JWT do Supabase Auth no header `Authorization: Bearer <token>`.\n" +
+        "O token é obtido no frontend via `supabase.auth.signInWithPassword` (rotas `/api/auth/*` apenas consultam o usuário autenticado).\n\n" +
         "## Perfis\n" +
         "- **admin**: acesso total\n" +
         "- **funcionario**: acesso operacional limitado (não pode excluir ou acessar finanças/relatórios)",

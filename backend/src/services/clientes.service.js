@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { dataLocalISO } from "../utils/data.js";
 
 export async function criarCliente({ nome, telefone, email, tenantId }) {
   if (telefone) {
@@ -87,9 +88,20 @@ export async function atualizarCliente(id, tenantId, updates) {
 }
 
 export async function deletarCliente(id, tenantId) {
-  const hoje = new Date().toISOString().split("T")[0];
+  const hoje = dataLocalISO();
 
-  const { count: agFuturos } = await supabaseAdmin
+  const { data: cliente, error: fetchError } = await supabaseAdmin
+    .from("clientes")
+    .select("cliente_id")
+    .eq("cliente_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .maybeSingle();
+
+  if (fetchError) throw new AppError(`Erro ao buscar cliente: ${fetchError.message}`);
+  if (!cliente) throw new AppError("Cliente não encontrado", 404);
+
+  const { count: agFuturos, error: agErr } = await supabaseAdmin
     .from("agendamentos")
     .select("*", { count: "exact", head: true })
     .eq("cliente_id", id)
@@ -98,32 +110,48 @@ export async function deletarCliente(id, tenantId) {
     .gte("data_agendamento", hoje)
     .in("status", ["pendente", "confirmado", "em_andamento"]);
 
+  if (agErr) throw new AppError(`Erro ao verificar agendamentos: ${agErr.message}`);
   if (agFuturos > 0) {
     throw new AppError("Não é possível excluir um cliente com agendamentos futuros", 400);
   }
 
-  const { count: osAndamento } = await supabaseAdmin
-    .from("ordens_servico")
-    .select("*", { count: "exact", head: true })
-    .eq("tenant_id", tenantId)
-    .is("deletado_em", null)
-    .eq("status", "em_andamento")
-    .in("agendamento_id",
-      (await supabaseAdmin
-        .from("agendamentos")
-        .select("agendamento_id")
-        .eq("cliente_id", id)
-        .eq("tenant_id", tenantId)
-      ).data?.map((a) => a.agendamento_id) ?? []
-    );
+  const { data: ags } = await supabaseAdmin
+    .from("agendamentos")
+    .select("agendamento_id")
+    .eq("cliente_id", id)
+    .eq("tenant_id", tenantId);
 
-  if (osAndamento > 0) {
-    throw new AppError("Não é possível excluir um cliente com ordem de serviço em andamento", 400);
+  const agIds = (ags ?? []).map((a) => a.agendamento_id);
+
+  if (agIds.length > 0) {
+    const { count: osAndamento, error: osErr } = await supabaseAdmin
+      .from("ordens_servico")
+      .select("*", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .is("deletado_em", null)
+      .eq("status", "em_andamento")
+      .in("agendamento_id", agIds);
+
+    if (osErr) throw new AppError(`Erro ao verificar ordens de serviço: ${osErr.message}`);
+    if (osAndamento > 0) {
+      throw new AppError("Não é possível excluir um cliente com ordem de serviço em andamento", 400);
+    }
   }
+
+  const agora = new Date().toISOString();
+
+  const { error: errorVeiculos } = await supabaseAdmin
+    .from("veiculos")
+    .update({ deletado_em: agora })
+    .eq("cliente_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null);
+
+  if (errorVeiculos) throw new AppError(`Erro ao deletar veículos do cliente: ${errorVeiculos.message}`);
 
   const { error } = await supabaseAdmin
     .from("clientes")
-    .update({ deletado_em: new Date().toISOString() })
+    .update({ deletado_em: agora })
     .eq("cliente_id", id)
     .eq("tenant_id", tenantId);
 

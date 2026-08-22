@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { dataLocalISO } from "../utils/data.js";
 
 export async function listarDatasBloqueadas(tenantId, ano = null) {
   let query = supabaseAdmin
@@ -19,6 +20,8 @@ export async function listarDatasBloqueadas(tenantId, ano = null) {
 
 export async function criarDataBloqueada({ data, motivo, tenantId }) {
   if (!data) throw new AppError("Data é obrigatória", 400);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new AppError("Data deve estar no formato YYYY-MM-DD", 400);
+  if (data < dataLocalISO(new Date())) throw new AppError("Não é possível bloquear uma data no passado", 400);
 
   const { data: existing } = await supabaseAdmin
     .from("datas_bloqueadas")

@@ -41,7 +41,9 @@ describe("Expediente page", () => {
 
   it("renderiza dias da semana", async () => {
     renderPage();
-    expect(screen.getByText("Segunda-feira")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Segunda-feira")).toBeInTheDocument();
+    });
     expect(screen.getByText("Sexta-feira")).toBeInTheDocument();
     expect(screen.getByText("Domingo")).toBeInTheDocument();
   });

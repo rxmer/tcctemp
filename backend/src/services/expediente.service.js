@@ -35,14 +35,28 @@ export async function listarExpediente(tenantId) {
   }));
 }
 
+const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 function normalizeTime(val) {
   if (val === "" || val == null) return null;
+  if (typeof val !== "string" || !HORA_REGEX.test(val)) {
+    throw new AppError("Horário inválido — use o formato HH:MM", 400);
+  }
   return val;
+}
+
+function minutosDe(hora) {
+  const [h, m] = hora.split(":").map(Number);
+  return h * 60 + m;
 }
 
 export async function upsertExpediente(dia_semana, tenantId, { abertura, fechamento, ativo }) {
   const aberturaOk = normalizeTime(abertura);
   const fechamentoOk = normalizeTime(fechamento);
+
+  if (aberturaOk && fechamentoOk && minutosDe(fechamentoOk) <= minutosDe(aberturaOk)) {
+    throw new AppError("O horário de fechamento deve ser após o horário de abertura", 400);
+  }
 
   const { data: existing } = await supabaseAdmin
     .from("configuracao_expediente")

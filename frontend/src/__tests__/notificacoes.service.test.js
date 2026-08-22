@@ -29,7 +29,7 @@ describe("notificacoesService", () => {
 
   it("contar chama apiFetch com url correta", () => {
     notificacoesService.contar();
-    expect(apiFetch).toHaveBeenCalledWith("/api/notificacoes/contar");
+    expect(apiFetch).toHaveBeenCalledWith("/api/notificacoes/contagem");
   });
 
   it("marcarLida chama apiFetch com PATCH", () => {

@@ -11,11 +11,15 @@ import { swaggerSpec } from "./config/swagger.js";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json({ limit: "1mb" }));
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+if (env.nodeEnv !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

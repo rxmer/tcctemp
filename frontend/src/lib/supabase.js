@@ -11,11 +11,18 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
+const sessionStorageAdapter = {
+  getItem: (key) => window.sessionStorage.getItem(key),
+  setItem: (key, value) => window.sessionStorage.setItem(key, value),
+  removeItem: (key) => window.sessionStorage.removeItem(key),
+};
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    storage: sessionStorageAdapter,
     storageKey: "esteticar-auth",
     flowType: "pkce",
   },

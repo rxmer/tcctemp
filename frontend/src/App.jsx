@@ -50,7 +50,6 @@ export default function App() {
                   <Route path="/veiculos" element={<Veiculos />} />
                 <Route path="/agendamentos" element={<Agendamentos />} />
                 <Route path="/ordens-servico" element={<OrdensServico />} />
-                <Route path="/financeiro" element={<Financeiro />} />
 
                 <Route element={<ProtectedRoute adminOnly />}>
                   <Route path="/funcionarios" element={<Funcionario />} />
@@ -58,6 +57,7 @@ export default function App() {
                   <Route path="/feriados" element={<Feriados />} />
                   <Route path="/configuracao-empresa" element={<ConfiguracaoEmpresa />} />
                   <Route path="/relatorios" element={<Relatorios />} />
+                  <Route path="/financeiro" element={<Financeiro />} />
                 <Route path="/whatsapp" element={<WhatsApp />} />
                 <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />
                 </Route>

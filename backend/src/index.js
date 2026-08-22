@@ -5,6 +5,7 @@ import { logger } from "./config/logger.js";
 import { initCache } from "./config/cache.js";
 import { verificarEEnviarLembretes } from "./services/lembretes.service.js";
 import { limparSessoesExpiradas } from "./chatbot/chatbot.session.js";
+import { limparNotificacoesAntigas } from "./services/notificacoes.service.js";
 
 process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "Unhandled Rejection");
@@ -35,4 +36,10 @@ app.listen(env.port, async () => {
       logger.error({ err }, "Erro na limpeza de sessões expiradas")
     );
   }, 5 * 60 * 1000);
+
+  setInterval(() => {
+    limparNotificacoesAntigas().catch((err) =>
+      logger.error({ err }, "Erro na limpeza de notificações antigas")
+    );
+  }, 6 * 60 * 60 * 1000);
 });

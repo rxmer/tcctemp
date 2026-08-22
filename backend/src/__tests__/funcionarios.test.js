@@ -110,40 +110,48 @@ describe("funcionariosService", () => {
 
   describe("atualizarFuncionario", () => {
     it("deve atualizar nome com sucesso", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery());
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1", perfil: "funcionario" }, error: null }),
+      }));
 
-      const result = await atualizarFuncionario("user-1", { nome: "Maria Atualizada" });
+      const result = await atualizarFuncionario("user-1", { nome: "Maria Atualizada" }, TENANT_ID);
 
       expect(result.nome).toBe("Maria Atualizada");
     });
 
     it("deve lancar erro se update falhar", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
-        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1", perfil: "funcionario" }, error: null }),
         then: (resolve) => resolve({ data: null, error: new Error("DB error") }),
       }));
 
-      await expect(atualizarFuncionario("user-1", { nome: "Maria" })).rejects.toThrow("Erro ao atualizar funcionário");
+      await expect(atualizarFuncionario("user-1", { nome: "Maria" }, TENANT_ID)).rejects.toThrow("Erro ao atualizar funcionário");
     });
   });
 
   describe("deletarFuncionario", () => {
     it("deve deletar funcionario com sucesso", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery());
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1", perfil: "funcionario" }, error: null }),
+      }));
       supabaseAdmin.auth.admin.deleteUser.mockResolvedValue({});
 
-      const result = await deletarFuncionario("user-1");
+      const result = await deletarFuncionario("user-1", TENANT_ID, "admin-1");
 
       expect(result.id).toBe("user-1");
     });
 
     it("deve lancar erro se delete falhar", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
-        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1", perfil: "funcionario" }, error: null }),
         then: (resolve) => resolve({ data: null, error: new Error("DB error") }),
       }));
 
-      await expect(deletarFuncionario("user-1")).rejects.toThrow("Erro ao excluir funcionário");
+      await expect(deletarFuncionario("user-1", TENANT_ID, "admin-1")).rejects.toThrow("Erro ao excluir funcionário");
+    });
+
+    it("deve bloquear exclusao da propria conta", async () => {
+      await expect(deletarFuncionario("admin-1", TENANT_ID, "admin-1")).rejects.toThrow("própria conta");
     });
   });
 });

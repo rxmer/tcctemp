@@ -55,6 +55,15 @@ function buildSession(overrides = {}) {
   };
 }
 
+function dataFutura(dias = 7) {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 describe("chatbot.service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1585,9 +1594,11 @@ describe("chatbot.service", () => {
 
   describe("processMessage - digitar data manualmente", () => {
     it("deve aceitar data digitada valida (DDMMYYYY)", async () => {
+      const data = dataFutura(7);
+      const [, mm, dd] = data.split("-");
       const session = buildSession({
         state: "ESCOLHENDO_DATA",
-        state_data: { servico_id: 1, datas_disponiveis: ["2026-07-01", "2026-07-02"] },
+        state_data: { servico_id: 1, datas_disponiveis: [data] },
       });
 
       supabaseAdmin.from.mockImplementation((table) => {
@@ -1615,7 +1626,7 @@ describe("chatbot.service", () => {
         return mockQuery();
       });
 
-      await processMessage(TENANT_ID, REMOTE_JID, "01072026", "João");
+      await processMessage(TENANT_ID, REMOTE_JID, `${dd}${mm}${data.slice(0, 4)}`, "João");
 
       expect(baileys.sendButtons).toHaveBeenCalledWith(
         REMOTE_JID,
@@ -1723,13 +1734,14 @@ describe("chatbot.service", () => {
 
   describe("processMessage - confirmar agendamento com sucesso", () => {
     it("deve confirmar agendamento com insert bem-sucedido", async () => {
+      const data = dataFutura(7);
       const session = buildSession({
         state: "CONFIRMANDO_AGENDAMENTO",
         cliente_id: 1,
         state_data: {
           servico_id: 1,
           veiculo_id: 1,
-          data_agendamento: "2026-07-01",
+          data_agendamento: data,
           hora_agendamento: "10:00",
           servicoInfo: { nome_servico: "Lavagem", preco_base: 50 },
           veiculoInfo: { marca: "Fiat", modelo: "Uno", placa: "ABC-1234" },
@@ -1738,7 +1750,7 @@ describe("chatbot.service", () => {
 
       const agendamentoCriado = {
         agendamento_id: 99,
-        data_agendamento: "2026-07-01",
+        data_agendamento: data,
         hora_agendamento: "10:00",
         cliente_id: 1,
         servico_id: 1,
@@ -1891,7 +1903,9 @@ describe("chatbot.service", () => {
 
   describe("helpers - parseDateInput", () => {
     it("deve converter DDMMYYYY valido", () => {
-      expect(parseDateInput("01072026")).toBe("2026-07-01");
+      const iso = dataFutura(7);
+      const [, m, d] = iso.split("-");
+      expect(parseDateInput(`${d}${m}${iso.slice(0, 4)}`)).toBe(iso);
     });
 
     it("deve rejeitar data com formato invalido", () => {

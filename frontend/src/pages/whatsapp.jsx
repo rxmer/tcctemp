@@ -19,26 +19,36 @@ export function WhatsApp() {
   const [loading, setLoading] = useState(false);
   const { feedback, showFeedback } = useFeedback();
   const mounted = useRef(true);
+  const inFlight = useRef(false);
+  const lastErrorShown = useRef(0);
 
   async function carregarStatus() {
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
       const data = await whatsappService.getStatus();
       if (mounted.current) setState(data);
     } catch (err) {
-      if (mounted.current) showFeedback("error", err.message);
+      const now = Date.now();
+      if (mounted.current && now - lastErrorShown.current > 30000) {
+        lastErrorShown.current = now;
+        showFeedback("error", err.message);
+      }
+    } finally {
+      inFlight.current = false;
     }
   }
 
   useEffect(() => {
     mounted.current = true;
-    const timer = setTimeout(carregarStatus, 0);
-    const interval = setInterval(carregarStatus, 3000);
+    carregarStatus();
+    const fast = ["awaiting_qr", "connecting", "reconnecting"].includes(state.status);
+    const interval = setInterval(carregarStatus, fast ? 3000 : 10000);
     return () => {
       mounted.current = false;
-      clearTimeout(timer);
       clearInterval(interval);
     };
-  }, []);
+  }, [state.status]);
 
   async function handleConnect() {
     try {

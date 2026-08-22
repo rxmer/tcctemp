@@ -37,12 +37,18 @@ export async function connect(req, res) {
   }
 
   const authDir = path.join(__dirname, "..", "..", "..", `baileys_auth_${tenantId}`);
-  if (currentState === "disconnected" && fs.existsSync(authDir)) {
-    const state = baileysClient.getConnectionState();
-    if (state.lastDisconnectReason === 401 || state.lastDisconnectReason === 405) {
-      fs.rmSync(authDir, { recursive: true, force: true });
-      logger.info({ reason: state.lastDisconnectReason }, "Auth removida — sessão foi deslogada/substituída");
-    }
+  const motivosAuthInvalida = [401, 403, 405];
+  if (
+    isOwner &&
+    currentState.status === "disconnected" &&
+    motivosAuthInvalida.includes(currentState.lastDisconnectReason) &&
+    fs.existsSync(authDir)
+  ) {
+    fs.rmSync(authDir, { recursive: true, force: true });
+    logger.info(
+      { reason: currentState.lastDisconnectReason },
+      "Auth removida — sessão foi deslogada/substituída"
+    );
   }
 
   try {

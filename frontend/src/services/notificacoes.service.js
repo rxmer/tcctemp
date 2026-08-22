@@ -6,7 +6,7 @@ export const notificacoesService = {
     return apiFetch(`/api/notificacoes${qs}`);
   },
 
-  contar: () => apiFetch("/api/notificacoes/contar"),
+  contar: () => apiFetch("/api/notificacoes/contagem"),
 
   marcarLida: (id) =>
     apiFetch(`/api/notificacoes/${id}/lida`, { method: "PATCH" }),

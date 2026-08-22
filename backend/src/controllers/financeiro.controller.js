@@ -1,4 +1,5 @@
 import * as financeiroService from "../services/financeiro.service.js";
+import { dataLocalISO } from "../utils/data.js";
 
 export async function criarConta(req, res) {
   const { descricao, valor, data_vencimento, observacoes } = req.body;
@@ -59,7 +60,7 @@ export async function pagarConta(req, res) {
   if (conta.pago) {
     return res.status(400).json({ error: "Esta conta já foi paga" });
   }
-  const hoje = new Date().toISOString().split("T")[0];
+  const hoje = dataLocalISO();
   const result = await financeiroService.atualizarContaPagar(id, req.tenantId, { pago: true, data_pagamento: hoje });
   res.json(result);
 }

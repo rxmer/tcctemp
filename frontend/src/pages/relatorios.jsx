@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { relatoriosService } from "../services/relatorios.service";
 import { PageHeader, Button, SkeletonCard } from "../components/ui";
@@ -24,8 +24,11 @@ export function Relatorios() {
   const [erro, setErro] = useState(null);
   const [filtroData, setFiltroData] = useState("");
   const [agrupar, setAgrupar] = useState("dia");
+  const [exportando, setExportando] = useState(false);
+  const reqSeq = useRef(0);
 
   const carregar = useCallback(async () => {
+    const seq = ++reqSeq.current;
     setLoading(true);
     setErro(null);
     try {
@@ -37,11 +40,13 @@ export function Relatorios() {
         params.data_fim = `${ano}-${mes}-${ultimoDia}`;
       }
       const data = await relatoriosService.geral(params);
+      if (seq !== reqSeq.current) return;
       setDados(data);
     } catch (err) {
+      if (seq !== reqSeq.current) return;
       setErro("Erro ao carregar relatórios. Tente novamente.");
     } finally {
-      setLoading(false);
+      if (seq === reqSeq.current) setLoading(false);
     }
   }, [filtroData, agrupar]);
 
@@ -58,6 +63,21 @@ export function Relatorios() {
       params.data_fim = `${ano}-${mes}-${ultimoDia}`;
     }
     return params;
+  }
+
+  async function handleExportar(formato) {
+    setExportando(true);
+    try {
+      if (formato === "excel") {
+        await relatoriosService.exportarExcel(getFiltros());
+      } else {
+        await relatoriosService.exportarPDF(getFiltros());
+      }
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setExportando(false);
+    }
   }
 
   function formatMoney(v) {
@@ -127,10 +147,10 @@ export function Relatorios() {
         </div>
 
         <div className={styles.exportActions}>
-          <Button onClick={() => relatoriosService.exportarExcel(getFiltros())}>
+          <Button onClick={() => handleExportar("excel")}>
             <Download size={14} /> Excel
           </Button>
-          <Button variant="ghost" onClick={() => relatoriosService.exportarPDF(getFiltros())}>
+          <Button variant="ghost" onClick={() => handleExportar("pdf")}>
             <FileText size={14} /> PDF
           </Button>
         </div>

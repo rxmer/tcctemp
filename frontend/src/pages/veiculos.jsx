@@ -93,7 +93,7 @@ export function Veiculos() {
     e.preventDefault();
 
     const payload = {
-      placa: form.placa,
+      placa: form.placa.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
       marca: form.marca,
       modelo: form.modelo,
       ano: form.ano ? Number(form.ano) : null,

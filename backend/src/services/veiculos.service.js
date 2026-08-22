@@ -1,11 +1,24 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { dataLocalISO } from "../utils/data.js";
 
 export async function criarVeiculo({ placa, marca, modelo, ano, cor, cliente_id, tenantId }) {
+  const { data: cliente } = await supabaseAdmin
+    .from("clientes")
+    .select("cliente_id")
+    .eq("cliente_id", cliente_id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .maybeSingle();
+
+  if (!cliente) {
+    throw new AppError("Cliente não encontrado para este vínculo", 404);
+  }
+
   const { data: existing } = await supabaseAdmin
     .from("veiculos")
     .select("veiculo_id")
-    .eq("placa", placa)
+    .eq("placa", placa.toUpperCase())
     .eq("tenant_id", tenantId)
     .is("deletado_em", null)
     .maybeSingle();
@@ -58,6 +71,7 @@ export async function listarVeiculos(tenantId, { page = 1, limit = 20, search = 
 
 export async function atualizarVeiculo(id, tenantId, updates) {
   if (updates.placa) {
+    updates.placa = updates.placa.toUpperCase();
     const { data: existing } = await supabaseAdmin
       .from("veiculos")
       .select("veiculo_id")
@@ -85,7 +99,7 @@ export async function atualizarVeiculo(id, tenantId, updates) {
 }
 
 export async function deletarVeiculo(id, tenantId) {
-  const hoje = new Date().toISOString().split("T")[0];
+  const hoje = dataLocalISO();
 
   const { count: agFuturos } = await supabaseAdmin
     .from("agendamentos")

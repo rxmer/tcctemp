@@ -46,11 +46,16 @@ export function Cadastro() {
   };
 
   const handleNext = () => {
+    setErro("");
     if (validarStep()) setStep((s) => s + 1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (step < STEPS.length - 1) {
+      handleNext();
+      return;
+    }
     if (!validarStep()) return;
     setErro("");
     setLoading(true);
@@ -163,15 +168,16 @@ export function Cadastro() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setStep((s) => s - 1)}
+                onClick={() => {
+                  setErro("");
+                  setStep((s) => s - 1);
+                }}
               >
                 ← Voltar
               </Button>
             )}
             {step < STEPS.length - 1 ? (
-              <Button type="button" onClick={handleNext}>
-                Continuar →
-              </Button>
+              <Button type="submit">Continuar →</Button>
             ) : (
               <Button type="submit" loading={loading}>
                 Criar conta

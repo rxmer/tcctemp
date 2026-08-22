@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { dataLocalISO } from "../utils/data.js";
 
 export async function criarServico({ nome_servico, descricao, preco_base, duracao_min, tenantId }) {
   const { data, error } = await supabaseAdmin
@@ -56,6 +57,24 @@ export async function atualizarServico(id, tenantId, updates) {
 }
 
 export async function deletarServico(id, tenantId) {
+  const hoje = dataLocalISO();
+
+  const { count: agAtivos } = await supabaseAdmin
+    .from("agendamentos")
+    .select("*", { count: "exact", head: true })
+    .eq("servico_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .gte("data_agendamento", hoje)
+    .in("status", ["pendente", "confirmado", "em_andamento"]);
+
+  if (agAtivos > 0) {
+    throw new AppError(
+      "Não é possível excluir um serviço que possui agendamentos futuros ou em andamento",
+      400
+    );
+  }
+
   const { count: osAndamento } = await supabaseAdmin
     .from("itens_ordem_servico")
     .select("*", { count: "exact", head: true })

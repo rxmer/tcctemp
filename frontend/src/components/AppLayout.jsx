@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { icon: Sparkles, label: "Serviços", path: "/servicos" },
   { icon: CalendarDays, label: "Agendamentos", path: "/agendamentos" },
   { icon: ClipboardList, label: "Ordem de Serviço", path: "/ordens-servico" },
-  { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
+  { icon: DollarSign, label: "Financeiro", path: "/financeiro", adminOnly: true },
   { icon: UserCog, label: "Funcionários", path: "/funcionarios", adminOnly: true },
   { icon: Clock, label: "Expediente", path: "/expediente", adminOnly: true },
   { icon: CalendarX2, label: "Feriados", path: "/feriados", adminOnly: true },

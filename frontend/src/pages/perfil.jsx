@@ -25,6 +25,14 @@ export function Perfil() {
     }
     setSaving(true);
     try {
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: usuario?.email,
+        password: senhaAtual,
+      });
+      if (verifyError) {
+        showFeedback("error", "Senha atual incorreta");
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: novaSenha });
       if (error) throw error;
       showFeedback("success", "Senha alterada com sucesso!");

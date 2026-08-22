@@ -15,7 +15,6 @@ export function Funcionario() {
   const [form, setForm] = useState({
     nome: "",
     email: "",
-    telefone: "",
     senha: "",
     confirmarSenha: "",
   });
@@ -64,14 +63,12 @@ export function Funcionario() {
         nome: form.nome,
         email: form.email,
         senha: form.senha,
-        telefone: form.telefone,
       });
 
       showFeedback("success", "Funcionário cadastrado com sucesso!");
       setForm({
         nome: "",
         email: "",
-        telefone: "",
         senha: "",
         confirmarSenha: "",
       });

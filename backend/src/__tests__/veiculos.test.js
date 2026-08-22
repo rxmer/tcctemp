@@ -31,9 +31,16 @@ describe("veiculosService", () => {
 
   describe("criarVeiculo", () => {
     it("deve lancar 409 se placa ja existir", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery({
-        maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }),
-      }));
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
+          });
+        }
+        return mockQuery({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }),
+        });
+      });
 
       await expect(
         veiculosService.criarVeiculo({ placa: "ABC1234", marca: "Fiat", modelo: "Uno", cliente_id: 1, tenantId: TENANT_ID })
@@ -42,10 +49,17 @@ describe("veiculosService", () => {
 
     it("deve criar veiculo convertendo placa para uppercase", async () => {
       const expected = { veiculo_id: 1, placa: "ABC1234" };
-      supabaseAdmin.from.mockImplementation(() => mockQuery({
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        single: vi.fn().mockResolvedValue({ data: expected, error: null }),
-      }));
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
+          });
+        }
+        return mockQuery({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          single: vi.fn().mockResolvedValue({ data: expected, error: null }),
+        });
+      });
 
       const result = await veiculosService.criarVeiculo({
         placa: "abc1234", marca: "Fiat", modelo: "Uno", cliente_id: 1, tenantId: TENANT_ID,
@@ -54,11 +68,33 @@ describe("veiculosService", () => {
       expect(result).toEqual(expected);
     });
 
+    it("deve lancar erro se cliente nao existir", async () => {
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          });
+        }
+        return mockQuery();
+      });
+
+      await expect(
+        veiculosService.criarVeiculo({ placa: "XYZ9876", marca: "VW", modelo: "Gol", cliente_id: 999, tenantId: TENANT_ID })
+      ).rejects.toThrow("Cliente não encontrado para este vínculo");
+    });
+
     it("deve lancar erro se insert falhar", async () => {
-      supabaseAdmin.from.mockImplementation(() => mockQuery({
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-        single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert error") }),
-      }));
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
+          });
+        }
+        return mockQuery({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert error") }),
+        });
+      });
 
       await expect(
         veiculosService.criarVeiculo({ placa: "XYZ9876", marca: "VW", modelo: "Gol", cliente_id: 1, tenantId: TENANT_ID })

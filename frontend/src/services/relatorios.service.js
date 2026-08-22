@@ -13,26 +13,21 @@ function exportUrl(path, params = {}) {
 }
 
 async function downloadBlob(url, filename) {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch(`${API_BASE}${url}`, {
-      headers: {
-        ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
-      },
-    });
-    if (!res.ok) throw new Error(`Erro ${res.status}`);
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
-  } catch (err) {
-    console.error("Erro ao baixar:", err);
-    alert("Erro ao baixar arquivo. Tente novamente.");
-  }
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch(`${API_BASE}${url}`, {
+    headers: {
+      ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
+    },
+  });
+  if (!res.ok) throw new Error("Erro ao baixar arquivo. Tente novamente.");
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 export const relatoriosService = {
@@ -86,11 +81,11 @@ export const relatoriosService = {
     return apiFetch(`/api/relatorios/clientes-frequentes${qs ? `?${qs}` : ""}`);
   },
 
-  exportarExcel: (params = {}) => {
-    downloadBlob(exportUrl("exportar/excel", params), `relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  exportarExcel: async (params = {}) => {
+    await downloadBlob(exportUrl("exportar/excel", params), `relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.xlsx`);
   },
 
-  exportarPDF: (params = {}) => {
-    downloadBlob(exportUrl("exportar/pdf", params), `relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.pdf`);
+  exportarPDF: async (params = {}) => {
+    await downloadBlob(exportUrl("exportar/pdf", params), `relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.pdf`);
   },
 };

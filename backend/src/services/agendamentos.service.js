@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 import { criarNotificacao } from "./notificacoes.service.js";
 import { verificarDataBloqueada } from "./datas-bloqueadas.service.js";
+import { dataLocalISO } from "../utils/data.js";
 
 const STATUS_FLOW = {
   pendente: ["confirmado", "cancelado"],
@@ -80,9 +81,15 @@ export async function listarAgendamentosCliente(tenantId, clienteId, statusFilte
 }
 
 export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes, tenantId, criadoPor, fonte }) {
-  const hoje = new Date().toISOString().split("T")[0];
+  const hoje = dataLocalISO();
   if (data_agendamento < hoje) {
     throw new AppError("Não é possível agendar para uma data passada", 400);
+  }
+  if (
+    data_agendamento === hoje &&
+    hora_agendamento.slice(0, 5) < new Date().toTimeString().slice(0, 5)
+  ) {
+    throw new AppError("Não é possível agendar para um horário que já passou", 400);
   }
 
   const bloqueada = await verificarDataBloqueada(tenantId, data_agendamento);
@@ -242,6 +249,7 @@ export async function atualizarAgendamento(id, tenantId, updates) {
       .select("status, data_agendamento, hora_agendamento, servico_id")
       .eq("agendamento_id", id)
       .eq("tenant_id", tenantId)
+      .is("deletado_em", null)
       .single();
 
     if (fetchError) throw new AppError("Agendamento não encontrado", 404);
@@ -285,13 +293,22 @@ export async function atualizarAgendamento(id, tenantId, updates) {
   }
 
   if (updates.data_agendamento || updates.hora_agendamento) {
-    const hoje = new Date().toISOString().split("T")[0];
+    const hoje = dataLocalISO();
+    const dataAlvo = updates.data_agendamento || current.data_agendamento;
+    const horaAlvo = updates.hora_agendamento || current.hora_agendamento;
+
     if (updates.data_agendamento && updates.data_agendamento < hoje) {
       throw new AppError("Não é possível agendar para uma data passada", 400);
     }
+    if (
+      dataAlvo === hoje &&
+      horaAlvo.slice(0, 5) < new Date().toTimeString().slice(0, 5)
+    ) {
+      throw new AppError("Não é possível agendar para um horário que já passou", 400);
+    }
 
-    const dataFinal = updates.data_agendamento || current.data_agendamento;
-    const horaFinal = updates.hora_agendamento || current.hora_agendamento;
+    const dataFinal = dataAlvo;
+    const horaFinal = horaAlvo;
 
     const diaSemana = new Date(dataFinal + "T" + horaFinal).getDay();
     const { data: expediente } = await supabaseAdmin
@@ -356,6 +373,7 @@ export async function atualizarAgendamento(id, tenantId, updates) {
     .update(updates)
     .eq("agendamento_id", id)
     .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
     .select("*, cliente:clientes(*), veiculo:veiculos(*), servico:servico(*)")
     .single();
 
@@ -383,6 +401,7 @@ export async function deletarAgendamento(id, tenantId) {
     .select("status")
     .eq("agendamento_id", id)
     .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
     .single();
 
   if (fetchError) throw new AppError("Agendamento não encontrado", 404);
@@ -407,7 +426,8 @@ export async function deletarAgendamento(id, tenantId) {
     .from("agendamentos")
     .update({ deletado_em: new Date().toISOString() })
     .eq("agendamento_id", id)
-    .eq("tenant_id", tenantId);
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null);
 
   if (error) throw new AppError(`Erro ao deletar agendamento: ${error.message}`);
 }

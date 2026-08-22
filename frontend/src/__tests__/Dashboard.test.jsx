@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { Dashboard } from "../pages/Dashboard";
 
 vi.mock("../context/useAuth", () => ({
@@ -48,7 +49,7 @@ describe("Dashboard page", () => {
     useAuth.mockReturnValue({ loading: true, usuario: null, tenant: null });
     dashboardService.resumo.mockReturnValue(new Promise(() => {}));
 
-    const { container } = render(<Dashboard />);
+    const { container } = render(<MemoryRouter><Dashboard /></MemoryRouter>);
     expect(container.querySelector(".dashLoading")).toBeInTheDocument();
   });
 
@@ -65,7 +66,7 @@ describe("Dashboard page", () => {
       faturamento_mes: 15000,
     });
 
-    render(<Dashboard />);
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText("5")).toBeInTheDocument();
@@ -82,7 +83,7 @@ describe("Dashboard page", () => {
     });
     dashboardService.resumo.mockRejectedValue(new Error("API error"));
 
-    render(<Dashboard />);
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText(/Erro no dashboard/)).toBeInTheDocument();
@@ -97,7 +98,7 @@ describe("Dashboard page", () => {
     });
     dashboardService.resumo.mockResolvedValue({});
 
-    render(<Dashboard />);
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText(/Erro ao carregar perfil/)).toBeInTheDocument();
@@ -117,7 +118,7 @@ describe("Dashboard page", () => {
       faturamento_mes: 0,
     });
 
-    render(<Dashboard />);
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText("Bem-vindo, João!")).toBeInTheDocument();
@@ -137,7 +138,7 @@ describe("Dashboard page", () => {
       faturamento_mes: 0,
     });
 
-    render(<Dashboard />);
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText("Administrador")).toBeInTheDocument();
@@ -157,7 +158,7 @@ describe("Dashboard page", () => {
       faturamento_mes: 0,
     });
 
-    render(<Dashboard />);
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.getByText("Funcionário")).toBeInTheDocument();

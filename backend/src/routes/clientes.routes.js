@@ -9,5 +9,5 @@ clienteRoutes.use(authenticate);
 
 clienteRoutes.post("/", validateBody("criarCliente"), clienteController.criar);
 clienteRoutes.get("/", clienteController.listar);
-clienteRoutes.put("/:id", clienteController.atualizar);
+clienteRoutes.put("/:id", validateBody("atualizarCliente"), clienteController.atualizar);
 clienteRoutes.delete("/:id", requireAdmin, clienteController.deletar);

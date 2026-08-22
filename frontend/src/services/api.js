@@ -49,7 +49,13 @@ export async function apiFetch(path, options = {}) {
     if (refreshData?.session) {
       const retryResult = await doFetch(path, options, refreshData.session);
       if (retryResult.ok) return retryResult.data;
-      throw new Error(retryResult.body?.error ?? "Sessão expirada. Faça login novamente.");
+      if (retryResult.status !== 401) {
+        throw new Error(retryResult.body?.error ?? "Erro na requisição.");
+      }
+    }
+    await supabase.auth.signOut();
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.assign("/login");
     }
     throw new Error("Sessão expirada. Faça login novamente.");
   }

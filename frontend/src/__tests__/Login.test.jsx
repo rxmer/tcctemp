@@ -57,7 +57,7 @@ describe("Login page", () => {
 
   it("renderiza link para cadastro", () => {
     renderLogin();
-    expect(screen.getByText(/cadastrar estética/i)).toBeInTheDocument();
+    expect(screen.getByText(/cadastrar empresa/i)).toBeInTheDocument();
   });
 
   it("atualiza campos ao digitar", () => {

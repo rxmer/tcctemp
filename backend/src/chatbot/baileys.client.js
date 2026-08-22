@@ -66,7 +66,7 @@ export async function startBaileys(tenantId) {
       keys: makeCacheableSignalKeyStore(authStateValue.keys, baileysLogger),
     },
     logger: baileysLogger,
-    printQRInTerminal: true,
+    printQRInTerminal: false,
     syncFullHistory: false,
     connectTimeoutMs: 120000,
     keepAliveIntervalMs: 30000,
@@ -202,13 +202,13 @@ export async function startBaileys(tenantId) {
       const remoteJid = msg.key.remoteJid;
       const pushName = msg.pushName || "Cliente";
 
-      logger.info({ remoteJid, text, pushName }, "Mensagem processada");
+      logger.info({ jidSuffix: remoteJid?.split("@")[1], phoneSuffix: remoteJid?.split("@")[0]?.slice(-4), textLength: text.length }, "Mensagem processada");
 
       if (onMessageHandler) {
         try {
           await onMessageHandler(tenantId, remoteJid, text, pushName);
         } catch (err) {
-          logger.error({ err, remoteJid }, "Erro no handler de mensagem");
+          logger.error({ err, phoneSuffix: remoteJid?.split("@")[0]?.slice(-4) }, "Erro no handler de mensagem");
           try {
             await socket.sendMessage(remoteJid, {
               text: "Desculpe, ocorreu um erro. Tente novamente.",
@@ -257,7 +257,7 @@ export async function sendWhatsAppMessage(jid, text) {
 
 export async function sendButtons(jid, text, buttons, footer) {
   if (!socket) throw new Error("WhatsApp não conectado");
-  logger.debug({ jid, btnCount: buttons.length }, "sendButtons");
+  logger.debug({ btnCount: buttons.length }, "sendButtons");
 
   try {
     await helperSendButtons(socket, jid, {
@@ -275,7 +275,7 @@ export async function sendButtons(jid, text, buttons, footer) {
 
 export async function sendList(jid, text, buttonLabel, sections, footer) {
   if (!socket) throw new Error("WhatsApp não conectado");
-  logger.debug({ jid, sectionCount: sections?.length }, "sendList");
+  logger.debug({ sectionCount: sections?.length }, "sendList");
 
   try {
     await helperSendInteractive(socket, jid, {

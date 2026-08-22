@@ -7,6 +7,7 @@ import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, busca
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { dataLocalISO } from "../utils/data.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -366,7 +367,7 @@ async function criarAgendamentoViaChat(session, stateData) {
 
 async function listarAgendamentosCliente(tenantId, clienteId) {
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
+  const today = dataLocalISO(now);
   const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   const { data, error } = await supabaseAdmin

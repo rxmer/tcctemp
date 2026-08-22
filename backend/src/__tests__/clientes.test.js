@@ -158,16 +158,21 @@ describe("clienteService", () => {
   });
 
   describe("deletarCliente", () => {
-    it("deve soft-deletar cliente", async () => {
-      let cc = 0;
-      supabaseAdmin.from.mockImplementation(() => {
-        cc++;
-        const q = mockQuery();
-        q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
-        if (cc === 1) return q;
-        if (cc === 2) { q.then = (resolve) => resolve({ data: [], error: null }); return q; }
-        if (cc === 3) { q.then = (resolve) => resolve({ data: [], error: null, count: 0 }); return q; }
-        return mockQuery();
+    it("deve soft-deletar cliente e veiculos", async () => {
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          const q = mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
+          });
+          q.then = (resolve) => resolve({ data: [], error: null });
+          return q;
+        }
+        if (table === "agendamentos") {
+          const q = mockQuery();
+          q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
+          return q;
+        }
+        return mockQuery({ then: (resolve) => resolve({ data: [], error: null }) });
       });
 
       await clienteService.deletarCliente(1, TENANT_ID);
@@ -175,15 +180,43 @@ describe("clienteService", () => {
 
     it("deve lancar erro se delete falhar", async () => {
       let cc = 0;
-      supabaseAdmin.from.mockImplementation(() => {
-        cc++;
-        const q = mockQuery();
-        q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
-        if (cc <= 3) return q;
-        return mockQuery({ then: (resolve) => resolve({ data: null, error: new Error("DB error") }) });
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          cc++;
+          if (cc === 1) {
+            return mockQuery({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
+            });
+          }
+          return mockQuery({ then: (resolve) => resolve({ data: null, error: new Error("DB error") }) });
+        }
+        if (table === "agendamentos") {
+          const q = mockQuery();
+          q.then = (resolve) => resolve({ data: [], error: null, count: 0 });
+          return q;
+        }
+        return mockQuery({ then: (resolve) => resolve({ data: [], error: null }) });
       });
 
       await expect(clienteService.deletarCliente(1, TENANT_ID)).rejects.toThrow("Erro ao deletar cliente");
+    });
+
+    it("deve bloquear cliente com agendamentos futuros", async () => {
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "clientes") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
+          });
+        }
+        if (table === "agendamentos") {
+          const q = mockQuery();
+          q.then = (resolve) => resolve({ data: [], error: null, count: 2 });
+          return q;
+        }
+        return mockQuery();
+      });
+
+      await expect(clienteService.deletarCliente(1, TENANT_ID)).rejects.toThrow("agendamentos futuros");
     });
   });
 });

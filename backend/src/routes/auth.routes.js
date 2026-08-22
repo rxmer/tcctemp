@@ -2,6 +2,7 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import * as authController from "../controllers/auth.controller.js";
 import { authenticate } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -13,5 +14,5 @@ const authLimiter = rateLimit({
 
 export const authRoutes = Router();
 
-authRoutes.post("/signup", authLimiter, authController.signup);
+authRoutes.post("/signup", authLimiter, validateBody("criarConta"), authController.signup);
 authRoutes.get("/me", authenticate, authController.me);

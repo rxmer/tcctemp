@@ -1,5 +1,24 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { logger } from "../config/logger.js";
+
+const DIAS_RETENCAO = 30;
+
+export async function limparNotificacoesAntigas() {
+  const corte = new Date(Date.now() - DIAS_RETENCAO * 24 * 60 * 60 * 1000).toISOString();
+  const { error, count } = await supabaseAdmin
+    .from("notificacoes")
+    .delete()
+    .eq("lida", true)
+    .lt("criado_em", corte);
+
+  if (error) {
+    logger.error({ err: error }, "Erro ao limpar notificações antigas");
+    return 0;
+  }
+  if (count > 0) logger.info({ removidas: count }, "Notificações antigas removidas");
+  return count ?? 0;
+}
 
 export async function criarNotificacao({ tenantId, tipo, titulo, mensagem, referenciaTipo, referenciaId }) {
   const { data, error } = await supabaseAdmin

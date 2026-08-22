@@ -12,6 +12,8 @@ function mockQuery(overrides = {}) {
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     is: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     neq: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),

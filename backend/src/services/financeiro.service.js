@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { dataLocalISO } from "../utils/data.js";
 
 export async function criarContaPagar({ descricao, valor, data_vencimento, observacoes, tenantId }) {
   if (!descricao || valor == null || !data_vencimento) {
@@ -91,7 +92,7 @@ export async function deletarContaPagar(id, tenantId) {
 export async function registrarPagamentoFaturamento(id, tenantId, data_pagamento) {
   const { data, error } = await supabaseAdmin
     .from("faturamentos")
-    .update({ pago: true, data_pagamento: data_pagamento ?? new Date().toISOString().split("T")[0] })
+    .update({ pago: true, data_pagamento: data_pagamento ?? dataLocalISO() })
     .eq("faturamento_id", id)
     .eq("tenant_id", tenantId)
     .select()

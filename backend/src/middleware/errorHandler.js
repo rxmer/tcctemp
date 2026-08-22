@@ -5,6 +5,9 @@ export function errorHandler(err, _req, res, _next) {
   logger.error({ err }, err.message);
 
   if (err instanceof AppError) {
+    if (err.statusCode >= 500) {
+      return res.status(err.statusCode).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+    }
     return res.status(err.statusCode).json({ error: err.message });
   }
 
