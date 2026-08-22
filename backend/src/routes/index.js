@@ -13,6 +13,7 @@ import { configuracaoEmpresaRoutes } from "./configuracao-empresa.routes.js";
 import { relatoriosRoutes } from "./relatorios.routes.js";
 import { notificacoesRoutes } from "./notificacoes.routes.js";
 import { dashboardRoutes } from "./dashboard.routes.js";
+import { comunicadosRoutes } from "./comunicados.routes.js";
 import { chatbotRoutes } from "../chatbot/chatbot.routes.js";
 
 export const routes = Router();
@@ -31,4 +32,5 @@ routes.use("/configuracao-empresa", configuracaoEmpresaRoutes);
 routes.use("/relatorios", relatoriosRoutes);
 routes.use("/notificacoes", notificacoesRoutes);
 routes.use("/dashboard", dashboardRoutes);
+routes.use("/comunicados", comunicadosRoutes);
 routes.use("/chatbot", chatbotRoutes);

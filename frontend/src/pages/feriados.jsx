@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { datasBloqueadasService } from "../services/datas-bloqueadas.service";
 import { Input, Button, PageHeader, SkeletonCard, Card } from "../components/ui";
-import { Trash2 } from "lucide-react";
+import { Trash2, Megaphone } from "lucide-react";
 
 export function Feriados() {
   const { tenant } = useAuth();
+  const navigate = useNavigate();
   const { feedback, showFeedback } = useFeedback();
   const [datas, setDatas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,15 @@ export function Feriados() {
                 <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "var(--accent)", minWidth: 80 }}>{formatDate(d.data)}</div>
                   <div style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{d.motivo || "—"}</div>
+                  <button
+                    style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", color: "var(--accent)", display: "inline-flex", alignItems: "center" }}
+                    title="Avisar clientes no WhatsApp"
+                    onClick={() => navigate("/comunicados", {
+                      state: { mensagem: `Olá! Informamos que dia ${formatDate(d.data)} (${d.motivo || "feriado"}) estaremos fechados. Agradecemos a compreensão!` },
+                    })}
+                  >
+                    <Megaphone size={14} />
+                  </button>
                   <button style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", color: "var(--text-secondary)", display: "inline-flex", alignItems: "center" }} title="Remover" onClick={() => handleRemover(d.id)}>
                     <Trash2 size={14} />
                   </button>

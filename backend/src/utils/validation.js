@@ -100,6 +100,11 @@ export const schemas = {
     motivo: z.string().max(200).optional().nullable(),
   }),
 
+  criarComunicado: z.object({
+    mensagem: z.string().min(5, "Mensagem deve ter no mínimo 5 caracteres").max(500),
+    filtro: z.enum(["todos", "agendados", "chatbot"]).default("todos"),
+  }),
+
   upsertExpedienteDia: z.object({
     dia_semana: z.number().int().min(0).max(6),
     abertura: z.string().regex(horaRegex, "Abertura deve estar no formato HH:MM").optional().nullable(),

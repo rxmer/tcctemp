@@ -20,6 +20,7 @@ import {
   Clock,
   BarChart3,
   MessageCircle,
+  Megaphone,
   LogOut,
   Menu,
   X,
@@ -41,6 +42,7 @@ const NAV_ITEMS = [
   { icon: Settings, label: "Empresa", path: "/configuracao-empresa", adminOnly: true },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", adminOnly: true },
   { icon: MessageCircle, label: "WhatsApp", path: "/whatsapp", adminOnly: true },
+  { icon: Megaphone, label: "Comunicados", path: "/comunicados", adminOnly: true },
 ];
 
 export function AppLayout() {
