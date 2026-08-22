@@ -102,6 +102,7 @@ export function AppLayout() {
   const [mobileGrupoAberto, setMobileGrupoAberto] = useState(null);
   const [empresa, setEmpresa] = useState(null);
   const navRef = useRef(null);
+  const userRef = useRef(null);
   const hoverCloseTimer = useRef(null);
 
   function abrirNoHover(label) {
@@ -143,7 +144,9 @@ export function AppLayout() {
 
   useEffect(() => {
     function handleOutside(e) {
-      if (navRef.current && !navRef.current.contains(e.target)) {
+      const dentroNav = navRef.current && navRef.current.contains(e.target);
+      const dentroUser = userRef.current && userRef.current.contains(e.target);
+      if (!dentroNav && !dentroUser) {
         setOpenMenu(null);
         setUserMenuOpen(false);
       }
@@ -238,7 +241,7 @@ export function AppLayout() {
           <button className={styles.iconBtn} onClick={toggleTheme} title={theme === "dark" ? "Modo claro" : "Modo escuro"}>
             {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
-          <div className={styles.navGroupWrap}>
+          <div className={styles.navGroupWrap} ref={userRef}>
             <button
               className={`${styles.userBtn} ${userMenuOpen ? styles.navLinkActive : ""}`}
               onClick={() => setUserMenuOpen(!userMenuOpen)}
