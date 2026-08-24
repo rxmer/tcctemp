@@ -49,7 +49,8 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Expediente** — horários por dia da semana (admin)
 - **Feriados** — bloqueio de datas especiais (admin)
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
-- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão, transferência para atendente
+- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão, transferência para atendente, tela de conversas com histórico completo e resposta manual do atendente
+- **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas)
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
 - **Multi-tenant** — isolamento total por `tenant_id` derivado do token JWT em todas as consultas
@@ -80,6 +81,12 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 ### 2. Supabase
 
 Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`).
+
+Para o histórico de conversas do chatbot, execute também `docs/schema-chatbot-mensagens.sql`.
+
+Para a recuperação de senha funcionar, configure em **Authentication → URL Configuration**:
+- **Redirect URLs**: adicione `http://localhost:5173/**`
+- Opcional: traduza o template **Emails → Templates → Reset Password** para português (a variável `{{ .ConfirmationURL }}` é o link mágico)
 
 ### 3. Backend
 
@@ -114,11 +121,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 254 testes (18 arquivos)
-cd frontend && npm test   # 226 testes (35 arquivos)
+cd backend && npm test    # 267 testes (18 arquivos)
+cd frontend && npm test   # 270 testes (40 arquivos)
 ```
 
-> **480 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **537 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
