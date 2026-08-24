@@ -1,0 +1,124 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { Input, Button, Alert } from "../components/ui";
+import styles from "../styles/pages/Login.module.css";
+
+export function RedefinirSenha() {
+  const navigate = useNavigate();
+  const [status, setStatus] = useState("verificando");
+  const [form, setForm] = useState({ senha: "", confirmar: "" });
+  const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session) {
+        setStatus("pronto");
+      } else {
+        setStatus("invalido");
+      }
+    });
+  }, []);
+
+  const handleChange = (e) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErro("");
+
+    if (form.senha.length < 8) {
+      setErro("A senha deve ter no mínimo 8 caracteres.");
+      return;
+    }
+    if (form.senha !== form.confirmar) {
+      setErro("As senhas não coincidem.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: form.senha });
+      if (error) throw error;
+      await supabase.auth.signOut();
+      setSucesso(true);
+      setTimeout(() => navigate("/login", { replace: true }), 2500);
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={styles.splitLayout}>
+      <div className={styles.splitForm}>
+        <div className={styles.formContainer}>
+          {status === "verificando" && <p style={{ color: "var(--text-secondary)" }}>Verificando link...</p>}
+
+          {status === "invalido" && (
+            <>
+              <div className={styles.formHeader}>
+                <h1>Link inválido</h1>
+                <p>Este link de recuperação expirou ou já foi utilizado.</p>
+              </div>
+              <Button fullWidth onClick={() => navigate("/login")}>
+                Voltar para o login
+              </Button>
+            </>
+          )}
+
+          {status === "pronto" && sucesso && (
+            <>
+              <div className={styles.formHeader}>
+                <h1>Senha redefinida!</h1>
+                <p>Sua senha foi alterada com sucesso.</p>
+              </div>
+              <Alert>Faça login novamente com a nova senha. Redirecionando...</Alert>
+              <Link to="/login" className="link">Ir para o login</Link>
+            </>
+          )}
+
+          {status === "pronto" && !sucesso && (
+            <>
+              <div className={styles.formHeader}>
+                <h1>Redefinir senha</h1>
+                <p>Crie uma nova senha para sua conta</p>
+              </div>
+
+              {erro && <Alert>{erro}</Alert>}
+
+              <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
+                <Input
+                  label="Nova senha"
+                  name="senha"
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.senha}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+                <Input
+                  label="Confirmar nova senha"
+                  name="confirmar"
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.confirmar}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+                <Button type="submit" fullWidth loading={loading}>
+                  Salvar nova senha
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

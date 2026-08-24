@@ -15,6 +15,12 @@ export const funcionariosService = {
       body: JSON.stringify(data),
     }),
 
+  redefinirSenha: (id, senha) =>
+    apiFetch(`/api/funcionarios/${id}/senha`, {
+      method: "PUT",
+      body: JSON.stringify({ senha }),
+    }),
+
   deletar: (id) =>
     apiFetch(`/api/funcionarios/${id}`, {
       method: "DELETE",

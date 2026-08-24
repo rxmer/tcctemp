@@ -90,6 +90,10 @@ export const schemas = {
     telefone: z.string().max(20).optional().nullable(),
   }),
 
+  redefinirSenhaFuncionario: z.object({
+    senha: z.string().min(8, "Senha deve ter no mínimo 8 caracteres").max(100),
+  }),
+
   adicionarItemOS: z.object({
     servico_id: z.number().int().positive(),
     quantidade: z.number().int().positive().default(1),

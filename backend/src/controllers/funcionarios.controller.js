@@ -44,3 +44,10 @@ export async function deletar(req, res) {
   await funcionariosService.deletarFuncionario(id, req.tenantId, req.userId);
   res.json({ message: "Funcionário excluído com sucesso" });
 }
+
+export async function redefinirSenha(req, res) {
+  const { id } = req.params;
+  const { senha } = req.body;
+  await funcionariosService.redefinirSenha(id, senha, req.tenantId);
+  res.json({ message: "Senha redefinida com sucesso" });
+}

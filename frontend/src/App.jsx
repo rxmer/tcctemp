@@ -33,6 +33,7 @@ const WhatsAppConversas = lazy(() => import("./pages/whatsapp-conversas").then((
 const ConversaDetalhe = lazy(() => import("./pages/whatsapp-conversa-detalhe").then((m) => ({ default: m.ConversaDetalhe })));
 const Comunicados = lazy(() => import("./pages/comunicados").then((m) => ({ default: m.Comunicados })));
 const Perfil = lazy(() => import("./pages/perfil").then((m) => ({ default: m.Perfil })));
+const RedefinirSenha = lazy(() => import("./pages/redefinir-senha").then((m) => ({ default: m.RedefinirSenha })));
 
 export default function App() {
   return (
@@ -43,8 +44,9 @@ export default function App() {
             <Routes>
               {/* Rotas públicas — redirecionam para /dashboard se já autenticado */}
               <Route element={<PublicRoute />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
               </Route>
 
               {/* Rotas autenticadas */}

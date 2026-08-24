@@ -36,6 +36,7 @@ const mockFrom = vi.fn((table) => buildQuery({ data: [], error: null }));
 const mockAuthAdmin = {
   createUser: vi.fn(),
   deleteUser: vi.fn(),
+  updateUserById: vi.fn(),
 };
 
 vi.mock("../config/supabase.js", () => ({

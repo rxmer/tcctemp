@@ -7,6 +7,11 @@ vi.mock("../context/useAuth", () => ({
   useAuth: vi.fn(),
 }));
 
+const mockResetPasswordForEmail = vi.fn();
+vi.mock("../lib/supabase", () => ({
+  supabase: { auth: { resetPasswordForEmail: (...args) => mockResetPasswordForEmail(...args) } },
+}));
+
 vi.mock("../styles/pages/Login.module.css", () => ({
   default: {
     splitLayout: "splitLayout",
@@ -107,5 +112,36 @@ describe("Login page", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Network error");
     });
+  });
+
+  it("abre formulario de recuperacao ao clicar em esqueci minha senha", () => {
+    renderLogin();
+    fireEvent.click(screen.getByText(/esqueci minha senha/i));
+    expect(screen.getByText(/recuperar senha/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enviar link de recuperação/i })).toBeInTheDocument();
+  });
+
+  it("envia email de recuperacao", async () => {
+    mockResetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+    renderLogin();
+
+    fireEvent.click(screen.getByText(/esqueci minha senha/i));
+    fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "teste@test.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /enviar link de recuperação/i }));
+
+    await waitFor(() => {
+      expect(mockResetPasswordForEmail).toHaveBeenCalledWith(
+        "teste@test.com",
+        expect.objectContaining({ redirectTo: expect.stringContaining("/redefinir-senha") })
+      );
+      expect(screen.getByText(/link de recuperação/i)).toBeInTheDocument();
+    });
+  });
+
+  it("volta para o login a partir da recuperacao", () => {
+    renderLogin();
+    fireEvent.click(screen.getByText(/esqueci minha senha/i));
+    fireEvent.click(screen.getByText(/voltar para o login/i));
+    expect(screen.getByText(/bem-vindo de volta/i)).toBeInTheDocument();
   });
 });

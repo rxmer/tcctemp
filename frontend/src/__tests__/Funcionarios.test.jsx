@@ -5,9 +5,10 @@ import { Funcionario } from "../pages/funcionarios";
 
 vi.mock("../context/useAuth", () => ({ useAuth: vi.fn() }));
 vi.mock("../services/funcionarios.service", () => ({
-  funcionariosService: { criar: vi.fn(), listar: vi.fn() },
+  funcionariosService: { criar: vi.fn(), listar: vi.fn(), redefinirSenha: vi.fn(), deletar: vi.fn(), atualizar: vi.fn() },
 }));
 vi.mock("../hooks/useFeedback", () => ({ useFeedback: vi.fn() }));
+vi.mock("../hooks/useConfirm", () => ({ useConfirm: vi.fn() }));
 vi.mock("../styles/pages/funcionarios.module.css", () => ({
   default: {
     funcGrid: "funcGrid", formCard: "formCard", cardHeader: "cardHeader", funcForm: "funcForm",
@@ -19,6 +20,7 @@ vi.mock("../styles/pages/funcionarios.module.css", () => ({
 import { useAuth } from "../context/useAuth";
 import { funcionariosService } from "../services/funcionarios.service";
 import { useFeedback } from "../hooks/useFeedback";
+import { useConfirm } from "../hooks/useConfirm";
 
 function renderPage() {
   return render(<MemoryRouter><Funcionario /></MemoryRouter>);
@@ -31,6 +33,7 @@ describe("Funcionario page", () => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ tenant: { id: "t1", nome: "Esteticar" } });
     useFeedback.mockReturnValue({ feedback: null, showFeedback: mockShowFeedback });
+    useConfirm.mockReturnValue({ confirm: vi.fn().mockResolvedValue(true), ConfirmModal: () => null });
     funcionariosService.listar.mockResolvedValue([]);
   });
 
@@ -86,5 +89,51 @@ describe("Funcionario page", () => {
     fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
     await waitFor(() => { expect(mockShowFeedback).toHaveBeenCalledWith("error", "Erro ao criar"); });
+  });
+
+  it("redefine senha de um funcionario pelo modal", async () => {
+    useConfirm.mockReturnValue({ confirm: vi.fn(), ConfirmModal: () => null });
+    funcionariosService.listar.mockResolvedValue([
+      { id: "f1", nome: "João", email: "joao@test.com", perfil: "funcionario" },
+    ]);
+    funcionariosService.redefinirSenha.mockResolvedValue({ id: "f1" });
+
+    renderPage();
+    await waitFor(() => { expect(screen.getByText("João")).toBeInTheDocument(); });
+
+    fireEvent.click(screen.getByTitle("Redefinir senha"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(dialog.querySelector('input[name="senha"]'), { target: { value: "novaSenha123" } });
+    fireEvent.change(dialog.querySelector('input[name="confirmar"]'), { target: { value: "novaSenha123" } });
+    fireEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+
+    await waitFor(() => {
+      expect(funcionariosService.redefinirSenha).toHaveBeenCalledWith("f1", "novaSenha123");
+      expect(mockShowFeedback).toHaveBeenCalledWith("success", expect.stringContaining("redefinida"));
+    });
+  });
+
+  it("valida senhas diferentes no modal de reset", async () => {
+    useConfirm.mockReturnValue({ confirm: vi.fn(), ConfirmModal: () => null });
+    funcionariosService.listar.mockResolvedValue([
+      { id: "f1", nome: "João", email: "joao@test.com", perfil: "funcionario" },
+    ]);
+
+    renderPage();
+    await waitFor(() => { expect(screen.getByText("João")).toBeInTheDocument(); });
+
+    fireEvent.click(screen.getByTitle("Redefinir senha"));
+
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(dialog.querySelector('input[name="senha"]'), { target: { value: "abc12345" } });
+    fireEvent.change(dialog.querySelector('input[name="confirmar"]'), { target: { value: "xyz98765" } });
+    fireEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+
+    await waitFor(() => {
+      expect(mockShowFeedback).toHaveBeenCalledWith("error", "As senhas não coincidem");
+    });
+    expect(funcionariosService.redefinirSenha).not.toHaveBeenCalled();
   });
 });

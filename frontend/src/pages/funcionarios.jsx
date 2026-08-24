@@ -4,7 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { funcionariosService } from "../services/funcionarios.service";
 import { Input, Button, PageHeader } from "../components/ui";
 import { Card, CardHeader, styles as crud } from "../components/crud";
-import { Users, ShieldCheck, Pencil, Trash2, X, Check } from "lucide-react";
+import { Users, ShieldCheck, Pencil, Trash2, X, Check, KeyRound } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
 
 export function Funcionario() {
@@ -24,6 +24,9 @@ export function Funcionario() {
   const [loadingList, setLoadingList] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editNome, setEditNome] = useState("");
+  const [resetFunc, setResetFunc] = useState(null);
+  const [resetForm, setResetForm] = useState({ senha: "", confirmar: "" });
+  const [resetSaving, setResetSaving] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -104,6 +107,40 @@ export function Funcionario() {
     }
   }
 
+  function abrirReset(f) {
+    setResetFunc(f);
+    setResetForm({ senha: "", confirmar: "" });
+  }
+
+  function fecharReset() {
+    setResetFunc(null);
+    setResetForm({ senha: "", confirmar: "" });
+  }
+
+  async function handleSalvarReset(e) {
+    e.preventDefault();
+
+    if (resetForm.senha.length < 8) {
+      showFeedback("error", "Senha deve ter no mínimo 8 caracteres");
+      return;
+    }
+    if (resetForm.senha !== resetForm.confirmar) {
+      showFeedback("error", "As senhas não coincidem");
+      return;
+    }
+
+    try {
+      setResetSaving(true);
+      await funcionariosService.redefinirSenha(resetFunc.id, resetForm.senha);
+      showFeedback("success", `Senha de ${resetFunc.nome} redefinida!`);
+      fecharReset();
+    } catch (err) {
+      showFeedback("error", err.message);
+    } finally {
+      setResetSaving(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -119,6 +156,42 @@ export function Funcionario() {
 
       {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
       <ConfirmDialog />
+
+      {resetFunc && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+          onClick={fecharReset}
+        >
+          <div style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-md)", padding: 24, width: "min(420px, calc(100vw - 32px))", border: "1px solid var(--border)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 18 }}>Redefinir senha</h3>
+              <button type="button" onClick={fecharReset} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}>
+                <X size={18} />
+              </button>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 0 }}>
+              Defina uma nova senha para <strong>{resetFunc.nome}</strong> ({resetFunc.email}).
+            </p>
+
+            <form onSubmit={handleSalvarReset} style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+              <Input label="Nova senha" name="senha" type="password" placeholder="********"
+                value={resetForm.senha}
+                onChange={(e) => setResetForm((f) => ({ ...f, senha: e.target.value }))}
+                required autoComplete="new-password" />
+              <Input label="Confirmar nova senha" name="confirmar" type="password" placeholder="********"
+                value={resetForm.confirmar}
+                onChange={(e) => setResetForm((f) => ({ ...f, confirmar: e.target.value }))}
+                required autoComplete="new-password" />
+              <div style={{ display: "flex", gap: 10 }}>
+                <Button type="submit" fullWidth loading={resetSaving}>Salvar</Button>
+                <Button type="button" variant="ghost" fullWidth onClick={fecharReset}>Cancelar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className={crud.pageGrid + " responsiveGrid"} style={{ gridTemplateColumns: "1fr 1.5fr" }}>
         <Card>
@@ -170,6 +243,9 @@ export function Funcionario() {
                           <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{f.email}</div>
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
+                          <button type="button" onClick={() => abrirReset(f)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }} title="Redefinir senha">
+                            <KeyRound size={16} />
+                          </button>
                           <button type="button" onClick={() => { setEditingId(f.id); setEditNome(f.nome); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent)" }} title="Editar">
                             <Pencil size={16} />
                           </button>

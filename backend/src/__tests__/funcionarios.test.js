@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { supabaseAdmin } from "../config/supabase.js";
-import { criarFuncionario, listarFuncionarios, atualizarFuncionario, deletarFuncionario } from "../services/funcionarios.service.js";
+import { criarFuncionario, listarFuncionarios, atualizarFuncionario, deletarFuncionario, redefinirSenha } from "../services/funcionarios.service.js";
 
 function mockQuery(overrides = {}) {
   return {
@@ -152,6 +152,48 @@ describe("funcionariosService", () => {
 
     it("deve bloquear exclusao da propria conta", async () => {
       await expect(deletarFuncionario("admin-1", TENANT_ID, "admin-1")).rejects.toThrow("própria conta");
+    });
+  });
+
+  describe("redefinirSenha", () => {
+    it("deve redefinir senha do funcionario", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1", perfil: "funcionario" }, error: null }),
+      }));
+      supabaseAdmin.auth.admin.updateUserById.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+
+      const result = await redefinirSenha("user-1", "novasenha123", TENANT_ID);
+
+      expect(result.id).toBe("user-1");
+      expect(supabaseAdmin.auth.admin.updateUserById).toHaveBeenCalledWith("user-1", { password: "novasenha123" });
+    });
+
+    it("deve lancar erro se updateUserById falhar", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1", perfil: "funcionario" }, error: null }),
+      }));
+      supabaseAdmin.auth.admin.updateUserById.mockResolvedValue({
+        data: null,
+        error: new Error("Auth error"),
+      });
+
+      await expect(redefinirSenha("user-1", "novasenha123", TENANT_ID)).rejects.toThrow("Erro ao redefinir senha");
+    });
+
+    it("deve lancar 404 se funcionario nao existe", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }));
+
+      await expect(redefinirSenha("inexistente", "novasenha123", TENANT_ID)).rejects.toThrow("Funcionário não encontrado");
+    });
+
+    it("deve bloquear redefinicao de conta admin", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "admin-1", perfil: "admin" }, error: null }),
+      }));
+
+      await expect(redefinirSenha("admin-1", "novasenha123", TENANT_ID)).rejects.toThrow("administrador");
     });
   });
 });

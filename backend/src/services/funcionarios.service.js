@@ -90,6 +90,17 @@ async function garantirFuncionarioDoTenant(id, tenantId) {
   }
 }
 
+export async function redefinirSenha(id, senha, tenantId) {
+  await garantirFuncionarioDoTenant(id, tenantId);
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(id, {
+    password: senha,
+  });
+
+  if (error) throw new AppError(`Erro ao redefinir senha: ${error.message}`);
+  return { id };
+}
+
 export async function deletarFuncionario(id, tenantId, solicitanteId) {
   if (id === solicitanteId) {
     throw new AppError("Não é possível excluir a sua própria conta", 400);

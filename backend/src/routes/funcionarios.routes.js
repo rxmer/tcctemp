@@ -10,4 +10,5 @@ funcionariosRoutes.use(authenticate);
 funcionariosRoutes.post("/", requireAdmin, validateBody("criarFuncionario"), funcionariosController.criar);
 funcionariosRoutes.get("/", requireAdmin, funcionariosController.listar);
 funcionariosRoutes.put("/:id", requireAdmin, funcionariosController.atualizar);
+funcionariosRoutes.put("/:id/senha", requireAdmin, validateBody("redefinirSenhaFuncionario"), funcionariosController.redefinirSenha);
 funcionariosRoutes.delete("/:id", requireAdmin, funcionariosController.deletar);
