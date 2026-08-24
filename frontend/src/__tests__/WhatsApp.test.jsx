@@ -53,6 +53,21 @@ describe("WhatsApp page", () => {
     });
   });
 
+  it("exibe o numero formatado quando conectado", async () => {
+    whatsappService.getStatus.mockResolvedValue({ status: "connected", phoneNumber: "5511988887777" });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("+55 (11) 98888-7777")).toBeInTheDocument();
+    });
+  });
+
+  it("nao exibe numero quando desconectado", async () => {
+    whatsappService.getStatus.mockResolvedValue({ status: "disconnected", phoneNumber: null });
+    renderPage();
+    await waitFor(() => { expect(screen.getByText("Desconectado")).toBeInTheDocument(); });
+    expect(screen.queryByText(/^\+\d/)).not.toBeInTheDocument();
+  });
+
   it("exibe status aguardando QR", async () => {
     whatsappService.getStatus.mockResolvedValue({ status: "awaiting_qr", qr: "data:image/png;base64,abc" });
     renderPage();

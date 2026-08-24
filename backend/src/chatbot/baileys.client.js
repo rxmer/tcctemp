@@ -21,12 +21,14 @@ let connectionState = {
   qrCode: null,
   error: null,
   lastDisconnectReason: null,
+  phoneNumber: null,
 };
 
 let onMessageHandler = null;
 let intentionalDisconnect = false;
 let socketId = 0;
 let desconexaoNotificada = false;
+let ciclosLimpezaAuth = 0;
 
 function notificarDesconexao(tenantId, mensagem) {
   if (!tenantId || desconexaoNotificada) return;
@@ -74,6 +76,7 @@ export async function startBaileys(tenantId) {
 
   const thisSocketId = ++socketId;
   let pairingCompleted = false;
+  let conectouNestaSessao = false;
 
   socket = makeWASocket({
     auth: {
@@ -90,6 +93,10 @@ export async function startBaileys(tenantId) {
     qrTimeout: 120000,
     fireInitQueries: false,
   });
+
+  connectionState.status = "connecting";
+  connectionState.error = null;
+  connectionState.qrCode = null;
 
   socket.ev.on("connection.update", async ({ connection, lastDisconnect, qr, isNewLogin }) => {
     if (thisSocketId !== socketId) {
@@ -119,9 +126,14 @@ export async function startBaileys(tenantId) {
       connectionState.status = "connected";
       connectionState.qrCode = null;
       connectionState.error = null;
+      connectionState.phoneNumber = socket?.user?.id
+        ? socket.user.id.split("@")[0].split(":")[0].replace(/\D/g, "")
+        : null;
       pairingCompleted = false;
+      conectouNestaSessao = true;
+      ciclosLimpezaAuth = 0;
       desconexaoNotificada = false;
-      logger.info("Baileys conectado com sucesso");
+      logger.info({ numero: connectionState.phoneNumber }, "Baileys conectado com sucesso");
     }
 
     if (connection === "close") {
@@ -129,6 +141,7 @@ export async function startBaileys(tenantId) {
       intentionalDisconnect = false;
 
       connectionState.qrCode = null;
+      connectionState.phoneNumber = null;
 
       if (wasIntentional) {
         connectionState.status = "disconnected";
@@ -147,6 +160,20 @@ export async function startBaileys(tenantId) {
         "Conexão fechada - analisando motivo");
 
       if (isLoggedOut || isConnectionReplaced) {
+        if (isLoggedOut && !conectouNestaSessao && ciclosLimpezaAuth < 3) {
+          ciclosLimpezaAuth++;
+          try {
+            fs.rmSync(authDir, { recursive: true, force: true });
+          } catch {}
+          connectionState.status = "connecting";
+          connectionState.error = null;
+          logger.info(
+            "Credenciais salvas rejeitadas ao iniciar (401) - limpando auth e gerando novo QR Code automaticamente"
+          );
+          setTimeout(() => startBaileys(tenantId), 1500);
+          return;
+        }
+
         connectionState.status = "disconnected";
         connectionState.error = isLoggedOut
           ? "Desconectado do WhatsApp. Clique em Conectar para gerar novo QR Code."
@@ -270,6 +297,8 @@ export async function stopBaileys(keepState = false) {
       status: "disconnected",
       qrCode: null,
       error: null,
+      lastDisconnectReason: null,
+      phoneNumber: null,
     };
   }
 }

@@ -14,6 +14,19 @@ const STATUS_LABELS = {
   connecting: { label: "Conectando...", cls: styles.reconnecting },
 };
 
+function formatarNumero(num) {
+  const d = String(num).replace(/\D/g, "");
+  if (d.startsWith("55") && d.length >= 12 && d.length <= 13) {
+    const rest = d.slice(2);
+    const ddd = rest.slice(0, 2);
+    const tel = rest.slice(2);
+    return tel.length >= 9
+      ? `+55 (${ddd}) ${tel.slice(0, 5)}-${tel.slice(5)}`
+      : `+55 (${ddd}) ${tel.slice(0, 4)}-${tel.slice(4)}`;
+  }
+  return `+${d}`;
+}
+
 export function WhatsApp() {
   const [state, setState] = useState({ status: "disconnected" });
   const [loading, setLoading] = useState(false);
@@ -55,6 +68,7 @@ export function WhatsApp() {
       setLoading(true);
       await whatsappService.connect();
       showFeedback("success", "Conectando ao WhatsApp...");
+      setState((prev) => ({ ...prev, status: "connecting" }));
       await carregarStatus();
       setTimeout(() => { if (mounted.current) carregarStatus(); }, 600);
       setTimeout(() => { if (mounted.current) carregarStatus(); }, 1500);
@@ -117,7 +131,7 @@ export function WhatsApp() {
               <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
                 <Loader2 size={48} className="spin" />
                 <p style={{ fontSize: 16, marginTop: 8 }}>
-                  Pareamento concluído, conectando...
+                  Conectando ao WhatsApp...
                 </p>
               </div>
             ) : (
@@ -163,8 +177,8 @@ export function WhatsApp() {
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Número conectado</span>
               <span className={styles.infoValue}>
-                {state.status === "connected"
-                  ? "Conectado"
+                {state.phoneNumber
+                  ? formatarNumero(state.phoneNumber)
                   : "—"}
               </span>
             </div>
