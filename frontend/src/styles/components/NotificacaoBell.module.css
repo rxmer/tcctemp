@@ -38,9 +38,9 @@
 }
 
 .dropdown {
-  position: fixed;
-  top: 56px;
-  left: 16px;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
   width: min(340px, calc(100vw - 32px));
   max-height: 420px;
   background: linear-gradient(135deg, var(--bg-surface) 0%, #0f0f0f 100%);

@@ -35,20 +35,26 @@
   letter-spacing: 0.05em;
 }
 
+.dashContent {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
 .statGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 20px;
 }
 
 .statCard {
   background: linear-gradient(135deg, var(--bg-surface) 0%, #0f0f0f 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 22px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   position: relative;
   overflow: hidden;
   transition: all var(--transition);
@@ -84,7 +90,7 @@
 
 .statValue {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -97,9 +103,29 @@
   font-weight: 500;
 }
 
-.quickActions {
+.lowerGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.quickCol {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, #0f0f0f 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 26px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+}
+
+.quickCol .quickBtn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.quickCol .quickBtn + .quickBtn {
+  margin-top: 12px;
 }
 
 .quickBtn {
@@ -128,7 +154,7 @@
   background: linear-gradient(135deg, var(--bg-surface) 0%, #0f0f0f 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 22px;
+  padding: 26px;
 }
 
 .sectionTitle {
@@ -294,4 +320,31 @@
   background: rgba(217, 119, 6, 0.1);
   color: #d97706;
   border-color: rgba(217, 119, 6, 0.2);
+}
+
+/* -- RESPONSIVO ---------------------------------------------- */
+@media (max-width: 1024px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lowerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashContent {
+    gap: 20px;
+  }
+
+  .statCard,
+  .proximosSection,
+  .quickCol {
+    padding: 22px;
+  }
 }

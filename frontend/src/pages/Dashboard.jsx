@@ -94,55 +94,60 @@ export function Dashboard() {
         }
       />
 
-      <div className={styles.statGrid}>
-        {STATS.map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statIcon}><s.icon size={22} /></div>
-            <div className={styles.statValue}>{s.value}</div>
-            <div className={styles.statLabel}>{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <div className={styles.dashContent}>
+        <div className={styles.statGrid}>
+          {STATS.map((s) => (
+            <div key={s.label} className={styles.statCard}>
+              <div className={styles.statIcon}><s.icon size={22} /></div>
+              <div className={styles.statValue}>{s.value}</div>
+              <div className={styles.statLabel}>{s.label}</div>
+            </div>
+          ))}
+        </div>
 
-      <div className={styles.quickActions}>
-        <button className={styles.quickBtn} onClick={() => navigate("/agendamentos")}>
-          <CalendarPlus size={20} />
-          <span>Novo Agendamento</span>
-        </button>
-        <button className={styles.quickBtn} onClick={() => navigate("/clientes")}>
-          <UserPlus size={20} />
-          <span>Novo Cliente</span>
-        </button>
-      </div>
-
-      <div className={styles.proximosSection}>
-        <h3 className={styles.sectionTitle}>Próximos Agendamentos</h3>
-        {stats?.proximos_agendamentos?.length > 0 ? (
-          <div className={styles.proximosList}>
-            {stats.proximos_agendamentos.map((ag) => (
-              <div key={ag.agendamento_id} className={styles.proximoCard}>
-                <div className={styles.proximoTime}>
-                  <div>{ag.hora_agendamento?.slice(0, 5)}</div>
-                  <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.7 }}>{formatDate(ag.data_agendamento)}</div>
-                </div>
-                <div className={styles.proximoInfo}>
-                  <div className={styles.proximoCliente}>{ag.cliente?.nome ?? "Cliente"}</div>
-                  <div className={styles.proximoDetalhe}>
-                    {ag.servico?.nome_servico} · {ag.veiculo ? `${ag.veiculo.marca} ${ag.veiculo.modelo}` : "—"}
+        <div className={styles.lowerGrid}>
+          <div className={styles.proximosSection}>
+            <h3 className={styles.sectionTitle}>Próximos Agendamentos</h3>
+            {stats?.proximos_agendamentos?.length > 0 ? (
+              <div className={styles.proximosList}>
+                {stats.proximos_agendamentos.map((ag) => (
+                  <div key={ag.agendamento_id} className={styles.proximoCard}>
+                    <div className={styles.proximoTime}>
+                      <div>{ag.hora_agendamento?.slice(0, 5)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.7 }}>{formatDate(ag.data_agendamento)}</div>
+                    </div>
+                    <div className={styles.proximoInfo}>
+                      <div className={styles.proximoCliente}>{ag.cliente?.nome ?? "Cliente"}</div>
+                      <div className={styles.proximoDetalhe}>
+                        {ag.servico?.nome_servico} · {ag.veiculo ? `${ag.veiculo.marca} ${ag.veiculo.modelo}` : "—"}
+                      </div>
+                    </div>
+                    <span className={`${styles.proximoStatus} ${ag.status === "confirmado" ? styles.statusConfirmado : styles.statusPendente}`}>
+                      {ag.status === "confirmado" ? "Confirmado" : "Pendente"}
+                    </span>
                   </div>
-                </div>
-                <span className={`${styles.proximoStatus} ${ag.status === "confirmado" ? styles.statusConfirmado : styles.statusPendente}`}>
-                  {ag.status === "confirmado" ? "Confirmado" : "Pendente"}
-                </span>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className={styles.emptyProximos}>
+                <Clock size={20} />
+                <p>Nenhum agendamento próximo.</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className={styles.emptyProximos}>
-            <Clock size={20} />
-            <p>Nenhum agendamento próximo.</p>
-          </div>
-        )}
+
+          <aside className={styles.quickCol}>
+            <h3 className={styles.sectionTitle}>Ações rápidas</h3>
+            <button className={styles.quickBtn} onClick={() => navigate("/agendamentos")}>
+              <CalendarPlus size={20} />
+              <span>Novo Agendamento</span>
+            </button>
+            <button className={styles.quickBtn} onClick={() => navigate("/clientes")}>
+              <UserPlus size={20} />
+              <span>Novo Cliente</span>
+            </button>
+          </aside>
+        </div>
       </div>
     </>
   );
