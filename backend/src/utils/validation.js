@@ -65,7 +65,7 @@ export const schemas = {
 
   criarAgendamento: agendamentoBase,
   atualizarAgendamento: agendamentoBase.partial().extend({
-    status: z.enum(["agendado", "confirmado", "em_andamento", "concluido", "cancelado"]).optional(),
+    status: z.enum(["pendente", "confirmado", "em_andamento", "finalizado", "cancelado", "falta"]).optional(),
   }),
 
   login: z.object({
@@ -146,3 +146,4 @@ export function validate(schema, data) {
   }
   return result.data;
 }
+

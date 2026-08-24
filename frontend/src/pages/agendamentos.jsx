@@ -9,7 +9,7 @@ import { servicosService } from "../services/servicos.service";
 import { Input, Button, PageHeader, Pagination, Calendar, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import styles from "../styles/pages/agendamentos.module.css";
-import { List, CalendarDays, Pencil, Trash2, CheckCircle2, Play, CheckSquare, XCircle, ArrowRight, Smartphone, Clock } from "lucide-react";
+import { List, CalendarDays, Pencil, Trash2, CheckCircle2, Play, CheckSquare, XCircle, UserX, ArrowRight, Smartphone, Clock } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
 
 const STATUS_MAP = {
@@ -18,14 +18,16 @@ const STATUS_MAP = {
   em_andamento: "Em andamento",
   finalizado: "Finalizado",
   cancelado: "Cancelado",
+  falta: "Faltou",
 };
 
 const PROXIMOS_STATUS = {
   pendente: ["confirmado", "cancelado"],
-  confirmado: ["em_andamento", "cancelado"],
+  confirmado: ["em_andamento", "cancelado", "falta"],
   em_andamento: ["finalizado"],
   finalizado: [],
   cancelado: [],
+  falta: [],
 };
 
 const formInitial = {
@@ -474,7 +476,8 @@ export function Agendamentos() {
                                       {ns === "confirmado" ? <CheckCircle2 size={14} /> :
                                        ns === "em_andamento" ? <Play size={14} /> :
                                        ns === "finalizado" ? <CheckSquare size={14} /> :
-                                       ns === "cancelado" ? <XCircle size={14} /> : <ArrowRight size={14} />}
+                                       ns === "cancelado" ? <XCircle size={14} /> :
+                                       ns === "falta" ? <UserX size={14} /> : <ArrowRight size={14} />}
                                     </button>
                                   ))}
                                   <button className={`${crud.actionBtn} ${crud.actionDelete}`} title="Remover" onClick={() => handleDelete(ag)}><Trash2 size={14} /></button>

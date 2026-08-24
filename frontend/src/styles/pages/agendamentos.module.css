@@ -223,6 +223,11 @@
   color: #b91c1c;
 }
 
+.status_falta {
+  background: rgba(249, 115, 22, 0.1);
+  color: #c2410c;
+}
+
 .actionBtns {
   display: flex;
   gap: 4px;
@@ -267,6 +272,11 @@
 .act_cancelado:hover {
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
+}
+
+.act_falta:hover {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
 }
 
 .loadingState,

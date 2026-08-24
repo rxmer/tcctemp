@@ -142,3 +142,45 @@
     right: -20px;
   }
 }
+
+.acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btnFalta,
+.btnAbrir {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnFalta {
+  background: rgba(249, 115, 22, 0.12);
+  color: #c2410c;
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.btnFalta:hover:not(:disabled) {
+  background: rgba(249, 115, 22, 0.2);
+}
+
+.btnFalta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnAbrir {
+  background: transparent;
+  color: inherit;
+  border-color: var(--border, #d1d5db);
+}
+
+.btnAbrir:hover {
+  background: rgba(107, 114, 128, 0.1);
+}

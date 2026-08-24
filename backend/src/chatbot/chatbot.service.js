@@ -354,6 +354,7 @@ async function criarAgendamentoViaChat(session, stateData) {
       tenantId: session.tenant_id,
       criadoPor: adminUser.id,
       fonte: "WhatsApp",
+      status: "confirmado",
     });
 
     return data;

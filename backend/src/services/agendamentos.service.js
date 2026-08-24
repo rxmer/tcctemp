@@ -6,10 +6,11 @@ import { dataLocalISO } from "../utils/data.js";
 
 const STATUS_FLOW = {
   pendente: ["confirmado", "cancelado"],
-  confirmado: ["em_andamento", "cancelado"],
+  confirmado: ["em_andamento", "cancelado", "falta"],
   em_andamento: ["finalizado"],
   finalizado: [],
   cancelado: [],
+  falta: [],
 };
 
 function converterHoraParaMinutos(horaStr) {
@@ -80,7 +81,7 @@ export async function listarAgendamentosCliente(tenantId, clienteId, statusFilte
   return data ?? [];
 }
 
-export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes, tenantId, criadoPor, fonte }) {
+export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes, tenantId, criadoPor, fonte, status }) {
   const hoje = dataLocalISO();
   if (data_agendamento < hoje) {
     throw new AppError("Não é possível agendar para uma data passada", 400);
@@ -165,6 +166,7 @@ export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, dat
       observacoes,
       tenant_id: tenantId,
       criado_por: criadoPor,
+      ...(status ? { status } : {}),
     })
     .select("*, cliente:clientes(*), veiculo:veiculos(*), servico:servico(*)")
     .single();
@@ -379,8 +381,17 @@ export async function atualizarAgendamento(id, tenantId, updates) {
 
   if (error) throw new AppError(`Erro ao atualizar agendamento: ${error.message}`);
 
+  if (updates.status && current.status === "confirmado" && updates.status !== "confirmado") {
+    await supabaseAdmin
+      .from("notificacoes")
+      .delete()
+      .eq("tenant_id", tenantId)
+      .eq("tipo", "revisao_agendamento_passado")
+      .eq("referencia_id", String(id));
+  }
+
   if (updates.status) {
-    const statusLabel = { pendente: "Pendente", confirmado: "Confirmado", em_andamento: "Em andamento", finalizado: "Finalizado", cancelado: "Cancelado" };
+    const statusLabel = { pendente: "Pendente", confirmado: "Confirmado", em_andamento: "Em andamento", finalizado: "Finalizado", cancelado: "Cancelado", falta: "Faltou" };
     const nomeRel = data.cliente?.nome ? `para ${data.cliente.nome}` : "";
     criarNotificacao({
       tenantId,

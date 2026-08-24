@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { notificacoesService } from "../services/notificacoes.service";
+import { agendamentosService } from "../services/agendamentos.service";
 import styles from "../styles/components/NotificacaoBell.module.css";
 
 export function NotificacaoBell() {
   const [notificacoes, setNotificacoes] = useState([]);
   const [contagem, setContagem] = useState(0);
   const [aberto, setAberto] = useState(false);
+  const [processando, setProcessando] = useState(null);
+  const navigate = useNavigate();
   const ref = useRef(null);
 
   async function carregar() {
@@ -54,6 +58,29 @@ export function NotificacaoBell() {
     } catch {
       // ignorado
     }
+  }
+
+  async function handleMarcarFalta(n) {
+    setProcessando(n.notificacao_id);
+    try {
+      await agendamentosService.atualizar(n.referencia_id, { status: "falta" });
+      setNotificacoes((prev) => prev.filter((x) => x.notificacao_id !== n.notificacao_id));
+      if (!n.lida) setContagem((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      if (/não é permitido mudar de "falta"/i.test(err.message || "")) {
+        setNotificacoes((prev) => prev.filter((x) => x.notificacao_id !== n.notificacao_id));
+        if (!n.lida) setContagem((prev) => Math.max(0, prev - 1));
+      } else {
+        alert(err.message || "Não foi possível marcar a falta.");
+      }
+    } finally {
+      setProcessando(null);
+    }
+  }
+
+  function abrirAgenda() {
+    setAberto(false);
+    navigate("/agendamentos");
   }
 
   async function handleMarcarTodas() {
@@ -159,6 +186,20 @@ export function NotificacaoBell() {
                 >
                   <div className={styles.itemTitulo}>{n.titulo}</div>
                   <div className={styles.itemMsg}>{n.mensagem}</div>
+                  {n.tipo === "revisao_agendamento_passado" && (
+                    <div className={styles.acoes} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className={styles.btnFalta}
+                        disabled={processando === n.notificacao_id}
+                        onClick={() => handleMarcarFalta(n)}
+                      >
+                        {processando === n.notificacao_id ? "Salvando..." : "Cliente faltou"}
+                      </button>
+                      <button className={styles.btnAbrir} onClick={abrirAgenda}>
+                        Ver agenda
+                      </button>
+                    </div>
+                  )}
                   <div className={styles.itemTempo}>{formatTempo(n.criado_em)}</div>
                 </div>
               ))

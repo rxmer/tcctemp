@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import { sendWhatsAppMessage, getConnectionState } from "../chatbot/baileys.client.js";
 import { dataLocalISO } from "../utils/data.js";
+import { criarNotificacao } from "./notificacoes.service.js";
 
 function formatDateBR(dateStr) {
   if (!dateStr) return "";
@@ -67,7 +68,11 @@ export async function verificarEEnviarLembretes() {
       .eq("ativo", true)
       .maybeSingle();
 
-    if (sessError || !session) continue;
+    if (sessError) {
+      logger.warn({ err: sessError }, "Erro ao buscar sessão do chatbot para lembrete");
+    }
+
+    const jid = session?.remote_jid ?? `55${phone}@s.whatsapp.net`;
 
     const msg = [
       "🕐 *Lembrete de Agendamento*",
@@ -81,7 +86,7 @@ export async function verificarEEnviarLembretes() {
     ].join("\n");
 
     try {
-      await sendWhatsAppMessage(session.remote_jid, msg);
+      await sendWhatsAppMessage(jid, msg);
       await supabaseAdmin
         .from("agendamentos")
         .update({ lembrete_enviado: new Date().toISOString(), lembrete_tentativas: 0 })
@@ -96,6 +101,21 @@ export async function verificarEEnviarLembretes() {
         .update({ lembrete_tentativas: novasTentativas })
         .eq("agendamento_id", ag.agendamento_id)
         .eq("tenant_id", tenantId);
+
+      if (novasTentativas >= MAX_TENTATIVAS) {
+        criarNotificacao({
+          tenantId,
+          tipo: "lembrete_falha",
+          titulo: "Lembrete não entregue",
+          mensagem: `Não foi possível avisar ${ag.cliente?.nome ?? "o cliente"} (${
+            ag.cliente?.telefone ?? "sem telefone"
+          }) sobre o agendamento de ${formatDateBR(ag.data_agendamento)} às ${ag.hora_agendamento.slice(0, 5)} após ${MAX_TENTATIVAS} tentativas. Vale ligar para o cliente.`,
+          referenciaTipo: "agendamento",
+          referenciaId: String(ag.agendamento_id),
+        }).catch((notifyErr) =>
+          logger.error({ err: notifyErr }, "Erro ao notificar falha de lembrete")
+        );
+      }
     }
   }
 }

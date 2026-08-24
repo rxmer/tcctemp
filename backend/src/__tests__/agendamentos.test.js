@@ -10,7 +10,7 @@ function q(overrides = {}) {
     not: vi.fn().mockReturnThis(), neq: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(), lte: vi.fn().mockReturnThis(),
     lt: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
-    range: vi.fn().mockReturnThis(),
+    range: vi.fn().mockReturnThis(), delete: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
     then: (resolve) => resolve({ data: [], error: null, count: 0 }),
@@ -93,6 +93,25 @@ describe("agendamentoService", () => {
         return q({ single: vi.fn().mockResolvedValue(cc === 1 ? { data: { status: "pendente", data_agendamento: "2099-01-01", hora_agendamento: "10:00", servico_id: 1 }, error: null } : { data: { status: "confirmado", cliente: { nome: "João" } }, error: null }) });
       });
       expect((await agendamentoService.atualizarAgendamento(1, "t1", { status: "confirmado" })).status).toBe("confirmado");
+    });
+
+    it("deve permitir confirmado->falta", async () => {
+      let cc = 0;
+      const deletarNotificacao = vi.fn().mockReturnThis();
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "notificacoes") {
+          return q({ delete: deletarNotificacao });
+        }
+        cc++;
+        return q({ single: vi.fn().mockResolvedValue(cc === 1 ? { data: { status: "confirmado", data_agendamento: "2020-01-01", hora_agendamento: "10:00", servico_id: 1 }, error: null } : { data: { status: "falta", cliente: { nome: "João" } }, error: null }) });
+      });
+      expect((await agendamentoService.atualizarAgendamento(1, "t1", { status: "falta" })).status).toBe("falta");
+      expect(deletarNotificacao).toHaveBeenCalled();
+    });
+
+    it("deve rejeitar pendente->falta", async () => {
+      supabaseAdmin.from.mockReturnValue(q({ single: vi.fn().mockResolvedValue({ data: { status: "pendente", data_agendamento: "2099-01-01", hora_agendamento: "10:00", servico_id: 1 }, error: null }) }));
+      await expect(agendamentoService.atualizarAgendamento(1, "t1", { status: "falta" })).rejects.toThrow("Não é permitido mudar");
     });
 
     it("deve rejeitar transicao invalida", async () => {

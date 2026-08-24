@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import pino from "pino";
 import { logger } from "../config/logger.js";
+import { criarNotificacao } from "../services/notificacoes.service.js";
 
 const require = createRequire(import.meta.url);
 const { sendButtons: helperSendButtons, sendInteractiveMessage: helperSendInteractive } = require("baileys_helper");
@@ -25,6 +26,20 @@ let connectionState = {
 let onMessageHandler = null;
 let intentionalDisconnect = false;
 let socketId = 0;
+let desconexaoNotificada = false;
+
+function notificarDesconexao(tenantId, mensagem) {
+  if (!tenantId || desconexaoNotificada) return;
+  desconexaoNotificada = true;
+  criarNotificacao({
+    tenantId,
+    tipo: "whatsapp_desconectado",
+    titulo: "WhatsApp desconectado",
+    mensagem,
+    referenciaTipo: "whatsapp",
+    referenciaId: null,
+  }).catch((err) => logger.error({ err }, "Erro ao notificar desconexão do WhatsApp"));
+}
 
 const baileysLogger = pino({ level: "silent" });
 
@@ -105,6 +120,7 @@ export async function startBaileys(tenantId) {
       connectionState.qrCode = null;
       connectionState.error = null;
       pairingCompleted = false;
+      desconexaoNotificada = false;
       logger.info("Baileys conectado com sucesso");
     }
 
@@ -135,6 +151,10 @@ export async function startBaileys(tenantId) {
         connectionState.error = isLoggedOut
           ? "Desconectado do WhatsApp. Clique em Conectar para gerar novo QR Code."
           : "Conexão substituída por outro dispositivo. Clique em Conectar novamente.";
+        notificarDesconexao(
+          tenantId,
+          connectionState.error + " Lembretes e comunicados estão pausados até reconectar."
+        );
         logger.info({ statusCode }, "Desconectado definitivamente");
       } else if (isStreamError && pairingCompleted) {
         connectionState.status = "connecting";
@@ -149,6 +169,10 @@ export async function startBaileys(tenantId) {
         connectionState.status = "reconnecting";
         connectionState.error = isStreamError ? null : connectionState.error;
         const delay = isTimedOut ? 3000 : 5000;
+        notificarDesconexao(
+          tenantId,
+          "A conexão com o WhatsApp caiu. A reconexão é automática, mas lembretes e comunicados ficam pausados até voltar."
+        );
         logger.info({ delay, statusCode }, `Reconectando em ${delay / 1000}s...`);
         setTimeout(() => startBaileys(tenantId), delay);
       }
