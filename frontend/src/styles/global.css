@@ -325,8 +325,22 @@ select.input-field option {
   width: 100%;
 }
 
+/* ── CARDS (ui/Card) ────────────────────────────────────────── */
+.auth-card {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, #0f0f0f 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+[data-theme="light"] .auth-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+}
+
 /* ── ALERTS ─────────────────────────────────────────────────── */
 .alert {
+  margin-bottom: 16px;
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px;

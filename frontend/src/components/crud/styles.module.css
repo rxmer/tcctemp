@@ -274,6 +274,11 @@
   gap: 18px;
 }
 
+/* card empilhado acima do grid (ex: criar OS) */
+.card + .pageGrid {
+  margin-top: 18px;
+}
+
 /* ── FILTERS ────────────────────────────────────────────────── */
 .filtros {
   display: flex;
