@@ -34,8 +34,29 @@ const COLORS = {
   cancelado: "ef4444",
 };
 
+const TITULOS_POR_TIPO = {
+  geral: "Relatório Geral",
+  agendamentos: "Relatório de Agendamentos",
+  servicos: "Relatório de Serviços",
+  financeiro: "Relatório Financeiro",
+  clientes_frequentes: "Clientes Frequentes",
+};
+
+function normalizarTipo(tipo) {
+  return TITULOS_POR_TIPO[tipo] ? tipo : "geral";
+}
+
+async function buscarDados(tenantId, filtros, tipo) {
+  if (tipo === "agendamentos") return { agendamentos: await relatoriosService.relatorioAgendamentos(tenantId, filtros) };
+  if (tipo === "servicos") return { servicos: await relatoriosService.relatorioServicos(tenantId, filtros) };
+  if (tipo === "financeiro") return { financeiro: await relatoriosService.relatorioFinanceiro(tenantId, filtros) };
+  if (tipo === "clientes_frequentes") return { clientes_frequentes: await relatoriosService.relatorioClientesFrequentes(tenantId, filtros) };
+  return relatoriosService.relatorioGeral(tenantId, filtros);
+}
+
 export async function gerarExcel(tenantId, filtros = {}) {
-  const dados = await relatoriosService.relatorioGeral(tenantId, filtros);
+  const tipo = normalizarTipo(filtros.tipo);
+  const dados = await buscarDados(tenantId, filtros, tipo);
   const agrupar = filtros.agrupar_por || "dia";
 
   const { data: empresa } = await supabaseAdmin
@@ -77,63 +98,84 @@ export async function gerarExcel(tenantId, filtros = {}) {
   };
 
   /* ---------- Sheet: Agendamentos ---------- */
-  const wsAg = wb.addWorksheet("Agendamentos");
-  addHeaderRow(wsAg, ["Período", "Total", "Pendente", "Confirmado", "Em Andamento", "Finalizado", "Cancelado"]);
+  if (dados.agendamentos) {
+    const wsAg = wb.addWorksheet("Agendamentos");
+    addHeaderRow(wsAg, ["Período", "Total", "Pendente", "Confirmado", "Em Andamento", "Finalizado", "Cancelado"]);
 
-  for (const row of dados.agendamentos) {
-    wsAg.addRow([
-      formatPeriodo(row.periodo, agrupar),
-      row.total,
-      row.por_status?.pendente || 0,
-      row.por_status?.confirmado || 0,
-      row.por_status?.em_andamento || 0,
-      row.por_status?.finalizado || 0,
-      row.por_status?.cancelado || 0,
-    ]);
+    for (const row of dados.agendamentos) {
+      wsAg.addRow([
+        formatPeriodo(row.periodo, agrupar),
+        row.total,
+        row.por_status?.pendente || 0,
+        row.por_status?.confirmado || 0,
+        row.por_status?.em_andamento || 0,
+        row.por_status?.finalizado || 0,
+        row.por_status?.cancelado || 0,
+      ]);
+    }
+    autoWidth(wsAg);
   }
-  autoWidth(wsAg);
 
   /* ---------- Sheet: Serviços ---------- */
-  const wsSe = wb.addWorksheet("Serviços");
-  addHeaderRow(wsSe, ["Serviço", "Quantidade", "Receita"]);
+  if (dados.servicos) {
+    const wsSe = wb.addWorksheet("Serviços");
+    addHeaderRow(wsSe, ["Serviço", "Quantidade", "Receita"]);
 
-  for (const row of dados.servicos) {
-    wsSe.addRow([row.nome, row.quantidade, formatMoney(row.receita)]);
+    for (const row of dados.servicos) {
+      wsSe.addRow([row.nome, row.quantidade, formatMoney(row.receita)]);
+    }
+    autoWidth(wsSe);
+    centerCol(wsSe, [2, 3]);
   }
-  autoWidth(wsSe);
-  centerCol(wsSe, [2, 3]);
 
   /* ---------- Sheet: Financeiro ---------- */
-  const wsFi = wb.addWorksheet("Financeiro");
-  addHeaderRow(wsFi, ["Mês", "Receitas", "Despesas", "Recebido", "Pago", "Saldo"]);
+  if (dados.financeiro) {
+    const wsFi = wb.addWorksheet("Financeiro");
+    addHeaderRow(wsFi, ["Mês", "Receitas", "Despesas", "Recebido", "Pago", "Saldo"]);
 
-  for (const row of dados.financeiro) {
-    wsFi.addRow([
-      row.mes,
-      formatMoney(row.receitas),
-      formatMoney(row.despesas),
-      formatMoney(row.recebido),
-      formatMoney(row.pago),
-      formatMoney(row.receitas - row.despesas),
-    ]);
+    for (const row of dados.financeiro) {
+      wsFi.addRow([
+        row.mes,
+        formatMoney(row.receitas),
+        formatMoney(row.despesas),
+        formatMoney(row.recebido),
+        formatMoney(row.pago),
+        formatMoney(row.receitas - row.despesas),
+      ]);
+    }
+    autoWidth(wsFi);
   }
-  autoWidth(wsFi);
 
   /* ---------- Sheet: Status ---------- */
-  const wsSt = wb.addWorksheet("Status");
-  addHeaderRow(wsSt, ["Status", "Quantidade"]);
+  if (dados.status) {
+    const wsSt = wb.addWorksheet("Status");
+    addHeaderRow(wsSt, ["Status", "Quantidade"]);
 
-  for (const row of dados.status) {
-    wsSt.addRow([row.label, row.quantidade]);
+    for (const row of dados.status) {
+      wsSt.addRow([row.label, row.quantidade]);
+    }
+    autoWidth(wsSt);
+    centerCol(wsSt, [2]);
   }
-  autoWidth(wsSt);
-  centerCol(wsSt, [2]);
+
+  /* ---------- Sheet: Clientes Frequentes ---------- */
+  if (dados.clientes_frequentes) {
+    const wsCl = wb.addWorksheet("Clientes Frequentes");
+    addHeaderRow(wsCl, ["Cliente", "Telefone", "Agendamentos"]);
+
+    for (const row of dados.clientes_frequentes) {
+      wsCl.addRow([row.nome, row.telefone || "-", row.quantidade]);
+    }
+    autoWidth(wsCl);
+    centerCol(wsCl, [3]);
+  }
 
   return await wb.xlsx.writeBuffer();
 }
 
 export async function gerarPDF(tenantId, filtros = {}) {
-  const dados = await relatoriosService.relatorioGeral(tenantId, filtros);
+  const tipo = normalizarTipo(filtros.tipo);
+  const dados = await buscarDados(tenantId, filtros, tipo);
   const agrupar = filtros.agrupar_por || "dia";
 
   const { data: empresa } = await supabaseAdmin
@@ -143,7 +185,7 @@ export async function gerarPDF(tenantId, filtros = {}) {
     .maybeSingle();
 
   const nomeEmpresa = empresa?.nome_fantasia || "EstetiCar";
-  const docTitle = `Relatório ${nomeEmpresa}`;
+  const docTitle = `${TITULOS_POR_TIPO[tipo]} - ${nomeEmpresa}`;
 
   const doc = new PDFDocument({
     size: "A4",
@@ -249,60 +291,81 @@ export async function gerarPDF(tenantId, filtros = {}) {
   }
 
   /* ---------- 1. Agendamentos ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
-  doc.text("Agendamentos por Período", doc.page.margins.left, doc.y, { align: "left" });
-  doc.moveDown(0.5);
+  if (dados.agendamentos) {
+    doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+    doc.text("Agendamentos por Período", doc.page.margins.left, doc.y, { align: "left" });
+    doc.moveDown(0.5);
 
-  const agHeaders = ["Período", "Total", "Pend.", "Conf.", "E.A.", "Fin.", "Canc."];
-  const agColW = [70, 40, 40, 40, 50, 40, 40];
-  const agRows = dados.agendamentos.map((r) => [
-    formatPeriodo(r.periodo, agrupar),
-    r.total,
-    r.por_status?.pendente || 0,
-    r.por_status?.confirmado || 0,
-    r.por_status?.em_andamento || 0,
-    r.por_status?.finalizado || 0,
-    r.por_status?.cancelado || 0,
-  ]);
-  const y1 = drawTable(agHeaders, agRows, doc.y, agColW);
-  doc.y = y1 + 20;
+    const agHeaders = ["Período", "Total", "Pend.", "Conf.", "E.A.", "Fin.", "Canc."];
+    const agColW = [70, 40, 40, 40, 50, 40, 40];
+    const agRows = dados.agendamentos.map((r) => [
+      formatPeriodo(r.periodo, agrupar),
+      r.total,
+      r.por_status?.pendente || 0,
+      r.por_status?.confirmado || 0,
+      r.por_status?.em_andamento || 0,
+      r.por_status?.finalizado || 0,
+      r.por_status?.cancelado || 0,
+    ]);
+    const y1 = drawTable(agHeaders, agRows, doc.y, agColW);
+    doc.y = y1 + 20;
+  }
 
   /* ---------- 2. Servicos ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
-  doc.text("Serviços Mais Realizados", doc.page.margins.left, doc.y, { align: "left" });
-  doc.moveDown(0.5);
+  if (dados.servicos) {
+    doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+    doc.text("Serviços Mais Realizados", doc.page.margins.left, doc.y, { align: "left" });
+    doc.moveDown(0.5);
 
-  const seHeaders = ["Serviço", "Qtd", "Receita"];
-  const seColW = [260, 50, 120];
-  const seRows = dados.servicos.slice(0, 15).map((r) => [r.nome, r.quantidade, formatMoney(r.receita)]);
-  const y2 = drawTable(seHeaders, seRows, doc.y, seColW);
-  doc.y = y2 + 20;
+    const seHeaders = ["Serviço", "Qtd", "Receita"];
+    const seColW = [260, 50, 120];
+    const seRows = dados.servicos.slice(0, 15).map((r) => [r.nome, r.quantidade, formatMoney(r.receita)]);
+    const y2 = drawTable(seHeaders, seRows, doc.y, seColW);
+    doc.y = y2 + 20;
+  }
 
   /* ---------- 3. Financeiro ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
-  doc.text("Financeiro", doc.page.margins.left, doc.y, { align: "left" });
-  doc.moveDown(0.5);
+  if (dados.financeiro) {
+    doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+    doc.text("Financeiro", doc.page.margins.left, doc.y, { align: "left" });
+    doc.moveDown(0.5);
 
-  const fiHeaders = ["Mês", "Receitas", "Despesas", "Saldo"];
-  const fiColW = [80, 100, 100, 100];
-  const fiRows = dados.financeiro.map((r) => [
-    r.mes,
-    formatMoney(r.receitas),
-    formatMoney(r.despesas),
-    formatMoney(r.receitas - r.despesas),
-  ]);
-  const y3 = drawTable(fiHeaders, fiRows, doc.y, fiColW);
-  doc.y = y3 + 20;
+    const fiHeaders = ["Mês", "Receitas", "Despesas", "Saldo"];
+    const fiColW = [80, 100, 100, 100];
+    const fiRows = dados.financeiro.map((r) => [
+      r.mes,
+      formatMoney(r.receitas),
+      formatMoney(r.despesas),
+      formatMoney(r.receitas - r.despesas),
+    ]);
+    const y3 = drawTable(fiHeaders, fiRows, doc.y, fiColW);
+    doc.y = y3 + 20;
+  }
 
   /* ---------- 4. Status ---------- */
-  doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
-  doc.text("Distribuição de Status", doc.page.margins.left, doc.y, { align: "left" });
-  doc.moveDown(0.5);
+  if (dados.status) {
+    doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+    doc.text("Distribuição de Status", doc.page.margins.left, doc.y, { align: "left" });
+    doc.moveDown(0.5);
 
-  const stHeaders = ["Status", "Quantidade"];
-  const stColW = [300, 80];
-  const stRows = dados.status.map((r) => [r.label, r.quantidade]);
-  drawTable(stHeaders, stRows, doc.y, stColW);
+    const stHeaders = ["Status", "Quantidade"];
+    const stColW = [300, 80];
+    const stRows = dados.status.map((r) => [r.label, r.quantidade]);
+    const y4 = drawTable(stHeaders, stRows, doc.y, stColW);
+    doc.y = y4 + 20;
+  }
+
+  /* ---------- 5. Clientes Frequentes ---------- */
+  if (dados.clientes_frequentes) {
+    doc.fontSize(14).font("Helvetica-Bold").fillColor("#222222");
+    doc.text("Clientes Frequentes", doc.page.margins.left, doc.y, { align: "left" });
+    doc.moveDown(0.5);
+
+    const clHeaders = ["Cliente", "Telefone", "Agendamentos"];
+    const clColW = [240, 140, 100];
+    const clRows = dados.clientes_frequentes.map((r) => [r.nome, r.telefone || "-", r.quantidade]);
+    drawTable(clHeaders, clRows, doc.y, clColW);
+  }
 
   doc.end();
 

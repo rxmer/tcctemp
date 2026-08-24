@@ -13,6 +13,7 @@ export function RelatorioAgendamentos() {
       cardSub="Volume de agendamentos no período selecionado"
       comAgrupar
       fetcher={relatoriosService.agendamentos}
+      tipoExport="agendamentos"
       renderChart={(dados, agrupar) => (
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={dados || []}>

@@ -8,6 +8,7 @@ function exportUrl(path, params = {}) {
   if (params.data_inicio) query.set("data_inicio", params.data_inicio);
   if (params.data_fim) query.set("data_fim", params.data_fim);
   if (params.agrupar_por) query.set("agrupar_por", params.agrupar_por);
+  if (params.tipo) query.set("tipo", params.tipo);
   const qs = query.toString();
   return `/api/relatorios/${path}${qs ? `?${qs}` : ""}`;
 }

@@ -13,6 +13,7 @@ export function RelatorioFinanceiro() {
       cardSub="Comparativo mensal"
       comAgrupar={false}
       fetcher={relatoriosService.financeiro}
+      tipoExport="financeiro"
       renderChart={(dados) => (
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={dados || []}>

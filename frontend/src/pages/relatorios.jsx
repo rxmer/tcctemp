@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, SkeletonCard } from "../components/ui";
+import { PageHeader, SkeletonCard, Button } from "../components/ui";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 import styles from "../styles/pages/relatorios.module.css";
+import { Download, FileText } from "lucide-react";
 
 const STATUS_CORES = {
   pendente: "#f59e0b",
@@ -21,6 +22,7 @@ export function Relatorios() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [filtroData, setFiltroData] = useState("");
+  const [exportando, setExportando] = useState(false);
   const reqSeq = useRef(0);
 
   function getParams() {
@@ -32,6 +34,21 @@ export function Relatorios() {
       params.data_fim = `${ano}-${mes}-${ultimoDia}`;
     }
     return params;
+  }
+
+  async function handleExportar(formato) {
+    setExportando(true);
+    try {
+      if (formato === "excel") {
+        await relatoriosService.exportarExcel(getParams());
+      } else {
+        await relatoriosService.exportarPDF(getParams());
+      }
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setExportando(false);
+    }
   }
 
   useEffect(() => {
@@ -80,6 +97,15 @@ export function Relatorios() {
           <label className={styles.filtroLabel}>Mês</label>
           <input type="month" className={styles.filtroInput} value={filtroData}
             onChange={(e) => setFiltroData(e.target.value)} />
+        </div>
+
+        <div className={styles.exportActions}>
+          <Button onClick={() => handleExportar("excel")} disabled={exportando}>
+            <Download size={14} /> Excel
+          </Button>
+          <Button variant="ghost" onClick={() => handleExportar("pdf")} disabled={exportando}>
+            <FileText size={14} /> PDF
+          </Button>
         </div>
       </div>
 

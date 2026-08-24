@@ -10,6 +10,7 @@ export function RelatorioClientes() {
       cardSub="Por quantidade de agendamentos"
       comAgrupar={false}
       fetcher={relatoriosService.clientesFrequentes}
+      tipoExport="clientes_frequentes"
       renderChart={(dados) => (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {(dados ?? []).length > 0 ? (

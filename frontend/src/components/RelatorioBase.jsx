@@ -22,7 +22,7 @@ export function formatPeriodo(p, agrupar) {
   return p;
 }
 
-export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupar = true, fetcher, renderChart }) {
+export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupar = true, fetcher, renderChart, tipoExport }) {
   const { tenant } = useAuth();
   const [dados, setDados] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,7 @@ export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupa
   function getParams() {
     const params = {};
     if (comAgrupar) params.agrupar_por = agrupar;
+    if (tipoExport) params.tipo = tipoExport;
     if (filtroData) {
       const [ano, mes] = filtroData.split("-");
       params.data_inicio = `${ano}-${mes}-01`;

@@ -56,23 +56,26 @@ function extrairFiltros(query) {
   if (query.data_inicio) filtros.data_inicio = query.data_inicio;
   if (query.data_fim) filtros.data_fim = query.data_fim;
   if (query.agrupar_por) filtros.agrupar_por = query.agrupar_por;
+  if (query.tipo) filtros.tipo = query.tipo;
   return filtros;
 }
 
 export async function exportarExcel(req, res) {
   const filtros = extrairFiltros(req.query);
   const buffer = await exportService.gerarExcel(req.tenantId, filtros);
+  const sufixo = filtros.tipo && filtros.tipo !== "geral" ? `-${filtros.tipo}` : "-geral";
 
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  res.setHeader("Content-Disposition", `attachment; filename="relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.xlsx"`);
+  res.setHeader("Content-Disposition", `attachment; filename="relatorio${sufixo}-${new Date().toISOString().slice(0, 10)}.xlsx"`);
   res.send(buffer);
 }
 
 export async function exportarPDF(req, res) {
   const filtros = extrairFiltros(req.query);
   const buffer = await exportService.gerarPDF(req.tenantId, filtros);
+  const sufixo = filtros.tipo && filtros.tipo !== "geral" ? `-${filtros.tipo}` : "-geral";
 
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="relatorio-esteticar-${new Date().toISOString().slice(0, 10)}.pdf"`);
+  res.setHeader("Content-Disposition", `attachment; filename="relatorio${sufixo}-${new Date().toISOString().slice(0, 10)}.pdf"`);
   res.send(buffer);
 }
