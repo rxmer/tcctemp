@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { authService } from "../services/auth.service";
 import { AuthContext } from "./AuthContextStore";
@@ -8,15 +8,20 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [tenant, setTenant] = useState(null);
   const [loading, setLoading] = useState(true);
+  const ultimoUserId = useRef(null);
 
   const fetchProfile = useCallback(async (authUser) => {
     if (!authUser) {
+      ultimoUserId.current = null;
       setUser(null);
       setUsuario(null);
       setTenant(null);
       setLoading(false);
       return;
     }
+
+    if (ultimoUserId.current === authUser.id) return;
+    ultimoUserId.current = authUser.id;
 
     try {
       setUser(authUser);
@@ -35,8 +40,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      fetchProfile(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((_event, _session) => {
+      supabase.auth.getSession().then(({ data }) => {
+        fetchProfile(data?.session?.user ?? null);
+      });
     });
 
     return () => subscription.unsubscribe();

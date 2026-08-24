@@ -54,7 +54,9 @@ export async function apiFetch(path, options = {}) {
       }
     }
     await supabase.auth.signOut();
-    if (!window.location.pathname.startsWith("/login")) {
+    const rotasPublicas = ["/login", "/cadastro", "/redefinir-senha"];
+    const emRotaPublica = rotasPublicas.some((p) => window.location.pathname.startsWith(p));
+    if (!emRotaPublica) {
       window.location.assign("/login");
     }
     throw new Error("Sessão expirada. Faça login novamente.");

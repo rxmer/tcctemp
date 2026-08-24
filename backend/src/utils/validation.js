@@ -27,6 +27,10 @@ const agendamentoBase = z.object({
 });
 
 export const schemas = {
+  verificarEmail: z.object({
+    email: z.string().email("E-mail inválido"),
+  }),
+
   criarCliente: clienteBase.transform(limparTelefone),
   atualizarCliente: clienteBase.partial().transform(limparTelefone),
 

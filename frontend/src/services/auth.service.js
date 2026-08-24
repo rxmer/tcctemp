@@ -8,4 +8,10 @@ export const authService = {
     }),
 
   me: () => apiFetch("/api/auth/me"),
+
+  verificarEmail: (email) =>
+    apiFetch("/api/auth/verificar-email", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
 };

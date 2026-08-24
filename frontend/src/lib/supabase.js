@@ -24,6 +24,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     detectSessionInUrl: true,
     storage: sessionStorageAdapter,
     storageKey: "esteticar-auth",
-    flowType: "pkce",
+    flowType: "implicit",
   },
 });

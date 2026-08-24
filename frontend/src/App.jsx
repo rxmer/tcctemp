@@ -42,11 +42,13 @@ export default function App() {
         <AuthProvider>
           <Suspense fallback={<FullPageSpinner message="Carregando..." />}>
             <Routes>
+              {/* Rota livre — pagina trata os proprios estados (link de recuperacao gera sessao) */}
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+
               {/* Rotas públicas — redirecionam para /dashboard se já autenticado */}
               <Route element={<PublicRoute />}>
-              <Route path="/login" element={<Login />} />
-              <Route path="/cadastro" element={<Cadastro />} />
-              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/cadastro" element={<Cadastro />} />
               </Route>
 
               {/* Rotas autenticadas */}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { traduzirErroAuth } from "../lib/authErrors";
 import { Input, Button, Alert } from "../components/ui";
 import styles from "../styles/pages/Login.module.css";
 
@@ -13,13 +14,40 @@ export function RedefinirSenha() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    const url = new URL(window.location.href);
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+    const erroUrl = url.searchParams.get("error_description") || hash.get("error_description");
+
+    if (erroUrl) {
+      setStatus("invalido");
+      return;
+    }
+
+    const veioDeLink = url.searchParams.has("code") || hash.has("access_token");
+
+    if (!veioDeLink) {
+      supabase.auth.getSession().then(({ data }) => {
+        setStatus(data?.session ? "pronto" : "invalido");
+      });
+      return;
+    }
+
+    let tentativas = 0;
+    let timer;
+    const verificar = async () => {
+      const { data } = await supabase.auth.getSession();
       if (data?.session) {
         setStatus("pronto");
+        return;
+      }
+      if (tentativas++ < 5) {
+        timer = setTimeout(verificar, 400);
       } else {
         setStatus("invalido");
       }
-    });
+    };
+    verificar();
+    return () => clearTimeout(timer);
   }, []);
 
   const handleChange = (e) =>
@@ -43,10 +71,14 @@ export function RedefinirSenha() {
       const { error } = await supabase.auth.updateUser({ password: form.senha });
       if (error) throw error;
       await supabase.auth.signOut();
+      try {
+        localStorage.setItem("esteticar-senha-redefinida", String(Date.now()));
+      } catch {
+        /* ignora */
+      }
       setSucesso(true);
-      setTimeout(() => navigate("/login", { replace: true }), 2500);
     } catch (err) {
-      setErro(err.message);
+      setErro(traduzirErroAuth(err));
     } finally {
       setLoading(false);
     }
@@ -76,8 +108,10 @@ export function RedefinirSenha() {
                 <h1>Senha redefinida!</h1>
                 <p>Sua senha foi alterada com sucesso.</p>
               </div>
-              <Alert>Faça login novamente com a nova senha. Redirecionando...</Alert>
-              <Link to="/login" className="link">Ir para o login</Link>
+              <Alert>Pode fechar esta aba e entrar na tela de login com a nova senha.</Alert>
+              <Button fullWidth onClick={() => navigate("/login", { replace: true })}>
+                Ir para o login
+              </Button>
             </>
           )}
 

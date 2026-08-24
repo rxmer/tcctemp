@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { supabaseAdmin } from "../config/supabase.js";
-import { signup, getProfile } from "../services/auth.service.js";
+import { signup, getProfile, verificarEmail } from "../services/auth.service.js";
 
 vi.mock("node:crypto", () => ({
   randomUUID: () => "12345678-1234-1234-1234-123456789abc",
@@ -209,6 +209,37 @@ describe("authService", () => {
       });
 
       await expect(getProfile("user-1")).rejects.toThrow("Erro ao buscar tenant");
+    });
+  });
+
+  describe("verificarEmail", () => {
+    it("deve retornar existe true quando usuario encontrado", async () => {
+      supabaseAdmin.from.mockReturnValue(
+        q({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1" }, error: null }) })
+      );
+
+      const result = await verificarEmail({ email: "admin@oficina.com" });
+
+      expect(result).toEqual({ existe: true });
+      expect(supabaseAdmin.from).toHaveBeenCalledWith("usuarios");
+    });
+
+    it("deve retornar existe false quando usuario nao encontrado", async () => {
+      supabaseAdmin.from.mockReturnValue(q());
+
+      const result = await verificarEmail({ email: "desconhecido@email.com" });
+
+      expect(result).toEqual({ existe: false });
+    });
+
+    it("deve tratar erro do banco como email inexistente", async () => {
+      supabaseAdmin.from.mockReturnValue(
+        q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: new Error("DB error") }) })
+      );
+
+      const result = await verificarEmail({ email: "admin@oficina.com" });
+
+      expect(result.existe).toBe(false);
     });
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import { traduzirErroAuth } from "../lib/authErrors";
 import { Input, Button, Alert } from "../components/ui";
 import styles from "../styles/pages/Cadastro.module.css";
 
@@ -63,10 +64,10 @@ export function Cadastro() {
       await signUp(form);
       navigate("/login", { replace: true });
     } catch (err) {
-      if (err.message.includes("already registered")) {
+      if (/already registered|already exists/i.test(err.message)) {
         setErros((e) => ({ ...e, email: "Este e-mail já está em uso" }));
       } else {
-        setErro(err.message);
+        setErro(traduzirErroAuth(err));
       }
     } finally {
       setLoading(false);

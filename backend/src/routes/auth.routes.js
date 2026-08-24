@@ -15,4 +15,5 @@ const authLimiter = rateLimit({
 export const authRoutes = Router();
 
 authRoutes.post("/signup", authLimiter, validateBody("criarConta"), authController.signup);
+authRoutes.post("/verificar-email", authLimiter, validateBody("verificarEmail"), authController.verificarEmail);
 authRoutes.get("/me", authenticate, authController.me);

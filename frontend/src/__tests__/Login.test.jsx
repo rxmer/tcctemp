@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { Login } from "../pages/Login";
@@ -10,6 +10,11 @@ vi.mock("../context/useAuth", () => ({
 const mockResetPasswordForEmail = vi.fn();
 vi.mock("../lib/supabase", () => ({
   supabase: { auth: { resetPasswordForEmail: (...args) => mockResetPasswordForEmail(...args) } },
+}));
+
+const mockVerificarEmail = vi.fn();
+vi.mock("../services/auth.service", () => ({
+  authService: { verificarEmail: (...args) => mockVerificarEmail(...args) },
 }));
 
 vi.mock("../styles/pages/Login.module.css", () => ({
@@ -47,6 +52,7 @@ describe("Login page", () => {
     useAuth.mockReturnValue({
       signIn: vi.fn(),
     });
+    mockVerificarEmail.mockResolvedValue({ existe: true });
   });
 
   it("renderiza campos de email e senha", () => {
@@ -100,7 +106,7 @@ describe("Login page", () => {
     });
   });
 
-  it("mostra erro generico quando signIn falha com outra mensagem", async () => {
+  it("mostra erro traduzido quando signIn falha com outra mensagem", async () => {
     const signIn = vi.fn().mockRejectedValue(new Error("Network error"));
     useAuth.mockReturnValue({ signIn });
     renderLogin();
@@ -110,7 +116,7 @@ describe("Login page", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Network error");
+      expect(screen.getByRole("alert")).toHaveTextContent(/não foi possível conectar/i);
     });
   });
 
@@ -135,6 +141,40 @@ describe("Login page", () => {
         expect.objectContaining({ redirectTo: expect.stringContaining("/redefinir-senha") })
       );
       expect(screen.getByText(/link de recuperação/i)).toBeInTheDocument();
+    });
+  });
+
+  it("mostra erro e nao envia email quando o email nao esta cadastrado", async () => {
+    mockVerificarEmail.mockResolvedValue({ existe: false });
+    renderLogin();
+
+    fireEvent.click(screen.getByText(/esqueci minha senha/i));
+    fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "inexistente@test.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /enviar link de recuperação/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("não está cadastrado no sistema");
+    });
+    expect(mockResetPasswordForEmail).not.toHaveBeenCalled();
+  });
+
+  it("volta ao login com aviso quando a senha e redefinida em outra aba", async () => {
+    renderLogin();
+    fireEvent.click(screen.getByText(/esqueci minha senha/i));
+    expect(screen.getByText(/recuperar senha/i)).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "esteticar-senha-redefinida",
+          newValue: String(Date.now()),
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/bem-vindo de volta/i)).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent(/senha alterada/i);
     });
   });
 

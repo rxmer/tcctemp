@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { supabase } from "../lib/supabase";
+import { authService } from "../services/auth.service";
+import { traduzirErroAuth } from "../lib/authErrors";
 import { Input, Button, Alert } from "../components/ui";
 import styles from "../styles/pages/Login.module.css";
 
@@ -16,25 +18,36 @@ export function Login() {
   const [recEmail, setRecEmail] = useState("");
   const [recEnviado, setRecEnviado] = useState(false);
   const [erro, setErro] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [recLoading, setRecLoading] = useState(false);
 
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  useEffect(() => {
+    const aoRedefinirEmOutraAba = (e) => {
+      if (e.key === "esteticar-senha-redefinida" && e.newValue) {
+        setModo("login");
+        setRecEnviado(false);
+        setErro("");
+        setInfo("Senha alterada com sucesso! Faça login com a nova senha.");
+      }
+    };
+    window.addEventListener("storage", aoRedefinirEmOutraAba);
+    return () => window.removeEventListener("storage", aoRedefinirEmOutraAba);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro("");
+    setInfo("");
     setLoading(true);
     try {
       await signIn(form);
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setErro(
-        err?.message?.includes("Invalid login credentials")
-          ? "E-mail ou senha incorretos."
-          : err.message,
-      );
+      setErro(traduzirErroAuth(err));
     } finally {
       setLoading(false);
     }
@@ -43,14 +56,19 @@ export function Login() {
   const handleRecuperar = async (e) => {
     e.preventDefault();
     setErro("");
+    setInfo("");
     setRecLoading(true);
     try {
+      const { existe } = await authService.verificarEmail(recEmail);
+      if (!existe) {
+        throw new Error("Este e-mail não está cadastrado no sistema.");
+      }
       await supabase.auth.resetPasswordForEmail(recEmail, {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       setRecEnviado(true);
     } catch (err) {
-      setErro(err.message);
+      setErro(traduzirErroAuth(err));
     } finally {
       setRecLoading(false);
     }
@@ -106,6 +124,7 @@ export function Login() {
               </div>
 
               {erro && <Alert>{erro}</Alert>}
+              {info && <Alert>{info}</Alert>}
 
               <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
                 <Input
@@ -135,7 +154,7 @@ export function Login() {
 
               <p className={styles.authFooterText} style={{ textAlign: "center", marginTop: 12 }}>
                 <button type="button" className="link" style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
-                  onClick={() => { setModo("recuperar"); setErro(""); setRecEnviado(false); }}>
+                  onClick={() => { setModo("recuperar"); setErro(""); setInfo(""); setRecEnviado(false); }}>
                   Esqueci minha senha
                 </button>
               </p>
@@ -183,7 +202,7 @@ export function Login() {
                     Enviar link de recuperação
                   </Button>
                   <button type="button" className="link" style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
-                    onClick={() => { setModo("login"); setErro(""); }}>
+                    onClick={() => { setModo("login"); setErro(""); setInfo(""); }}>
                     Voltar para o login
                   </button>
                 </form>
