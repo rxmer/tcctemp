@@ -9,7 +9,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 | Frontend | ReactJS + Vite |
 | Backend | Node.js + ExpressJS |
 | Banco | PostgreSQL (Supabase) |
-| Chatbot | Baileys (WhatsApp Web) |
+| Chatbot | Baileys (WhatsApp Web) embutido no backend |
 | Autenticação | Supabase Auth (JWT) |
 
 ## Estrutura
@@ -22,7 +22,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 │   │   ├── services/      # Regras de negócio
 │   │   ├── routes/        # Definição de rotas
 │   │   ├── middleware/     # Auth, validação, erros
-│   │   ├── chatbot/       # Chatbot WhatsApp
+│   │   ├── chatbot/       # Chatbot WhatsApp (Baileys embutido)
 │   │   ├── config/        # Configurações (Supabase, cache, logger, swagger)
 │   │   ├── utils/         # Helpers e validação Zod
 │   │   └── __tests__/     # Testes automatizados (Vitest)
@@ -45,31 +45,33 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Agendamentos** — calendário + lista, conflito com duração, expediente, feriados, fluxo de status
 - **Ordens de Serviço** — vinculadas a agendamentos, itens, geração automática de faturamento
 - **Financeiro** — contas a pagar, faturamentos, resumo com saldo (admin)
-- **Relatórios** — agendamentos por período, serviços mais realizados, receitas vs despesas, status, clientes frequentes (admin)
+- **Relatórios** — agendamentos, serviços, receitas vs despesas, status, clientes frequentes (admin). Exportação PDF/Excel por tipo (cada tela gera apenas sua seção) ou relatório completo pela visão geral
 - **Expediente** — horários por dia da semana (admin)
 - **Feriados** — bloqueio de datas especiais (admin)
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
-- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão, transferência para atendente, tela de conversas com histórico completo e resposta manual do atendente
+- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 30 min de inatividade
+- **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente e polling a cada 5s
 - **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
-- **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas)
+- **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas). Sino com ações rápidas para agendamentos passados (marcar falta) e conversas WhatsApp
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
 - **Multi-tenant** — isolamento total por `tenant_id` derivado do token JWT em todas as consultas
 - **Validação de entrada** — schemas Zod em todas as rotas de escrita (criação e atualização)
 - **Segurança** — Helmet, CORS restrito, rate limiting (global + login + exportações), sanitização de erros internos, logs sem dados pessoais, Swagger apenas fora de produção
-- **Manutenção automática** — limpeza de notificações antigas (>30 dias), expiração de sessões do chatbot, lembretes com tolerância para reinicialização do servidor
+- **Manutenção automática** — limpeza de notificações antigas (>30 dias), expiração de sessões do chatbot (incluindo atendimento humano), lembretes com tolerância para reinicialização do servidor
 - **Máscara de telefone** — formatação `(11) 99999-9999` em todo o sistema
 - **Responsividade** — layout adaptável para mobile (≤ 768px), tabelas viram cards
 - **API documentada** — Swagger/OpenAPI em `/api-docs`
 
 ## Regras de Negócio
 
-- Status do agendamento: pendente → confirmado → em_andamento → finalizado | cancelado
+- Status do agendamento: pendente → confirmado → em_andamento → finalizado | cancelado | falta
 - Cancelamento com antecedência mínima de 2h
 - Conflito de horário considera duração do serviço (sobreposição de janelas)
 - Finalizar OS → gera faturamento automaticamente + agendamento vira finalizado
 - Cancelar OS → agenda volta para confirmado
 - Cliente/veículo/serviço não podem ser excluídos se vinculados a registros ativos
 - Conta paga e faturamento recebido não podem ser pagos novamente
+- Atendimento humano no chatbot: cliente pode voltar ao bot a qualquer momento via keywords ou botões; timeout de 30 min sem atividade retorna automaticamente ao menu
 
 ## Setup para Desenvolvimento
 
@@ -83,6 +85,8 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`).
 
 Para o histórico de conversas do chatbot, execute também `docs/schema-chatbot-mensagens.sql`.
+
+Para o status "faltou" nos agendamentos, execute `docs/schema-falta-status.sql`.
 
 Para a recuperação de senha funcionar, configure em **Authentication → URL Configuration**:
 - **Redirect URLs**: adicione `http://localhost:5173/**`
@@ -113,6 +117,7 @@ npm run dev
 1. Acesse o sistema → WhatsApp → Conectar
 2. Escaneie o QR Code com o WhatsApp do negócio
 3. O chatbot estará ativo para os clientes
+4. Widget de conversas aparece no canto inferior direito para acompanhar e responder mensagens
 
 ### 6. Banco de Dados
 
@@ -121,11 +126,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 267 testes (18 arquivos)
-cd frontend && npm test   # 270 testes (40 arquivos)
+cd backend && npm test    # 303 testes (21 arquivos)
+cd frontend && npm test   # 277 testes (41 arquivos)
 ```
 
-> **537 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **580 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
