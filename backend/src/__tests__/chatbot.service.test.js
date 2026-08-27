@@ -215,7 +215,7 @@ describe("chatbot.service", () => {
       );
     });
 
-    it("deve responder que foi encaminhado se ja estiver em FALANDO_COM_ATENDENTE", async () => {
+    it("deve mostrar botoes ao enviar mensagem em FALANDO_COM_ATENDENTE", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({
           data: buildSession({ state: "FALANDO_COM_ATENDENTE" }),
@@ -223,11 +223,32 @@ describe("chatbot.service", () => {
         }),
       }));
 
-      await processMessage(TENANT_ID, REMOTE_JID, "Oi", "João");
+      await processMessage(TENANT_ID, REMOTE_JID, "preciso de ajuda", "João");
+
+      expect(baileys.sendButtons).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("voltar ao bot"),
+        expect.arrayContaining([
+          expect.objectContaining({ id: "voltar_bot" }),
+          expect.objectContaining({ id: "continuar_atendente" }),
+        ]),
+        expect.any(String)
+      );
+    });
+
+    it("deve voltar ao menu ao enviar keyword (menu)", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: buildSession({ state: "FALANDO_COM_ATENDENTE" }),
+          error: null,
+        }),
+      }));
+
+      await processMessage(TENANT_ID, REMOTE_JID, "menu", "João");
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("encaminhada")
+        expect.stringContaining("Voltando ao menu")
       );
     });
   });
@@ -921,16 +942,66 @@ describe("chatbot.service", () => {
   });
 
   describe("processMessage - FALANDO_COM_ATENDENTE", () => {
-    it("deve responder que foi encaminhado ao enviar mensagem", async () => {
+    it("deve mostrar botoes ao enviar mensagem nao-keyword", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({ state: "FALANDO_COM_ATENDENTE" }), error: null }),
       }));
 
       await processMessage(TENANT_ID, REMOTE_JID, "preciso de ajuda", "João");
 
+      expect(baileys.sendButtons).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("voltar ao bot"),
+        expect.arrayContaining([
+          expect.objectContaining({ id: "voltar_bot" }),
+          expect.objectContaining({ id: "continuar_atendente" }),
+        ]),
+        expect.any(String)
+      );
+    });
+
+    it("deve voltar ao menu ao enviar keyword 0", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({ state: "FALANDO_COM_ATENDENTE" }), error: null }),
+      }));
+
+      await processMessage(TENANT_ID, REMOTE_JID, "0", "João");
+
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("encaminhada")
+        expect.stringContaining("Voltando ao menu")
+      );
+    });
+
+    it("deve voltar ao menu ao clicar botao voltar_bot", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: buildSession({ state: "FALANDO_COM_ATENDENTE", state_data: { aguardando_resposta_retorno: true } }),
+          error: null,
+        }),
+      }));
+
+      await processMessage(TENANT_ID, REMOTE_JID, "voltar_bot", "João");
+
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Voltando ao menu")
+      );
+    });
+
+    it("deve permanecer em FALANDO_COM_ATENDENTE ao clicar continuar_atendente", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: buildSession({ state: "FALANDO_COM_ATENDENTE", state_data: { aguardando_resposta_retorno: true } }),
+          error: null,
+        }),
+      }));
+
+      await processMessage(TENANT_ID, REMOTE_JID, "continuar_atendente", "João");
+
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("continua sendo encaminhada")
       );
     });
   });

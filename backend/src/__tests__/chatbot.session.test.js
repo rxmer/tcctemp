@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as sessionService from "../chatbot/chatbot.session.js";
 import { supabaseAdmin } from "../config/supabase.js";
 
+vi.mock("../chatbot/baileys.client.js", () => ({
+  sendWhatsAppMessage: vi.fn(),
+}));
+
 const TENANT_ID = "tenant-1";
 const REMOTE_JID = "5511999999999@s.whatsapp.net";
 const SESSION_ID = "uuid-session-1";
@@ -288,7 +292,7 @@ describe("chatbot.session", () => {
   });
 
   describe("limparSessoesExpiradas", () => {
-    it("deve reiniciar sessoes expiradas", async () => {
+    it("deve reiniciar sessoes expiradas e incluir FALANDO_COM_ATENDENTE", async () => {
       const expiradas = [
         { id: "sess-1", state: "ESCOLHENDO_SERVICO" },
         { id: "sess-2", state: "ESCOLHENDO_DATA" },
@@ -298,10 +302,15 @@ describe("chatbot.session", () => {
         then: (resolve) => resolve({ data: expiradas, error: null }),
       });
 
+      const selectAtendente = mockQuery({
+        then: (resolve) => resolve({ data: [], error: null }),
+      });
+
       supabaseAdmin.from
         .mockReturnValueOnce(selectQuery)
         .mockReturnValueOnce(mockQuery())
-        .mockReturnValueOnce(mockQuery());
+        .mockReturnValueOnce(mockQuery())
+        .mockReturnValueOnce(selectAtendente);
 
       await sessionService.limparSessoesExpiradas();
 
@@ -309,12 +318,14 @@ describe("chatbot.session", () => {
     });
 
     it("deve retornar sem fazer nada se nao houver expiradas", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery({
+      const emptyQuery = mockQuery({
         then: (resolve) => resolve({ data: [], error: null }),
-      }));
+      });
+
+      supabaseAdmin.from.mockReturnValue(emptyQuery);
 
       await sessionService.limparSessoesExpiradas();
-      expect(supabaseAdmin.from).toHaveBeenCalledTimes(1);
+      expect(supabaseAdmin.from).toHaveBeenCalledTimes(2);
     });
 
     it("deve ignorar erro na query e logar warning", async () => {

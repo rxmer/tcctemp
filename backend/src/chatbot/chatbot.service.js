@@ -1179,6 +1179,18 @@ async function handleConfirmandoCancelamento(action, jid, session) {
    =================================================================== */
 
 async function handleFalandoComAtendente(action, jid, session) {
+  const ATENDENTE_KEYWORDS = ["MENU", "VOLTAR", "BOT", "REINICIAR", "0"];
+  const upper = action.trim().toUpperCase();
+
+  if (ATENDENTE_KEYWORDS.includes(upper)) {
+    await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
+    session.state = "MENU_PRINCIPAL";
+    session.state_data = {};
+    await sendWhatsAppMessage(jid, "Voltando ao menu. Como posso ajudar?");
+    await sendMenu(jid, session);
+    return;
+  }
+
   criarNotificacao({
     tenantId: session.tenant_id,
     tipo: "chatbot_mensagem_cliente",
@@ -1187,7 +1199,15 @@ async function handleFalandoComAtendente(action, jid, session) {
     referenciaTipo: "chatbot",
     referenciaId: session.id,
   }).catch(() => {});
-  await sendWhatsAppMessage(jid, "Sua mensagem foi encaminhada ao atendente. Em breve vamos responder.");
+
+  await atualizarSessao(session.id, {
+    state_data: { ...session.state_data, aguardando_resposta_retorno: true, ultima_mensagem_atendente: action },
+  });
+
+  await sendButtons(jid, "Sua mensagem foi encaminhada ao atendente. Deseja voltar ao bot?", [
+    { id: "voltar_bot", text: "Voltar ao bot" },
+    { id: "continuar_atendente", text: "Continuar com atendente" },
+  ], session.empresaNome);
 }
 
 /* ===================================================================
@@ -1501,6 +1521,22 @@ const STATE_HANDLERS = {
 async function handleEstado(state, action, session) {
   const jid = session.remote_jid;
   const stateData = session.state_data ?? {};
+
+  if (state === "FALANDO_COM_ATENDENTE" && stateData.aguardando_resposta_retorno) {
+    const upper = action.trim().toUpperCase();
+    if (upper === "VOLTAR_BOT" || action === "voltar_bot") {
+      await atualizarSessao(session.id, { state: "MENU_PRINCIPAL", state_data: {} });
+      session.state = "MENU_PRINCIPAL";
+      session.state_data = {};
+      await sendWhatsAppMessage(jid, "Voltando ao menu. Como posso ajudar?");
+      await sendMenu(jid, session);
+      return;
+    } else if (upper === "CONTINUAR_ATENDENTE" || action === "continuar_atendente") {
+      await atualizarSessao(session.id, { state_data: { ...stateData, aguardando_resposta_retorno: false } });
+      await sendWhatsAppMessage(jid, "Ok! Sua mensagem continua sendo encaminhada ao atendente.");
+      return;
+    }
+  }
 
   if (state === "FALANDO_COM_ATENDENTE") {
     await handleFalandoComAtendente(action, jid, session);

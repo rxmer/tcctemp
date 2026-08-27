@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
+import { sendWhatsAppMessage } from "./baileys.client.js";
 
 export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName }) {
   const { data: existingData, error: existingError } = await supabaseAdmin
@@ -143,9 +144,7 @@ export async function limparSessoesExpiradas() {
     return;
   }
 
-  if (!expiradas?.length) return;
-
-  for (const sess of expiradas) {
+  for (const sess of (expiradas ?? [])) {
     await supabaseAdmin
       .from("chatbot_session")
       .update({
@@ -158,5 +157,30 @@ export async function limparSessoesExpiradas() {
     logger.info({ sessionId: sess.id }, "Sessão expirada reiniciada para MENU_PRINCIPAL");
   }
 
-  logger.info({ quantidade: expiradas.length }, "Sessões expiradas reiniciadas");
+  const { data: atendenteExpiradas } = await supabaseAdmin
+    .from("chatbot_session")
+    .select("id, remote_jid")
+    .eq("ativo", true)
+    .eq("state", "FALANDO_COM_ATENDENTE")
+    .lt("ultima_atividade", limite);
+
+  for (const sess of (atendenteExpiradas ?? [])) {
+    await supabaseAdmin
+      .from("chatbot_session")
+      .update({
+        state: "MENU_PRINCIPAL",
+        state_data: {},
+        ultima_atividade: new Date().toISOString(),
+      })
+      .eq("id", sess.id);
+
+    sendWhatsAppMessage(
+      sess.remote_jid,
+      "⏳ Parece que o atendente está demorando. O bot está de volta! Como posso ajudar?"
+    ).catch(() => {});
+
+    logger.info({ sessionId: sess.id }, "Sessão FALANDO_COM_ATENDENTE expirada, voltou ao MENU_PRINCIPAL");
+  }
+
+  logger.info({ quantidade: (expiradas?.length ?? 0) + (atendenteExpiradas?.length ?? 0) }, "Sessões expiradas reiniciadas");
 }
