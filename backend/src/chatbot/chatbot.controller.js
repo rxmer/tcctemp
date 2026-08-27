@@ -78,6 +78,11 @@ export async function listSessions(req, res) {
   res.json(sessions);
 }
 
+export async function getUnreadCount(req, res) {
+  const result = await sessionService.contarNaoLidas(req.tenantId);
+  res.json(result);
+}
+
 export async function getSession(req, res) {
   const { id } = req.params;
 

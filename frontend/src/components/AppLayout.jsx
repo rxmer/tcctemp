@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/ThemeContext";
 import { NotificacaoBell } from "./NotificacaoBell";
+import { ChatWidget } from "./ChatWidget";
 import { configuracaoEmpresaService } from "../services/configuracao-empresa.service";
 import styles from "../styles/components/AppLayout.module.css";
 import {
@@ -318,6 +319,8 @@ export function AppLayout() {
       <main className={styles.dashMain}>
         <Outlet />
       </main>
+
+      <ChatWidget />
     </div>
   );
 }

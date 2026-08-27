@@ -79,6 +79,46 @@ export async function listarSessoes(tenantId) {
   return data;
 }
 
+export async function contarNaoLidas(tenantId) {
+  const { data: sessoes } = await supabaseAdmin
+    .from("chatbot_session")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("ativo", true);
+
+  if (!sessoes?.length) return { total: 0, sessoes: [] };
+
+  const resultado = [];
+  let total = 0;
+
+  for (const sess of sessoes) {
+    const { data: ultimaMsg } = await supabaseAdmin
+      .from("chatbot_mensagem")
+      .select("criado_em")
+      .eq("session_id", sess.id)
+      .neq("remetente", "cliente")
+      .order("criado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const apos = ultimaMsg?.criado_em ?? "1970-01-01T00:00:00Z";
+
+    const { count } = await supabaseAdmin
+      .from("chatbot_mensagem")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", sess.id)
+      .eq("remetente", "cliente")
+      .gt("criado_em", apos);
+
+    if (count > 0) {
+      resultado.push({ session_id: sess.id, nao_lidas: count });
+      total += count;
+    }
+  }
+
+  return { total, sessoes: resultado };
+}
+
 export async function registrarMensagem({ tenantId, sessionId, remetente, texto }) {
   const { error } = await supabaseAdmin
     .from("chatbot_mensagem")

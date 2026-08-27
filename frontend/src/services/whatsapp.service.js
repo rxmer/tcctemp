@@ -15,6 +15,8 @@ export const whatsappService = {
 
   listSessions: () => apiFetch(`/api/chatbot/sessions?_=${Date.now()}`),
 
+  getUnreadCount: () => apiFetch(`/api/chatbot/sessions/unread?_=${Date.now()}`),
+
   getSession: (id) => apiFetch(`/api/chatbot/sessions/${id}?_=${Date.now()}`),
 
   sendReply: (id, mensagem) =>
