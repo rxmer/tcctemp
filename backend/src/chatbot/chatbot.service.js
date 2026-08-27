@@ -1568,7 +1568,7 @@ async function handleEstado(state, action, session) {
 
   const upper = action.trim().toUpperCase();
 
-  if (RESET_KEYWORDS.includes(upper)) {
+  if (RESET_KEYWORDS.includes(upper) && state !== "FALANDO_COM_ATENDENTE") {
     await sendWhatsAppMessage(jid, "🔄 Conversa reiniciada! Use o menu abaixo:");
     await sendMenu(jid, session);
     return;
@@ -1659,6 +1659,11 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
     }
 
     await registrarMensagem({ tenantId, sessionId: session.id, remetente: "cliente", texto: text });
+
+    if (session.state === "FALANDO_COM_ATENDENTE") {
+      await handleEstado(session.state, text, session);
+      return;
+    }
 
     const jid = remoteJid;
     const intent = detectNaturalLanguage(text);

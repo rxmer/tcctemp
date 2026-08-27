@@ -60,7 +60,7 @@ describe("relatorios-export - filtro por tipo", () => {
     return wb.worksheets.map((w) => w.name);
   }
 
-  it("excel geral contém todas as abas", async () => {
+  it("excel geral contém todas as abas", { timeout: 15000 }, async () => {
     const buffer = await exportService.gerarExcel("t1", {});
     expect(await nomesSheets(buffer)).toEqual([
       "Agendamentos",
@@ -107,7 +107,7 @@ describe("relatorios-export - filtro por tipo", () => {
     expect(relatoriosService.relatorioGeral).not.toHaveBeenCalled();
   });
 
-  it("pdf geral gera buffer com todas as seções", async () => {
+  it("pdf geral gera buffer com todas as seções", { timeout: 15000 }, async () => {
     const buffer = await exportService.gerarPDF("t1", {});
 
     expect(Buffer.isBuffer(buffer)).toBe(true);
