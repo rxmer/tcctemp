@@ -209,8 +209,24 @@ export async function startBaileys(tenantId) {
   socket.ev.on("messages.upsert", async ({ messages, type }) => {
     try {
     if (type !== "notify") return;
+
+    const ownNumber = socket?.user?.id
+      ? socket.user.id.split("@")[0].split(":")[0].replace(/\D/g, "")
+      : null;
+
     for (const msg of messages) {
       if (msg.key?.fromMe) continue;
+
+      const remoteJid = msg.key.remoteJid;
+      if (!remoteJid) continue;
+
+      // Ignora mensagens cujo remetente é o próprio número conectado (ex.: envio
+      // do WhatsApp Web/App para o próprio número conectado). Sem isso o bot
+      // trata o número do WhatsApp conectado como cliente e responde para ele mesmo.
+      if (ownNumber) {
+        const senderNumber = remoteJid.split("@")[0].split(":")[0].replace(/\D/g, "");
+        if (senderNumber === ownNumber) continue;
+      }
 
       let text = null;
       const msgType = Object.keys(msg.message || {}).find((k) => k !== "messageContextInfo");
@@ -250,7 +266,6 @@ export async function startBaileys(tenantId) {
 
       if (!text || text === "") continue;
 
-      const remoteJid = msg.key.remoteJid;
       const pushName = msg.pushName || "Cliente";
 
       logger.info({ jidSuffix: remoteJid?.split("@")[1], phoneSuffix: remoteJid?.split("@")[0]?.slice(-4), textLength: text.length }, "Mensagem processada");

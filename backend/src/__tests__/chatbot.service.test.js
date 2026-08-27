@@ -960,6 +960,35 @@ describe("chatbot.service", () => {
       );
     });
 
+    it("nao deve oferecer voltar ao bot quando o atendente ja respondeu", async () => {
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({ state: "FALANDO_COM_ATENDENTE" }), error: null }),
+          });
+        }
+        if (table === "chatbot_mensagem") {
+          return mockQuery({
+            then: (resolve) => resolve({ data: [{ id: "msg-atendente-1", remetente: "atendente" }], error: null }),
+          });
+        }
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "obrigado", "João");
+
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("encaminhada ao atendente")
+      );
+      expect(baileys.sendButtons).not.toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Deseja voltar ao bot?"),
+        expect.any(Array),
+        expect.any(String)
+      );
+    });
+
     it("deve voltar ao menu ao enviar keyword 0", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({ state: "FALANDO_COM_ATENDENTE" }), error: null }),

@@ -5,7 +5,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import * as baileysClient from "./baileys.client.js";
 import * as sessionService from "./chatbot.session.js";
-import { processMessage } from "./chatbot.service.js";
+import { processMessage, sendMenu } from "./chatbot.service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -164,6 +164,8 @@ export async function resetSession(req, res) {
     session.remote_jid,
     "🔄 Sessão reiniciada! Escolha uma opção no menu."
   );
+
+  await sendMenu(session.remote_jid, { ...session, state: "MENU_PRINCIPAL", state_data: {} });
 
   res.json({ message: "Sessão reiniciada" });
 }

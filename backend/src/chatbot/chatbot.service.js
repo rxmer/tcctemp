@@ -125,8 +125,7 @@ function isAtLeast11Digits(num) {
 function extractPhone(remoteJid) {
   const raw = remoteJid.replace(/@.*$/, "").replace(/\D/g, "");
   let phone = raw;
-  if (!remoteJid.endsWith("@lid")) phone = raw;
-  else {
+  if (remoteJid.endsWith("@lid")) {
     const cacheKey = remoteJid;
     if (lidPhoneCache.has(cacheKey)) phone = lidPhoneCache.get(cacheKey);
     else {
@@ -136,7 +135,8 @@ function extractPhone(remoteJid) {
         for (const dir of dirs) {
           const mappingFile = path.join(root, dir, `lid-mapping-${raw}_reverse.json`);
           if (fs.existsSync(mappingFile)) {
-            phone = JSON.parse(fs.readFileSync(mappingFile, "utf8"));
+            const parsed = JSON.parse(fs.readFileSync(mappingFile, "utf8"));
+            phone = typeof parsed === "string" || typeof parsed === "number" ? String(parsed) : raw;
             lidPhoneCache.set(cacheKey, phone);
             break;
           }
@@ -144,7 +144,10 @@ function extractPhone(remoteJid) {
       } catch {}
     }
   }
-  return phone.replace(/^55/, "");
+  if (phone.length === 12 || phone.length === 13) {
+    phone = phone.replace(/^55/, "");
+  }
+  return phone;
 }
 
 function isValidPhone(phone) {
@@ -437,7 +440,7 @@ function gerarButtonsDatas(datas) {
   });
 }
 
-async function sendMenu(jid, session) {
+export async function sendMenu(jid, session) {
   const empresaNome = await getEmpresaNome(session.tenant_id);
   const phone = extractPhone(session.remote_jid);
   const cliente = await listarClientePorTelefone(session.tenant_id, phone);
@@ -1178,6 +1181,16 @@ async function handleConfirmandoCancelamento(action, jid, session) {
    FALANDO_COM_ATENDENTE
    =================================================================== */
 
+async function atendenteJaRespondeu(session) {
+  const { data } = await supabaseAdmin
+    .from("chatbot_mensagem")
+    .select("id")
+    .eq("session_id", session.id)
+    .eq("remetente", "atendente")
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
 async function handleFalandoComAtendente(action, jid, session) {
   const ATENDENTE_KEYWORDS = ["MENU", "VOLTAR", "BOT", "REINICIAR", "0"];
   const upper = action.trim().toUpperCase();
@@ -1200,9 +1213,16 @@ async function handleFalandoComAtendente(action, jid, session) {
     referenciaId: session.id,
   }).catch(() => {});
 
+  const atendenteEngajado = await atendenteJaRespondeu(session);
+
   await atualizarSessao(session.id, {
-    state_data: { ...session.state_data, aguardando_resposta_retorno: true, ultima_mensagem_atendente: action },
+    state_data: { ...session.state_data, aguardando_resposta_retorno: !atendenteEngajado, ultima_mensagem_atendente: action },
   });
+
+  if (atendenteEngajado) {
+    await sendWhatsAppMessage(jid, "Sua mensagem foi encaminhada ao atendente.");
+    return;
+  }
 
   await sendButtons(jid, "Sua mensagem foi encaminhada ao atendente. Deseja voltar ao bot?", [
     { id: "voltar_bot", text: "Voltar ao bot" },
