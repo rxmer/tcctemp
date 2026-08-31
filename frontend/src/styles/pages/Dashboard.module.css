@@ -261,15 +261,105 @@
 .dashLoading {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 80px 20px;
+  gap: 28px;
+  padding: 20px 0;
   color: var(--text-secondary);
 }
 
 .dashLoading p {
   font-size: 14px;
+}
+
+.skeletonStatGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.skeletonStat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-surface);
+}
+
+.skeletonStatIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+
+.skeletonLowerGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.skeletonProximos {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 26px;
+  background: var(--bg-surface);
+}
+
+.skeletonProximo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.skeletonQuick {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 26px;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* -- TEMA CLARO ---------------------------------------------- */
+:global([data-theme="light"]) .skeletonStat,
+:global([data-theme="light"]) .skeletonProximos,
+:global([data-theme="light"]) .skeletonQuick {
+  background: #ffffff;
+}
+
+:global([data-theme="light"]) .skeletonProximo,
+:global([data-theme="light"]) .skeletonStatIcon {
+  background: #f0f0f0;
+}
+
+/* -- RESPONSIVO ---------------------------------------------- */
+@media (max-width: 1024px) {
+  .skeletonStatGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .skeletonLowerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .skeletonStatGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonStat,
+  .skeletonProximos,
+  .skeletonQuick {
+    padding: 22px;
+  }
 }
 
 .dashError {

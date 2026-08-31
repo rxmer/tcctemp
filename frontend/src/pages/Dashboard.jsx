@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
-import { PageHeader, Button, SkeletonCard } from "../components/ui";
+import { PageHeader, Button } from "../components/ui";
 import { dashboardService } from "../services/dashboard.service";
 import styles from "../styles/pages/Dashboard.module.css";
 import { CalendarDays, CheckCircle2, Users, DollarSign, AlertTriangle, CalendarPlus, UserPlus, Clock } from "lucide-react";
@@ -31,7 +31,39 @@ export function Dashboard() {
   if (loading || dashLoading) {
     return (
       <div className={styles.dashLoading}>
-        <SkeletonCard lines={6} />
+        <div className={styles.skeletonStatGrid}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className={styles.skeletonStat}>
+              <div className={`${styles.skeletonStatIcon} skeleton`} />
+              <div className="skeleton" style={{ width: "55%", height: 28 }} />
+              <div className="skeleton" style={{ width: "75%", height: 12 }} />
+            </div>
+          ))}
+        </div>
+        <div className={styles.skeletonLowerGrid}>
+          <div className={styles.skeletonProximos}>
+            <div className="skeleton" style={{ width: "40%", height: 18, marginBottom: 18 }} />
+            {Array.from({ length: 3 }, (_, i) => (
+              <div
+                key={i}
+                className={styles.skeletonProximo}
+                style={{ marginBottom: i < 2 ? 10 : 0 }}
+              >
+                <div className="skeleton" style={{ width: 45, height: 18 }} />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div className="skeleton" style={{ width: "40%", height: 12 }} />
+                  <div className="skeleton" style={{ width: "70%", height: 10 }} />
+                </div>
+                <div className="skeleton" style={{ width: 70, height: 16 }} />
+              </div>
+            ))}
+          </div>
+          <div className={styles.skeletonQuick}>
+            <div className="skeleton" style={{ width: "45%", height: 18 }} />
+            <div className="skeleton" style={{ width: "100%", height: 46 }} />
+            <div className="skeleton" style={{ width: "100%", height: 46 }} />
+          </div>
+        </div>
       </div>
     );
   }

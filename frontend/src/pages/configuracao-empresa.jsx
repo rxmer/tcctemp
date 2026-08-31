@@ -110,20 +110,20 @@ export function ConfiguracaoEmpresa() {
       {loading ? (
         <SkeletonCard lines={8} />
       ) : (
-        <div style={{ maxWidth: 640 }}>
+        <div style={{ maxWidth: 880, margin: "0 auto" }}>
           <Card>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
               <Building2 size={20} style={{ color: "var(--accent)" }} />
               <h2 style={{ fontSize: 18, fontFamily: "var(--font-display)" }}>Dados da empresa</h2>
             </div>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               <Input label="Nome fantasia" name="nome_fantasia" placeholder="Ex: Esteticar" value={form.nome_fantasia} onChange={handleChange} required />
               <Input label="CNPJ" name="cnpj" placeholder="00.000.000/0000-00" value={mascaraCNPJ(form.cnpj)} onChange={(e) => setForm((p) => ({ ...p, cnpj: e.target.value.replace(/\D/g, "") }))} />
               <Input label="Telefone" name="telefone" mask="phone" placeholder="(11) 99999-9999" value={form.telefone} onChange={handleChange} />
               <Input label="E-mail" name="email" type="email" placeholder="contato@esteticar.com.br" value={form.email} onChange={handleChange} />
-              <Input label="Endereço" name="endereco" placeholder="Rua, número, bairro, cidade - UF" value={form.endereco} onChange={handleChange} />
+              <Input label="Endereço" name="endereco" placeholder="Rua, número, bairro, cidade - UF" value={form.endereco} onChange={handleChange} style={{ gridColumn: "1 / -1" }} />
 
-              <div className="input-group">
+              <div className="input-group" style={{ gridColumn: "1 / -1" }}>
                 <label className="input-label">Logo da empresa</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   {logoPreview ? (
@@ -142,7 +142,9 @@ export function ConfiguracaoEmpresa() {
                 </div>
               </div>
 
-              <Button type="submit" loading={saving} fullWidth>Salvar configurações</Button>
+              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                <Button type="submit" loading={saving} fullWidth>Salvar configurações</Button>
+              </div>
             </form>
           </Card>
         </div>
