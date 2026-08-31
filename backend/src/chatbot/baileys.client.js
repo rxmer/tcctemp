@@ -30,6 +30,33 @@ let socketId = 0;
 let desconexaoNotificada = false;
 let ciclosLimpezaAuth = 0;
 
+export function normalizarNumero(jid) {
+  if (!jid) return null;
+  let raw = jid.split("@")[0].split(":")[0].replace(/\D/g, "");
+  if (jid.endsWith("@lid")) {
+    try {
+      const root = path.resolve(__dirname, "..", "..", "..");
+      const dirs = fs.readdirSync(root).filter((d) => d.startsWith("baileys_auth_"));
+      for (const dir of dirs) {
+        const mappingFile = path.join(root, dir, `lid-mapping-${raw}_reverse.json`);
+        if (fs.existsSync(mappingFile)) {
+          const parsed = JSON.parse(fs.readFileSync(mappingFile, "utf8"));
+          raw = typeof parsed === "string" || typeof parsed === "number" ? String(parsed).replace(/\D/g, "") : raw;
+          break;
+        }
+      }
+    } catch {}
+  }
+  if (!raw) return null;
+  return raw.length > 11 ? raw.replace(/^55/, "") : raw;
+}
+
+export function ehNumeroProprio(jid, ownNumber) {
+  if (!ownNumber) return false;
+  const numero = normalizarNumero(jid);
+  return numero === ownNumber;
+}
+
 function notificarDesconexao(tenantId, mensagem) {
   if (!tenantId || desconexaoNotificada) return;
   desconexaoNotificada = true;
@@ -126,14 +153,16 @@ export async function startBaileys(tenantId) {
       connectionState.status = "connected";
       connectionState.qrCode = null;
       connectionState.error = null;
-      connectionState.phoneNumber = socket?.user?.id
-        ? socket.user.id.split("@")[0].split(":")[0].replace(/\D/g, "")
-        : null;
+      const meId =
+        socket?.user?.id ||
+        authState?.creds?.me?.id ||
+        socket?.authState?.creds?.me?.id;
+      connectionState.phoneNumber = meId ? normalizarNumero(meId) : null;
       pairingCompleted = false;
       conectouNestaSessao = true;
       ciclosLimpezaAuth = 0;
       desconexaoNotificada = false;
-      logger.info({ numero: connectionState.phoneNumber }, "Baileys conectado com sucesso");
+      logger.info({ numero: connectionState.phoneNumber, meId }, "Baileys conectado com sucesso");
     }
 
     if (connection === "close") {
@@ -210,9 +239,15 @@ export async function startBaileys(tenantId) {
     try {
     if (type !== "notify") return;
 
-    const ownNumber = socket?.user?.id
-      ? socket.user.id.split("@")[0].split(":")[0].replace(/\D/g, "")
-      : null;
+    // Número próprio de forma confiável: usa o capturado na conexão quando
+    // disponível, com fallback para socket.user.id e creds.me (normalizados
+    // também para @lid)
+    const meId =
+      socket?.user?.id ||
+      authState?.creds?.me?.id ||
+      socket?.authState?.creds?.me?.id;
+    const ownNumber = connectionState.phoneNumber ||
+      (meId ? normalizarNumero(meId) : null);
 
     for (const msg of messages) {
       if (msg.key?.fromMe) continue;
@@ -220,12 +255,19 @@ export async function startBaileys(tenantId) {
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid) continue;
 
+      // Ignora mensagens de grupos: o chatbot atende apenas conversas 1:1
+      if (remoteJid.endsWith("@g.us") || remoteJid.endsWith("@broadcast")) continue;
+
       // Ignora mensagens cujo remetente é o próprio número conectado (ex.: envio
-      // do WhatsApp Web/App para o próprio número conectado). Sem isso o bot
-      // trata o número do WhatsApp conectado como cliente e responde para ele mesmo.
-      if (ownNumber) {
-        const senderNumber = remoteJid.split("@")[0].split(":")[0].replace(/\D/g, "");
-        if (senderNumber === ownNumber) continue;
+      // do WhatsApp Web/App para o próprio número conectado, incluindo quando o
+      // remoteJid vem com @lid). Sem isso o bot trata o número do WhatsApp
+      // conectado como cliente e responde para ele mesmo.
+      if (ownNumber && ehNumeroProprio(remoteJid, ownNumber)) {
+        logger.info(
+          { remoteJid, ownNumber },
+          "Mensagem do próprio número conectado ignorada (self)"
+        );
+        continue;
       }
 
       let text = null;
