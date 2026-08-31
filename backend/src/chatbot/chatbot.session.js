@@ -167,7 +167,7 @@ export async function desativarSessao(sessionId) {
   if (error) throw new AppError(`Erro ao desativar sessão: ${error.message}`);
 }
 
-const SESSION_TIMEOUT_MINUTES = 30;
+const SESSION_TIMEOUT_MINUTES = 5;
 
 export async function limparSessoesExpiradas() {
   const limite = new Date(Date.now() - SESSION_TIMEOUT_MINUTES * 60 * 1000).toISOString();
@@ -205,6 +205,15 @@ export async function limparSessoesExpiradas() {
     .lt("ultima_atividade", limite);
 
   for (const sess of (atendenteExpiradas ?? [])) {
+    const { data: atendenteRespondeu } = await supabaseAdmin
+      .from("chatbot_mensagem")
+      .select("id")
+      .eq("session_id", sess.id)
+      .eq("remetente", "atendente")
+      .limit(1);
+
+    if ((atendenteRespondeu?.length ?? 0) > 0) continue;
+
     await supabaseAdmin
       .from("chatbot_session")
       .update({

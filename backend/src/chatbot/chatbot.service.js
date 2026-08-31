@@ -65,7 +65,7 @@ const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julh
 
 const ERRO_MAXIMO = 3;
 const ANTECEDENCIA_MINIMA_HORAS = 2;
-const SESSION_TIMEOUT_MINUTOS = 30;
+const SESSION_TIMEOUT_MINUTOS = 5;
 
 const VALID_TRANSITIONS = {
   "MENU_PRINCIPAL": ["ESCOLHENDO_SERVICO", "CONSULTANDO_AGENDAMENTOS", "CANCELANDO_AGENDAMENTO", "FALANDO_COM_ATENDENTE"],
@@ -1182,13 +1182,25 @@ async function handleConfirmandoCancelamento(action, jid, session) {
    =================================================================== */
 
 async function atendenteJaRespondeu(session) {
+  if (session.atendente_engajado) return true;
+
   const { data } = await supabaseAdmin
     .from("chatbot_mensagem")
     .select("id")
     .eq("session_id", session.id)
     .eq("remetente", "atendente")
     .limit(1);
-  return (data?.length ?? 0) > 0;
+  const engajado = (data?.length ?? 0) > 0;
+
+  if (engajado) {
+    await supabaseAdmin
+      .from("chatbot_session")
+      .update({ atendente_engajado: true })
+      .eq("id", session.id);
+    session.atendente_engajado = true;
+  }
+
+  return engajado;
 }
 
 async function handleFalandoComAtendente(action, jid, session) {
@@ -1220,7 +1232,6 @@ async function handleFalandoComAtendente(action, jid, session) {
   });
 
   if (atendenteEngajado) {
-    await sendWhatsAppMessage(jid, "Sua mensagem foi encaminhada ao atendente.");
     return;
   }
 
@@ -1645,13 +1656,17 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
     if (session) session.empresaNome = empresaNome;
 
     if (session && await verificarSessaoExpirada(session)) {
-      logger.info({ sessionId: session.id, remoteJid }, "Sessão expirada por inatividade");
-      await supabaseAdmin
-        .from("chatbot_session")
-        .update({ ativo: false })
-        .eq("id", session.id);
-      await sendWhatsAppMessage(remoteJid, "⏰ Seu atendimento foi encerrado por inatividade. Caso deseje continuar, basta enviar uma mensagem.");
-      session = null;
+      if (session.state === "FALANDO_COM_ATENDENTE" && await atendenteJaRespondeu(session)) {
+        await atualizarSessao(session.id, { ultima_atividade: new Date().toISOString() });
+      } else {
+        logger.info({ sessionId: session.id, remoteJid }, "Sessão expirada por inatividade");
+        await supabaseAdmin
+          .from("chatbot_session")
+          .update({ ativo: false })
+          .eq("id", session.id);
+        await sendWhatsAppMessage(remoteJid, "⏰ Seu atendimento foi encerrado por inatividade. Caso deseje continuar, basta enviar uma mensagem.");
+        session = null;
+      }
     }
 
     if (!session) {

@@ -120,6 +120,10 @@ export async function sendReply(req, res) {
   }
 
   await baileysClient.sendWhatsAppMessage(session.remote_jid, mensagem.trim(), "atendente");
+  await supabaseAdmin
+    .from("chatbot_session")
+    .update({ ultima_atividade: new Date().toISOString(), atendente_engajado: true })
+    .eq("id", id);
   res.json({ message: "Mensagem enviada" });
 }
 

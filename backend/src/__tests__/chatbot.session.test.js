@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as sessionService from "../chatbot/chatbot.session.js";
 import { supabaseAdmin } from "../config/supabase.js";
+import { sendWhatsAppMessage } from "../chatbot/baileys.client.js";
 
 vi.mock("../chatbot/baileys.client.js", () => ({
-  sendWhatsAppMessage: vi.fn(),
+  sendWhatsAppMessage: vi.fn().mockResolvedValue(true),
 }));
 
 const TENANT_ID = "tenant-1";
@@ -315,6 +316,68 @@ describe("chatbot.session", () => {
       await sessionService.limparSessoesExpiradas();
 
       expect(selectQuery.neq).toHaveBeenCalledWith("state", "FALANDO_COM_ATENDENTE");
+    });
+
+    it("nao deve derrubar sessao FALANDO_COM_ATENDENTE quando o atendente ja respondeu", async () => {
+      const expiradas = [];
+
+      const selectExpiradas = mockQuery({
+        then: (resolve) => resolve({ data: expiradas, error: null }),
+      });
+
+      const selectAtendente = mockQuery({
+        then: (resolve) =>
+          resolve({ data: [{ id: "sess-atend", remote_jid: REMOTE_JID }], error: null }),
+      });
+
+      const selectMensagem = mockQuery({
+        then: (resolve) => resolve({ data: [{ id: "msg-1", remetente: "atendente" }], error: null }),
+      });
+
+      supabaseAdmin.from
+        .mockReturnValueOnce(selectExpiradas)
+        .mockReturnValueOnce(selectAtendente)
+        .mockReturnValueOnce(selectMensagem);
+
+
+      await sessionService.limparSessoesExpiradas();
+
+      expect(selectMensagem.eq).toHaveBeenCalledWith("remetente", "atendente");
+      expect(sendWhatsAppMessage).not.toHaveBeenCalled();
+    });
+
+    it("deve derrubar sessao FALANDO_COM_ATENDENTE quando o atendente nao respondeu", async () => {
+      const expiradas = [];
+
+      const selectExpiradas = mockQuery({
+        then: (resolve) => resolve({ data: expiradas, error: null }),
+      });
+
+      const selectAtendente = mockQuery({
+        then: (resolve) =>
+          resolve({ data: [{ id: "sess-atend", remote_jid: REMOTE_JID }], error: null }),
+      });
+
+      const selectMensagem = mockQuery({
+        then: (resolve) => resolve({ data: [], error: null }),
+      });
+
+      const updateQuery = mockQuery();
+
+      supabaseAdmin.from
+        .mockReturnValueOnce(selectExpiradas)
+        .mockReturnValueOnce(selectAtendente)
+        .mockReturnValueOnce(selectMensagem)
+        .mockReturnValueOnce(updateQuery);
+
+
+      await sessionService.limparSessoesExpiradas();
+
+      expect(updateQuery.update).toHaveBeenCalled();
+      expect(sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("atendente está demorando")
+      );
     });
 
     it("deve retornar sem fazer nada se nao houver expiradas", async () => {

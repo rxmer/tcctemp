@@ -960,7 +960,7 @@ describe("chatbot.service", () => {
       );
     });
 
-    it("nao deve oferecer voltar ao bot quando o atendente ja respondeu", async () => {
+    it("nao deve responder ao cliente quando o atendente ja respondeu", async () => {
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
           return mockQuery({
@@ -977,7 +977,7 @@ describe("chatbot.service", () => {
 
       await processMessage(TENANT_ID, REMOTE_JID, "obrigado", "João");
 
-      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
         REMOTE_JID,
         expect.stringContaining("encaminhada ao atendente")
       );
@@ -997,6 +997,39 @@ describe("chatbot.service", () => {
       await processMessage(TENANT_ID, REMOTE_JID, "0", "João");
 
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Voltando ao menu")
+      );
+    });
+
+    it("nao deve encerrar sessao expirada quando atendente ja respondeu", async () => {
+      const expirada = buildSession({
+        state: "FALANDO_COM_ATENDENTE",
+        ultima_atividade: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      });
+
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: expirada, error: null }),
+            single: vi.fn().mockResolvedValue({ data: expirada, error: null }),
+          });
+        }
+        if (table === "chatbot_mensagem") {
+          return mockQuery({
+            then: (resolve) => resolve({ data: [{ id: "m1", remetente: "atendente" }], error: null }),
+          });
+        }
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "obrigado", "João");
+
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("encerrado por inatividade")
+      );
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
         REMOTE_JID,
         expect.stringContaining("Voltando ao menu")
       );
