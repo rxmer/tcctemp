@@ -2,7 +2,10 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import { criarNotificacao } from "./notificacoes.service.js";
 import { dataLocalISO } from "../utils/data.js";
-import { sendWhatsAppMessage, getConnectionState } from "../chatbot/baileys.client.js";
+import {
+  sendWhatsAppMessage,
+  getConnectionState,
+} from "../chatbot/baileys.client.js";
 
 const DIAS_ANTECEDENCIA = 3;
 const DIAS_PARA_COBRANCA = 3;
@@ -21,7 +24,9 @@ function diasDeDiferenca(dataISO, refISO) {
 
 export async function verificarContasVencendo() {
   const hoje = dataLocalISO();
-  const limite = dataLocalISO(new Date(Date.now() + DIAS_ANTECEDENCIA * 24 * 60 * 60 * 1000));
+  const limite = dataLocalISO(
+    new Date(Date.now() + DIAS_ANTECEDENCIA * 24 * 60 * 60 * 1000),
+  );
 
   const { data: contas, error } = await supabaseAdmin
     .from("contas_pagar")
@@ -67,7 +72,8 @@ export async function verificarContasVencendo() {
     criadas++;
   }
 
-  if (criadas > 0) logger.info({ criadas }, "Alertas de contas a pagar criados");
+  if (criadas > 0)
+    logger.info({ criadas }, "Alertas de contas a pagar criados");
   return criadas;
 }
 
@@ -76,19 +82,24 @@ export async function cobrarFaturamentosPendentes() {
   if (connState.status !== "connected" || !connState.tenantId) return 0;
 
   const tenantId = connState.tenantId;
-  const corte = new Date(Date.now() - DIAS_PARA_COBRANCA * 24 * 60 * 60 * 1000).toISOString();
+  const corte = new Date(
+    Date.now() - DIAS_PARA_COBRANCA * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   const { data: faturamentos, error } = await supabaseAdmin
     .from("faturamentos")
     .select(
-      "faturamento_id, valor_total, ordem_servico:ordens_servico(agendamento:agendamentos(data_agendamento, cliente:clientes(nome, telefone)))"
+      "faturamento_id, valor_total, ordem_servico:ordens_servico(agendamento:agendamentos(data_agendamento, cliente:clientes(nome, telefone)))",
     )
     .eq("tenant_id", tenantId)
     .eq("pago", false)
     .lte("criado_em", corte);
 
   if (error) {
-    logger.error({ err: error }, "Erro ao buscar faturamentos pendentes para cobrança");
+    logger.error(
+      { err: error },
+      "Erro ao buscar faturamentos pendentes para cobrança",
+    );
     return 0;
   }
 
@@ -114,7 +125,7 @@ export async function cobrarFaturamentosPendentes() {
       `Olá, *${cliente.nome ?? "Cliente"}*! Tudo bem?`,
       "",
       `Passando para lembrar que o pagamento do serviço realizado em ${formatDateBR(
-        fat.ordem_servico?.agendamento?.data_agendamento
+        fat.ordem_servico?.agendamento?.data_agendamento,
       )} ainda está pendente.`,
       "",
       `💵 *Valor:* R$ ${Number(fat.valor_total).toFixed(2)}`,
@@ -134,11 +145,15 @@ export async function cobrarFaturamentosPendentes() {
       });
       enviadas++;
     } catch (err) {
-      logger.warn({ err, faturamentoId: fat.faturamento_id }, "Falha ao enviar cobrança");
+      logger.warn(
+        { err, faturamentoId: fat.faturamento_id },
+        "Falha ao enviar cobrança",
+      );
     }
   }
 
-  if (enviadas > 0) logger.info({ enviadas }, "Cobranças de faturamento enviadas");
+  if (enviadas > 0)
+    logger.info({ enviadas }, "Cobranças de faturamento enviadas");
   return enviadas;
 }
 
@@ -150,13 +165,18 @@ export async function fecharAgendamentosPassados() {
 
   const { data: pendentes, error } = await supabaseAdmin
     .from("agendamentos")
-    .select("agendamento_id, tenant_id, data_agendamento, hora_agendamento, cliente:clientes(nome)")
+    .select(
+      "agendamento_id, tenant_id, data_agendamento, hora_agendamento, cliente:clientes(nome)",
+    )
     .eq("status", "pendente")
     .lt("data_agendamento", hoje)
     .is("deletado_em", null);
 
   if (error) {
-    logger.error({ err: error }, "Erro ao buscar agendamentos pendentes passados");
+    logger.error(
+      { err: error },
+      "Erro ao buscar agendamentos pendentes passados",
+    );
   } else {
     for (const ag of pendentes ?? []) {
       const { error: updError } = await supabaseAdmin
@@ -166,7 +186,10 @@ export async function fecharAgendamentosPassados() {
         .eq("tenant_id", ag.tenant_id);
 
       if (updError) {
-        logger.error({ err: updError, agendamentoId: ag.agendamento_id }, "Erro ao cancelar agendamento passado");
+        logger.error(
+          { err: updError, agendamentoId: ag.agendamento_id },
+          "Erro ao cancelar agendamento passado",
+        );
         continue;
       }
 
@@ -185,13 +208,18 @@ export async function fecharAgendamentosPassados() {
 
   const { data: confirmados, error: errConf } = await supabaseAdmin
     .from("agendamentos")
-    .select("agendamento_id, tenant_id, data_agendamento, hora_agendamento, cliente:clientes(nome)")
+    .select(
+      "agendamento_id, tenant_id, data_agendamento, hora_agendamento, cliente:clientes(nome)",
+    )
     .eq("status", "confirmado")
     .lt("data_agendamento", hoje)
     .is("deletado_em", null);
 
   if (errConf) {
-    logger.error({ err: errConf }, "Erro ao buscar agendamentos confirmados passados");
+    logger.error(
+      { err: errConf },
+      "Erro ao buscar agendamentos confirmados passados",
+    );
   } else {
     for (const ag of confirmados ?? []) {
       const { count } = await supabaseAdmin
@@ -221,7 +249,9 @@ export async function fecharAgendamentosPassados() {
     .select("notificacao_id, referencia_id")
     .eq("tipo", "revisao_agendamento_passado");
 
-  const idsRevisao = (revisoes ?? []).map((r) => r.referencia_id).filter(Boolean);
+  const idsRevisao = (revisoes ?? [])
+    .map((r) => r.referencia_id)
+    .filter(Boolean);
   if (idsRevisao.length > 0) {
     const { data: agsVinculados } = await supabaseAdmin
       .from("agendamentos")
@@ -230,7 +260,7 @@ export async function fecharAgendamentosPassados() {
 
     for (const revisao of revisoes ?? []) {
       const ag = (agsVinculados ?? []).find(
-        (a) => String(a.agendamento_id) === String(revisao.referencia_id)
+        (a) => String(a.agendamento_id) === String(revisao.referencia_id),
       );
 
       if (!ag || ag.status !== "confirmado") {
@@ -244,7 +274,10 @@ export async function fecharAgendamentosPassados() {
   }
 
   if (cancelados > 0 || avisosCriados > 0 || limpezas > 0) {
-    logger.info({ cancelados, avisosCriados, limpezas }, "Fechamento de agendamentos passados executado");
+    logger.info(
+      { cancelados, avisosCriados, limpezas },
+      "Fechamento de agendamentos passados executado",
+    );
   }
   return { cancelados, avisosCriados };
 }
@@ -257,8 +290,12 @@ export async function enviarResumoDiario() {
 
   const hoje = dataLocalISO();
   const amanha = dataLocalISO(new Date(Date.now() + 24 * 60 * 60 * 1000));
-  const limiteContas = dataLocalISO(new Date(Date.now() + DIAS_ANTECEDENCIA * 24 * 60 * 60 * 1000));
-  const corteFaturas = new Date(Date.now() - DIAS_PARA_COBRANCA * 24 * 60 * 60 * 1000).toISOString();
+  const limiteContas = dataLocalISO(
+    new Date(Date.now() + DIAS_ANTECEDENCIA * 24 * 60 * 60 * 1000),
+  );
+  const corteFaturas = new Date(
+    Date.now() - DIAS_PARA_COBRANCA * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   const { data: empresas, error: errEmpresas } = await supabaseAdmin
     .from("configuracao_empresa")
@@ -266,7 +303,10 @@ export async function enviarResumoDiario() {
     .neq("telefone", null);
 
   if (errEmpresas) {
-    logger.error({ err: errEmpresas }, "Erro ao buscar empresas para o resumo di�rio");
+    logger.error(
+      { err: errEmpresas },
+      "Erro ao buscar empresas para o resumo di�rio",
+    );
     return { enviados: 0 };
   }
 
@@ -309,8 +349,14 @@ export async function enviarResumoDiario() {
       .eq("pago", false)
       .lte("criado_em", corteFaturas);
 
-    const totalContas = (contas ?? []).reduce((soma, c) => soma + Number(c.valor || 0), 0);
-    const totalFaturas = (faturas ?? []).reduce((soma, f) => soma + Number(f.valor_total || 0), 0);
+    const totalContas = (contas ?? []).reduce(
+      (soma, c) => soma + Number(c.valor || 0),
+      0,
+    );
+    const totalFaturas = (faturas ?? []).reduce(
+      (soma, f) => soma + Number(f.valor_total || 0),
+      0,
+    );
 
     const temAgendamentos = (agsAmanha?.length ?? 0) > 0;
     const temAlertas = totalContas > 0 || totalFaturas > 0;
@@ -338,9 +384,15 @@ export async function enviarResumoDiario() {
     }
 
     try {
-      await sendWhatsAppMessage(`55${String(telefone).replace(/\D/g, "")}@s.whatsapp.net`, mensagem.trim());
+      await sendWhatsAppMessage(
+        `55${String(telefone).replace(/\D/g, "")}@s.whatsapp.net`,
+        mensagem.trim(),
+      );
     } catch (err) {
-      logger.warn({ err, tenantId }, "Falha ao enviar resumo di�rio por WhatsApp");
+      logger.warn(
+        { err, tenantId },
+        "Falha ao enviar resumo di�rio por WhatsApp",
+      );
       continue;
     }
 
