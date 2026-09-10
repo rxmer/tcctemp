@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePolling } from "../hooks/usePolling";
 import { whatsappService } from "../services/whatsapp.service";
 import styles from "./ChatWidget.module.css";
 import { MessageCircle, X, ArrowLeft, Send, RotateCcw } from "lucide-react";
@@ -62,9 +63,9 @@ export function ChatWidget() {
 
   useEffect(() => {
     carregarUnread();
-    const intervalo = setInterval(carregarUnread, 30000);
-    return () => clearInterval(intervalo);
   }, [carregarUnread]);
+
+  usePolling(carregarUnread, 30000);
 
   useEffect(() => {
     if (open && !activeSession) {
@@ -75,10 +76,10 @@ export function ChatWidget() {
   useEffect(() => {
     if (activeSession) {
       carregarMensagens();
-      const intervalo = setInterval(carregarMensagens, 5000);
-      return () => clearInterval(intervalo);
     }
   }, [activeSession, carregarMensagens]);
+
+  usePolling(activeSession ? carregarMensagens : null, activeSession ? 5000 : null);
 
   useEffect(() => {
     if (bubblesRef.current) {

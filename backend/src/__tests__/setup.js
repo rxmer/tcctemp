@@ -19,6 +19,7 @@ function buildQuery(returnValue) {
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
     lt: vi.fn().mockReturnThis(),
+    gt: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -42,6 +43,7 @@ const mockAuthAdmin = {
 vi.mock("../config/supabase.js", () => ({
   supabaseAdmin: {
     from: mockFrom,
+    rpc: vi.fn(),
     auth: { admin: mockAuthAdmin },
   },
 }));

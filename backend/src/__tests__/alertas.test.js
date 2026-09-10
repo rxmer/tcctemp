@@ -119,11 +119,11 @@ describe("alertas - verificarContasVencendo", () => {
       data_vencimento: isoComDeslocamento(-1),
     };
 
-    supabaseAdmin.from.mockImplementation((table) => {
+supabaseAdmin.from.mockImplementation((table) => {
       if (table === "contas_pagar") {
         return q({ then: (resolve) => resolve({ data: [conta], error: null }) });
       }
-      return q({ then: (resolve) => resolve({ count: 1, error: null }) });
+      return q({ then: (resolve) => resolve({ data: [{ referencia_id: "3" }], error: null }) });
     });
 
     const criadas = await verificarContasVencendo();
@@ -207,7 +207,7 @@ describe("alertas - cobrarFaturamentosPendentes", () => {
       if (table === "faturamentos") {
         return q({ then: (resolve) => resolve({ data: [fat], error: null }) });
       }
-      return q({ then: (resolve) => resolve({ count: 1, error: null }) });
+      return q({ then: (resolve) => resolve({ data: [{ referencia_id: "77" }], error: null }) });
     });
 
     const enviadas = await cobrarFaturamentosPendentes();
@@ -322,7 +322,7 @@ describe("alertas - fecharAgendamentosPassados", () => {
     );
   });
 
-  it("nao duplica aviso de revisao", async () => {
+it("nao duplica aviso de revisao", async () => {
     let chamada = 0;
     supabaseAdmin.from.mockImplementation((table) => {
       if (table === "agendamentos") {
@@ -331,7 +331,12 @@ describe("alertas - fecharAgendamentosPassados", () => {
           ? q({ then: (resolve) => resolve({ data: [], error: null }) })
           : q({ then: (resolve) => resolve({ data: [agConfirmado], error: null }) });
       }
-      return q({ then: (resolve) => resolve({ count: 5, error: null }) });
+      if (table === "notificacoes") {
+        return q({
+          then: (resolve) => resolve({ data: [{ notificacao_id: 9, referencia_id: "51" }], error: null }),
+        });
+      }
+      return q();
     });
 
     const resultado = await fecharAgendamentosPassados();

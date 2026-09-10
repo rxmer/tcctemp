@@ -42,15 +42,23 @@ export async function verificarContasVencendo() {
 
   let criadas = 0;
 
-  for (const conta of contas ?? []) {
-    const { count } = await supabaseAdmin
-      .from("notificacoes")
-      .select("*", { count: "exact", head: true })
-      .eq("tenant_id", conta.tenant_id)
-      .eq("tipo", "conta_vencendo")
-      .eq("referencia_id", String(conta.conta_id));
+  const idsContas = (contas ?? []).map((c) => String(c.conta_id));
+  const jaNotificadas = new Set();
 
-    if ((count ?? 0) > 0) continue;
+  if (idsContas.length > 0) {
+    const { data: existentes } = await supabaseAdmin
+      .from("notificacoes")
+      .select("referencia_id")
+      .eq("tipo", "conta_vencendo")
+      .in("referencia_id", idsContas);
+
+    for (const n of existentes ?? []) {
+      jaNotificadas.add(String(n.referencia_id));
+    }
+  }
+
+  for (const conta of contas ?? []) {
+    if (jaNotificadas.has(String(conta.conta_id))) continue;
 
     const dias = diasDeDiferenca(conta.data_vencimento, hoje);
     const quando =
@@ -105,18 +113,26 @@ export async function cobrarFaturamentosPendentes() {
 
   let enviadas = 0;
 
+  const idsFat = (faturamentos ?? []).map((f) => String(f.faturamento_id));
+  const jaCobrados = new Set();
+
+  if (idsFat.length > 0) {
+    const { data: existentes } = await supabaseAdmin
+      .from("notificacoes")
+      .select("referencia_id")
+      .eq("tipo", "cobranca_faturamento")
+      .in("referencia_id", idsFat);
+
+    for (const n of existentes ?? []) {
+      jaCobrados.add(String(n.referencia_id));
+    }
+  }
+
   for (const fat of faturamentos ?? []) {
     const cliente = fat.ordem_servico?.agendamento?.cliente;
     if (!cliente?.telefone) continue;
 
-    const { count } = await supabaseAdmin
-      .from("notificacoes")
-      .select("*", { count: "exact", head: true })
-      .eq("tenant_id", tenantId)
-      .eq("tipo", "cobranca_faturamento")
-      .eq("referencia_id", String(fat.faturamento_id));
-
-    if ((count ?? 0) > 0) continue;
+    if (jaCobrados.has(String(fat.faturamento_id))) continue;
 
     const phone = cliente.telefone.replace(/\D/g, "");
     const msg = [
@@ -202,9 +218,20 @@ export async function fecharAgendamentosPassados() {
         referenciaId: String(ag.agendamento_id),
       }).catch(() => {});
 
-      cancelados++;
+cancelados++;
     }
   }
+
+  const { data: revisoes } = await supabaseAdmin
+    .from("notificacoes")
+    .select("notificacao_id, referencia_id")
+    .eq("tipo", "revisao_agendamento_passado");
+
+  const idNotificacaoPorAgendamento = new Map(
+    (revisoes ?? [])
+      .filter((r) => r.referencia_id)
+      .map((r) => [String(r.referencia_id), r.notificacao_id])
+  );
 
   const { data: confirmados, error: errConf } = await supabaseAdmin
     .from("agendamentos")
@@ -222,14 +249,7 @@ export async function fecharAgendamentosPassados() {
     );
   } else {
     for (const ag of confirmados ?? []) {
-      const { count } = await supabaseAdmin
-        .from("notificacoes")
-        .select("*", { count: "exact", head: true })
-        .eq("tenant_id", ag.tenant_id)
-        .eq("tipo", "revisao_agendamento_passado")
-        .eq("referencia_id", String(ag.agendamento_id));
-
-      if ((count ?? 0) > 0) continue;
+      if (idNotificacaoPorAgendamento.has(String(ag.agendamento_id))) continue;
 
       await criarNotificacao({
         tenantId: ag.tenant_id,
@@ -244,32 +264,26 @@ export async function fecharAgendamentosPassados() {
     }
   }
 
-  const { data: revisoes } = await supabaseAdmin
-    .from("notificacoes")
-    .select("notificacao_id, referencia_id")
-    .eq("tipo", "revisao_agendamento_passado");
+  const idsRevisao = [...idNotificacaoPorAgendamento.keys()];
+  let agsVinculados = [];
 
-  const idsRevisao = (revisoes ?? [])
-    .map((r) => r.referencia_id)
-    .filter(Boolean);
   if (idsRevisao.length > 0) {
-    const { data: agsVinculados } = await supabaseAdmin
+    const { data } = await supabaseAdmin
       .from("agendamentos")
       .select("agendamento_id, status")
       .in("agendamento_id", idsRevisao);
+    agsVinculados = data ?? [];
+  }
 
-    for (const revisao of revisoes ?? []) {
-      const ag = (agsVinculados ?? []).find(
-        (a) => String(a.agendamento_id) === String(revisao.referencia_id),
-      );
+  for (const [refId, notifId] of idNotificacaoPorAgendamento) {
+    const ag = agsVinculados.find((a) => String(a.agendamento_id) === refId);
 
-      if (!ag || ag.status !== "confirmado") {
-        await supabaseAdmin
-          .from("notificacoes")
-          .delete()
-          .eq("notificacao_id", revisao.notificacao_id);
-        limpezas++;
-      }
+    if (!ag || ag.status !== "confirmado") {
+      await supabaseAdmin
+        .from("notificacoes")
+        .delete()
+        .eq("notificacao_id", notifId);
+      limpezas++;
     }
   }
 

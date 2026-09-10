@@ -80,6 +80,25 @@ export async function listarSessoes(tenantId) {
 }
 
 export async function contarNaoLidas(tenantId) {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("contar_nao_lidas", {
+      p_tenant: tenantId,
+    });
+
+    if (!error) {
+      const sessoes = (data ?? []).map((s) => ({
+        session_id: s.session_id,
+        nao_lidas: Number(s.nao_lidas),
+      }));
+      const total = sessoes.reduce((acc, s) => acc + s.nao_lidas, 0);
+      return { total, sessoes };
+    }
+
+    logger.warn({ err: error }, "RPC contar_nao_lidas indisponível, usando fallback");
+  } catch (err) {
+    logger.warn({ err }, "Falha na RPC contar_nao_lidas, usando fallback");
+  }
+
   const { data: sessoes } = await supabaseAdmin
     .from("chatbot_session")
     .select("id")

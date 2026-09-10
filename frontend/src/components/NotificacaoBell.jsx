@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePolling } from "../hooks/usePolling";
 import { notificacoesService } from "../services/notificacoes.service";
 import { agendamentosService } from "../services/agendamentos.service";
 import styles from "../styles/components/NotificacaoBell.module.css";
@@ -11,6 +12,7 @@ export function NotificacaoBell() {
   const [processando, setProcessando] = useState(null);
   const navigate = useNavigate();
   const ref = useRef(null);
+  const mountedRef = useRef(true);
 
   async function carregar() {
     try {
@@ -28,7 +30,7 @@ export function NotificacaoBell() {
   async function carregarContagem() {
     try {
       const cnt = await notificacoesService.contar();
-      setContagem(cnt.count);
+      if (mountedRef.current) setContagem(cnt.count);
     } catch {
       // polling — falha silenciosa
     }
@@ -106,7 +108,7 @@ export function NotificacaoBell() {
   }
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
     async function init() {
       try {
@@ -114,7 +116,7 @@ export function NotificacaoBell() {
           notificacoesService.listar(),
           notificacoesService.contar(),
         ]);
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         setNotificacoes(lista);
         setContagem(cnt.count);
       } catch (err) {
@@ -122,20 +124,13 @@ export function NotificacaoBell() {
       }
     }
 
-    async function poll() {
-      try {
-        const cnt = await notificacoesService.contar();
-        if (mounted) setContagem(cnt.count);
-      } catch { /* polling */ }
-    }
-
     init();
-    const interval = setInterval(poll, 30000);
     return () => {
-      mounted = false;
-      clearInterval(interval);
+      mountedRef.current = false;
     };
   }, []);
+
+  usePolling(carregarContagem, 30000);
 
   useEffect(() => {
     function handleClick(e) {

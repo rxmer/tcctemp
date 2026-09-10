@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
+import { usePolling } from "../hooks/usePolling";
 import { comunicadosService } from "../services/comunicados.service";
 import { Button, PageHeader, Alert } from "../components/ui";
 import { Card, CardHeader, styles as crud } from "../components/crud";
@@ -52,12 +53,8 @@ export function Comunicados() {
     };
   }, [carregarLista]);
 
-  useEffect(() => {
-    const temEnvioAtivo = comunicados.some((c) => c.status === "enviando");
-    if (!temEnvioAtivo) return;
-    const interval = setInterval(carregarLista, 3000);
-    return () => clearInterval(interval);
-  }, [comunicados, carregarLista]);
+  const temEnvioAtivo = comunicados.some((c) => c.status === "enviando");
+  usePolling(temEnvioAtivo ? carregarLista : null, temEnvioAtivo ? 5000 : null);
 
   async function handleSubmit(e) {
     e.preventDefault();
