@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { usePolling } from "../hooks/usePolling";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { PageHeader, Button } from "../components/ui";
@@ -55,13 +56,13 @@ export function WhatsApp() {
   useEffect(() => {
     mounted.current = true;
     carregarStatus();
-    const fast = ["awaiting_qr", "connecting", "reconnecting"].includes(state.status);
-    const interval = setInterval(carregarStatus, fast ? 1000 : 10000);
     return () => {
       mounted.current = false;
-      clearInterval(interval);
     };
   }, [state.status]);
+
+  const fast = ["awaiting_qr", "connecting", "reconnecting"].includes(state.status);
+  usePolling(carregarStatus, fast ? 3000 : 10000);
 
   async function handleConnect() {
     try {

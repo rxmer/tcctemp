@@ -2,6 +2,8 @@ import { getCache } from "../config/cache.js";
 
 export async function cacheGetOrSet(key, fetchFn, ttlSeconds = 300) {
   const cache = await getCache();
+  if (!cache) return fetchFn();
+
   const cached = await cache.get(key);
   if (cached !== null) return cached;
 
@@ -12,11 +14,13 @@ export async function cacheGetOrSet(key, fetchFn, ttlSeconds = 300) {
 
 export async function cacheDel(key) {
   const cache = await getCache();
+  if (!cache) return;
   await cache.del(key);
 }
 
 export async function cacheDelPattern(pattern) {
   const cache = await getCache();
+  if (!cache) return;
   await cache.delPattern(pattern);
 }
 

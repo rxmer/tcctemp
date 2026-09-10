@@ -25,6 +25,7 @@ function mockQuery(overrides = {}) {
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
     lt: vi.fn().mockReturnThis(),
+    gt: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -289,6 +290,51 @@ describe("chatbot.session", () => {
       await expect(
         sessionService.listarMensagens(TENANT_ID, SESSION_ID)
       ).rejects.toThrow("Erro ao listar mensagens");
+    });
+  });
+
+  describe("contarNaoLidas", () => {
+    it("deve usar a RPC contar_nao_lidas", async () => {
+      supabaseAdmin.rpc.mockResolvedValue({
+        data: [{ session_id: SESSION_ID, nao_lidas: 3 }],
+        error: null,
+      });
+
+      const result = await sessionService.contarNaoLidas(TENANT_ID);
+
+      expect(supabaseAdmin.rpc).toHaveBeenCalledWith("contar_nao_lidas", {
+        p_tenant: TENANT_ID,
+      });
+      expect(result).toEqual({
+        total: 3,
+        sessoes: [{ session_id: SESSION_ID, nao_lidas: 3 }],
+      });
+    });
+
+    it("deve usar fallback caso a RPC nao esteja disponivel", async () => {
+      supabaseAdmin.rpc.mockRejectedValue(new Error("function not found"));
+
+      const querySessoes = mockQuery({
+        then: (resolve) => resolve({ data: [{ id: SESSION_ID }], error: null }),
+      });
+      const queryUltimaMsg = mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { criado_em: "2026-09-01T10:00:00Z" }, error: null }),
+      });
+      const queryCount = mockQuery({
+        then: (resolve) => resolve({ count: 2, error: null }),
+      });
+
+      supabaseAdmin.from
+        .mockReturnValueOnce(querySessoes)
+        .mockReturnValueOnce(queryUltimaMsg)
+        .mockReturnValueOnce(queryCount);
+
+      const result = await sessionService.contarNaoLidas(TENANT_ID);
+
+      expect(result).toEqual({
+        total: 2,
+        sessoes: [{ session_id: SESSION_ID, nao_lidas: 2 }],
+      });
     });
   });
 

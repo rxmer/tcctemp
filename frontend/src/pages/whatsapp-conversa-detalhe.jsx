@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { usePolling } from "../hooks/usePolling";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
@@ -64,13 +65,10 @@ export function ConversaDetalhe() {
       }
     }
     load();
-    const intervalo = setInterval(carregarMensagens, 5000);
-    return () => {
-      mounted = false;
-      clearInterval(intervalo);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  usePolling(carregarMensagens, 5000);
 
   useEffect(() => {
     if (bubblesRef.current) {
