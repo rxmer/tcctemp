@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { useFeedback } from "../hooks/useFeedback";
-import { Input, Button, PageHeader } from "../components/ui";
+import { Input, Button, PageHeader, Alert } from "../components/ui";
 import { Card } from "../components/crud";
 import { supabase } from "../lib/supabase";
 
@@ -53,7 +53,7 @@ export function Perfil() {
         subtitle="Visualize seus dados e altere sua senha"
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className="responsiveGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, maxWidth: 800 }}>
         <Card>

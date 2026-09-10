@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { clientesService } from "../services/clientes.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
-import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
+import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
+import { Input, Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
@@ -25,7 +26,6 @@ export function Clientes() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
-  const debounceRef = useRef(null);
   const { feedback, showFeedback } = useFeedback();
   const { confirm, ConfirmModal } = useConfirm();
 
@@ -35,19 +35,15 @@ export function Clientes() {
     carregarClientes();
   }, [page]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const result = await clientesService.listar({ page: 1, limit: LIMIT, search });
-        setPage(1);
-        setClientes(result.data);
-        setTotal(result.total);
-      } catch (err) {
-        showFeedback("error", err.message);
-      }
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
+  useDebouncedEffect(async () => {
+    try {
+      const result = await clientesService.listar({ page: 1, limit: LIMIT, search });
+      setPage(1);
+      setClientes(result.data);
+      setTotal(result.total);
+    } catch (err) {
+      showFeedback("error", err.message);
+    }
   }, [search]);
 
   async function carregarClientes() {
@@ -157,15 +153,10 @@ export function Clientes() {
       <PageHeader
         title="Clientes"
         subtitle="Gerencie os clientes da sua empresa"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.pageGrid}>
         <Card>

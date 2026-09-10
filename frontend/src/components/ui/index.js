@@ -3,6 +3,8 @@ export { Button } from "./Button";
 export { Card } from "./Card";
 export { PageHeader } from "./PageHeader";
 export { Alert } from "./Alert";
+export { Select } from "./Select";
+export { TenantChip } from "./TenantChip";
 export { FullPageSpinner, InlineSpinner } from "./Spinner";
 export { Pagination } from "./Pagination";
 export { Calendar } from "./Calendar";

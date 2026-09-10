@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { funcionariosService } from "../services/funcionarios.service";
-import { Input, Button, PageHeader } from "../components/ui";
+import { Input, Button, PageHeader, Alert, TenantChip } from "../components/ui";
 import { Card, CardHeader, styles as crud } from "../components/crud";
 import { Users, ShieldCheck, Pencil, Trash2, X, Check, KeyRound } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
@@ -146,15 +146,10 @@ export function Funcionario() {
       <PageHeader
         title="Funcionários"
         subtitle="Cadastre e gerencie os usuários da sua empresa"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
       <ConfirmDialog />
 
       {resetFunc && (

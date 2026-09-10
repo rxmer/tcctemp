@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { servicosService } from "../services/servicos.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
-import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
-import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
+import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
+import { Input, Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, StatusBadge, styles as crud } from "../components/crud";
 import { Pencil, Trash2, Pause, Play } from "lucide-react";
+import { formatMoney } from "../utils/format";
 
 const formInitial = {
   nome_servico: "",
@@ -25,7 +27,6 @@ export function Servicos() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
-  const debounceRef = useRef(null);
   const { feedback, showFeedback } = useFeedback();
   const { confirm, ConfirmModal } = useConfirm();
 
@@ -35,19 +36,15 @@ export function Servicos() {
     carregarServicos();
   }, [page]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const result = await servicosService.listar({ page: 1, limit: LIMIT, search });
-        setPage(1);
-        setServicos(result.data);
-        setTotal(result.total);
-      } catch (err) {
-        showFeedback("error", err.message);
-      }
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
+  useDebouncedEffect(async () => {
+    try {
+      const result = await servicosService.listar({ page: 1, limit: LIMIT, search });
+      setPage(1);
+      setServicos(result.data);
+      setTotal(result.total);
+    } catch (err) {
+      showFeedback("error", err.message);
+    }
   }, [search]);
 
   async function carregarServicos() {
@@ -139,13 +136,6 @@ export function Servicos() {
     }
   }
 
-  function formatMoney(value) {
-    return Number(value).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  }
-
   const columns = [
     {
       key: "nome_servico",
@@ -169,12 +159,9 @@ export function Servicos() {
       key: "status",
       label: "Status",
       render: (s) => (
-        <span className={crud.statusBadge} style={s.ativo
-          ? { background: "rgba(34,197,94,0.1)", color: "#86efac", border: "1px solid rgba(34,197,94,0.2)" }
-          : { background: "rgba(100,100,100,0.1)", color: "var(--text-secondary)", border: "1px solid var(--border)" }
-        }>
+        <StatusBadge variant={s.ativo ? "success" : "neutral"}>
           {s.ativo ? "Ativo" : "Inativo"}
-        </span>
+        </StatusBadge>
       ),
     },
     {
@@ -202,15 +189,10 @@ export function Servicos() {
       <PageHeader
         title="Serviços"
         subtitle="Gerencie os serviços oferecidos pela sua empresa"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.pageGrid}>
         <Card>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
-import { PageHeader, Button } from "../components/ui";
+import { PageHeader, Button, Alert } from "../components/ui";
 import { QRCodeCanvas } from "qrcode.react";
 import styles from "../styles/pages/whatsapp.module.css";
 import { CheckCircle2, Loader2, Smartphone } from "lucide-react";
@@ -101,7 +101,7 @@ export function WhatsApp() {
         subtitle="Conecte o WhatsApp da sua empresa para atender clientes automaticamente"
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={styles.grid}>
         <div className={styles.card}>

@@ -267,6 +267,36 @@
   flex-shrink: 0;
 }
 
+.badgeSuccess {
+  background: rgba(34, 197, 94, 0.1);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.badgeWarning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badgeDanger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badgeInfo {
+  background: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.badgeNeutral {
+  background: rgba(100, 100, 100, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
 /* ── PAGE GRID (form + list) ────────────────────────────────── */
 .pageGrid {
   display: grid;
@@ -394,11 +424,47 @@
   background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
 }
 
+:global([data-theme="light"]) .card:hover {
+  border-color: rgba(138, 101, 0, 0.28);
+}
+
 :global([data-theme="light"]) .table th {
-  background: #f0f0f0;
+  background: #f0efec;
+}
+
+:global([data-theme="light"]) .table tbody tr:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+:global([data-theme="light"]) .searchInput:hover {
+  border-color: #d6d5d1;
 }
 
 :global([data-theme="light"]) .fieldSelect,
 :global([data-theme="light"]) .fieldTextarea {
   background: #fff;
+}
+
+:global([data-theme="light"]) .badgeSuccess {
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.22);
+}
+
+:global([data-theme="light"]) .badgeWarning {
+  background: rgba(180, 83, 9, 0.1);
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.22);
+}
+
+:global([data-theme="light"]) .badgeDanger {
+  background: rgba(220, 38, 38, 0.09);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+:global([data-theme="light"]) .badgeInfo {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.22);
 }

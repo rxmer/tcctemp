@@ -204,3 +204,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── TEMA CLARO ────────────────────────────────────────────── */
+:global([data-theme="light"]) .statusAtivo {
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+}
+
+:global([data-theme="light"]) .statusInativo {
+  background: rgba(100, 100, 100, 0.08);
+  color: #6e6e6e;
+}

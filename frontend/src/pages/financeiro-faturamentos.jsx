@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { financeiroService } from "../services/financeiro.service";
-import { Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
-import { Card, CardHeader, DataTable, ActionBtn, styles as crud } from "../components/crud";
+import { Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
+import { Card, CardHeader, DataTable, ActionBtn, StatusBadge, styles as crud } from "../components/crud";
 import { Wallet } from "lucide-react";
+import { formatMoney, formatDate } from "../utils/format";
 
 export function Faturamentos() {
   const { tenant } = useAuth();
@@ -48,34 +49,18 @@ export function Faturamentos() {
     }
   }
 
-  function formatMoney(value) {
-    return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  }
-
-  function formatDate(dateStr) {
-    if (!dateStr) return "-";
-    const [y, m, d] = dateStr.split("-");
-    return `${d}/${m}/${y}`;
-  }
-
-  function statusStyle(pago) {
-    return pago
-      ? { background: "rgba(34,197,94,0.1)", color: "#86efac", border: "1px solid rgba(34,197,94,0.2)" }
-      : { background: "rgba(245,158,11,0.1)", color: "#fcd34d", border: "1px solid rgba(245,158,11,0.2)" };
-  }
-
   const fatColumns = [
     { key: "faturamento_id", label: "#" },
     { key: "os_id", label: "OS", render: (f) => `OS #${f.os_id}` },
     { key: "valor_total", label: "Valor", render: (f) => formatMoney(f.valor_total) },
-    { key: "data", label: "Data", render: (f) => formatDate(f.criado_em?.split("T")[0]) },
+    { key: "data", label: "Data", render: (f) => formatDate(f.criado_em?.split("T")[0], "-") },
     {
       key: "status",
       label: "Status",
       render: (f) => (
-        <span className={crud.statusBadge} style={statusStyle(f.pago)}>
+        <StatusBadge variant={f.pago ? "success" : "warning"}>
           {f.pago ? "Recebido" : "Pendente"}
-        </span>
+        </StatusBadge>
       ),
     },
     {
@@ -95,14 +80,10 @@ export function Faturamentos() {
   return (
     <>
       <PageHeader title="Faturamentos" subtitle="Receitas geradas pelas ordens de serviço"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} /><span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.filtros}>
         <div className={crud.filtroGroup}>

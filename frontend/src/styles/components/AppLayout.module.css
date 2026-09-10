@@ -18,6 +18,10 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 }
 
+:global([data-theme="light"]) .topbar {
+  box-shadow: 0 1px 0 var(--border), 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -114,6 +118,10 @@
   flex-direction: column;
   gap: 1px;
   animation: dropdownIn 0.12s ease-out;
+}
+
+:global([data-theme="light"]) .dropdown {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 .dropdown::before {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { configuracaoEmpresaService } from "../services/configuracao-empresa.service";
-import { Input, Button, PageHeader, SkeletonCard } from "../components/ui";
+import { Input, Button, PageHeader, Alert, SkeletonCard } from "../components/ui";
 import { Card } from "../components/crud";
 import { Building2, Upload, X } from "lucide-react";
 
@@ -105,7 +105,7 @@ export function ConfiguracaoEmpresa() {
         subtitle="Personalize as informações da sua empresa"
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       {loading ? (
         <SkeletonCard lines={8} />

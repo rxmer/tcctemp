@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { veiculosService } from "../services/veiculos.service";
 import { clientesService } from "../services/clientes.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
-import { Input, Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
+import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
+import { Input, Button, PageHeader, Alert, TenantChip, Select, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
@@ -30,7 +31,6 @@ export function Veiculos() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
-  const debounceRef = useRef(null);
   const { feedback, showFeedback } = useFeedback();
   const { confirm, ConfirmModal } = useConfirm();
 
@@ -40,12 +40,8 @@ export function Veiculos() {
     carregarVeiculos();
   }, [page]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPage(1);
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
+  useDebouncedEffect(() => {
+    setPage(1);
   }, [search]);
 
   useEffect(() => {
@@ -179,15 +175,10 @@ export function Veiculos() {
       <PageHeader
         title="Veículos"
         subtitle="Gerencie os veículos dos seus clientes"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.pageGrid}>
         <Card>
@@ -242,23 +233,18 @@ export function Veiculos() {
               onChange={handleChange}
             />
 
-            <div className={crud.fieldGroup}>
-              <label className={crud.fieldLabel}>Cliente</label>
-              <select
-                name="cliente_id"
-                className={`input-field ${crud.fieldSelect}`}
-                value={form.cliente_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Selecione um cliente</option>
-                {clientes.map((c) => (
-                  <option key={c.cliente_id} value={c.cliente_id}>
-                    {c.nome} {c.telefone ? formatPhone(c.telefone) : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Cliente"
+              name="cliente_id"
+              wrapperClassName={crud.fieldGroup}
+              labelClassName={crud.fieldLabel}
+              className={`input-field ${crud.fieldSelect}`}
+              placeholder="Selecione um cliente"
+              value={form.cliente_id}
+              onChange={handleChange}
+              required
+              options={clientes.map((c) => [c.cliente_id, `${c.nome} ${c.telefone ? formatPhone(c.telefone) : ""}`])}
+            />
 
             <div className={crud.formActions}>
               <Button type="submit" fullWidth loading={saving}>

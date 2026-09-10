@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { financeiroService } from "../services/financeiro.service";
-import { Button, PageHeader, SkeletonCard } from "../components/ui";
+import { Button, PageHeader, Alert, TenantChip, SkeletonCard } from "../components/ui";
 import { Card, styles as crud } from "../components/crud";
 import { TrendingUp, TrendingDown, CheckCircle2, AlertTriangle } from "lucide-react";
+import { formatMoney } from "../utils/format";
 
 export function Financeiro() {
   const { tenant } = useAuth();
@@ -33,21 +34,13 @@ export function Financeiro() {
     }
   }
 
-  function formatMoney(value) {
-    return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  }
-
   return (
     <>
       <PageHeader title="Financeiro" subtitle="Visão geral do controle financeiro"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} /><span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.filtros}>
         <div className={crud.filtroGroup}>

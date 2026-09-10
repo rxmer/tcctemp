@@ -1,5 +1,4 @@
 /* src/styles/global.css */
-@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap");
 
 /* ── DESIGN TOKENS (DARK - default) ────────────────────────── */
 :root {
@@ -25,6 +24,13 @@
   --warning: #f59e0b;
   --info: #3b82f6;
 
+  --status-confirmado-bg: rgba(34, 197, 94, 0.12);
+  --status-confirmado-fg: #86efac;
+  --status-confirmado-border: rgba(34, 197, 94, 0.22);
+  --status-pendente-bg: rgba(245, 158, 11, 0.12);
+  --status-pendente-fg: #fcd34d;
+  --status-pendente-border: rgba(245, 158, 11, 0.22);
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -43,38 +49,46 @@
 
 /* ── DESIGN TOKENS (LIGHT) ─────────────────────────────────── */
 [data-theme="light"] {
-  --bg-base: #f5f5f5;
+  --bg-base: #f5f5f4;
   --bg-surface: #ffffff;
-  --bg-elevated: #f0f0f0;
+  --bg-elevated: #f0efec;
   --bg-input: #fafafa;
 
-  --border: #e0e0e0;
-  --border-focus: #b8941f;
+  --border: #deddda;
+  --border-focus: #8a6500;
 
-  --accent: #b8941f;
-  --accent-light: #d4a843;
-  --accent-dim: rgba(184, 148, 31, 0.12);
+  --accent: #8a6500;
+  --accent-light: #6b4f00;
+  --accent-dim: rgba(138, 101, 0, 0.12);
   --accent-gradient: linear-gradient(135deg, #b8941f 0%, #d4a843 50%, #e6b84d 100%);
 
   --text-primary: #1a1a1a;
-  --text-secondary: #666666;
-  --text-muted: #999999;
+  --text-secondary: #545454;
+  --text-muted: #6e6e6e;
 
-  --success: #16a34a;
+  --success: #15803d;
   --error: #dc2626;
-  --warning: #d97706;
+  --warning: #b45309;
   --info: #2563eb;
+  --danger: #dc2626;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-accent: 0 4px 20px rgba(184, 148, 31, 0.2);
+  --status-confirmado-bg: rgba(21, 128, 61, 0.1);
+  --status-confirmado-fg: #15803d;
+  --status-confirmado-border: rgba(21, 128, 61, 0.22);
+  --status-pendente-bg: rgba(180, 83, 9, 0.1);
+  --status-pendente-fg: #b45309;
+  --status-pendente-border: rgba(180, 83, 9, 0.22);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.1);
+  --shadow-accent: 0 4px 18px rgba(138, 101, 0, 0.16);
 }
 
 [data-theme="light"] body {
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(184, 148, 31, 0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(184, 148, 31, 0.03) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(138, 101, 0, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(138, 101, 0, 0.03) 0%, transparent 50%);
 }
 
 [data-theme="light"] ::-webkit-scrollbar-track {
@@ -91,7 +105,7 @@
 
 /* Input hover no tema claro */
 [data-theme="light"] .input-field:hover {
-  border-color: #ccc;
+  border-color: rgba(138, 101, 0, 0.35);
 }
 
 [data-theme="light"] .input-field:focus {
@@ -99,7 +113,7 @@
 }
 
 [data-theme="light"] select.input-field {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b8941f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a6500' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 [data-theme="light"] select.input-field option {
@@ -109,7 +123,7 @@
 
 /* Tabela zebra no tema claro */
 [data-theme="light"] .table tbody tr:nth-child(odd) {
-  background: rgba(0, 0, 0, 0.015);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 [data-theme="light"] .table tbody tr:hover {
@@ -123,13 +137,13 @@
 }
 
 [data-theme="light"] .alert-success {
-  background: rgba(22, 163, 74, 0.06);
-  color: #16a34a;
+  background: rgba(21, 128, 61, 0.07);
+  color: #15803d;
 }
 
 [data-theme="light"] .alert-info {
-  background: rgba(184, 148, 31, 0.06);
-  color: #92740e;
+  background: rgba(138, 101, 0, 0.07);
+  color: #7d5a00;
 }
 
 /* Modal no tema claro */
@@ -143,12 +157,12 @@
 
 /* Botão primário no tema claro */
 [data-theme="light"] .btn-primary {
-  color: #fff;
+  color: #1a1a1a;
 }
 
 [data-theme="light"] .btn-spinner {
-  border-color: rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border-color: rgba(0, 0, 0, 0.25);
+  border-top-color: #1a1a1a;
 }
 
 /* ── RESET ─────────────────────────────────────────────────── */
@@ -660,11 +674,6 @@ select.input-field option {
 
   .dashMain, [class*="dashMain"] {
     padding: 12px !important;
-  }
-
-  [class*="statGrid"] {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
   }
 }
 

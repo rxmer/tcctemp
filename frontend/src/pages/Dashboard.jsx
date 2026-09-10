@@ -3,11 +3,12 @@ import { useAuth } from "../context/useAuth";
 import { PageHeader, Button } from "../components/ui";
 import { dashboardService } from "../services/dashboard.service";
 import styles from "../styles/pages/Dashboard.module.css";
-import { CalendarDays, CheckCircle2, Users, DollarSign, AlertTriangle, CalendarPlus, UserPlus, Clock } from "lucide-react";
+import { CalendarDays, CheckCircle2, Users, DollarSign, AlertTriangle, CalendarPlus, UserPlus, Clock, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { formatMoney } from "../utils/format";
 
 export function Dashboard() {
-  const { usuario, tenant, loading } = useAuth();
+  const { usuario, loading } = useAuth();
   const [stats, setStats] = useState(null);
   const [dashLoading, setDashLoading] = useState(true);
   const [dashError, setDashError] = useState(null);
@@ -35,33 +36,29 @@ export function Dashboard() {
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className={styles.skeletonStat}>
               <div className={`${styles.skeletonStatIcon} skeleton`} />
-              <div className="skeleton" style={{ width: "55%", height: 28 }} />
-              <div className="skeleton" style={{ width: "75%", height: 12 }} />
+              <div className={`skeleton ${styles.skStatValue}`} />
+              <div className={`skeleton ${styles.skStatLabel}`} />
             </div>
           ))}
         </div>
         <div className={styles.skeletonLowerGrid}>
           <div className={styles.skeletonProximos}>
-            <div className="skeleton" style={{ width: "40%", height: 18, marginBottom: 18 }} />
+            <div className={`skeleton ${styles.skTitle}`} />
             {Array.from({ length: 3 }, (_, i) => (
-              <div
-                key={i}
-                className={styles.skeletonProximo}
-                style={{ marginBottom: i < 2 ? 10 : 0 }}
-              >
-                <div className="skeleton" style={{ width: 45, height: 18 }} />
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div className="skeleton" style={{ width: "40%", height: 12 }} />
-                  <div className="skeleton" style={{ width: "70%", height: 10 }} />
+              <div key={i} className={styles.skeletonProximo}>
+                <div className={`skeleton ${styles.skTime}`} />
+                <div className={styles.skListBody}>
+                  <div className={`skeleton ${styles.skName}`} />
+                  <div className={`skeleton ${styles.skDetail}`} />
                 </div>
-                <div className="skeleton" style={{ width: 70, height: 16 }} />
+                <div className={`skeleton ${styles.skPill}`} />
               </div>
             ))}
           </div>
           <div className={styles.skeletonQuick}>
-            <div className="skeleton" style={{ width: "45%", height: 18 }} />
-            <div className="skeleton" style={{ width: "100%", height: 46 }} />
-            <div className="skeleton" style={{ width: "100%", height: 46 }} />
+            <div className={`skeleton ${styles.skActionTitle}`} />
+            <div className={`skeleton ${styles.skAction}`} />
+            <div className={`skeleton ${styles.skAction}`} />
           </div>
         </div>
       </div>
@@ -90,18 +87,13 @@ export function Dashboard() {
     );
   }
 
-  function formatMoney(value) {
-    return Number(value).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  }
-
   function formatDate(dateStr) {
     if (!dateStr) return "";
-    const [y, m, d] = dateStr.split("-");
+    const [, m, d] = dateStr.split("-");
     return `${d}/${m}`;
   }
+
+  const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 
   const STATS = [
     { icon: CalendarDays, label: "Agendamentos hoje", value: String(stats?.agendamentos_hoje ?? 0) },
@@ -114,7 +106,7 @@ export function Dashboard() {
     <>
       <PageHeader
         title="Dashboard"
-        subtitle={`Bem-vindo, ${usuario?.nome?.split(" ")[0] ?? "usuário"}!`}
+        subtitle={hoje}
         action={
           <div className={styles.userChip}>
             <div className={styles.userAvatar}>{usuario?.nome?.[0]?.toUpperCase() ?? "?"}</div>
@@ -146,7 +138,7 @@ export function Dashboard() {
                   <div key={ag.agendamento_id} className={styles.proximoCard}>
                     <div className={styles.proximoTime}>
                       <div>{ag.hora_agendamento?.slice(0, 5)}</div>
-                      <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.7 }}>{formatDate(ag.data_agendamento)}</div>
+                      <div className={styles.proximoDate}>{formatDate(ag.data_agendamento)}</div>
                     </div>
                     <div className={styles.proximoInfo}>
                       <div className={styles.proximoCliente}>{ag.cliente?.nome ?? "Cliente"}</div>
@@ -169,14 +161,16 @@ export function Dashboard() {
           </div>
 
           <aside className={styles.quickCol}>
-            <h3 className={styles.sectionTitle}>Ações rápidas</h3>
+            <h3 className={styles.quickTitle}>Ações rápidas</h3>
             <button className={styles.quickBtn} onClick={() => navigate("/agendamentos")}>
               <CalendarPlus size={20} />
               <span>Novo Agendamento</span>
+              <ChevronRight size={18} className={styles.quickChevron} />
             </button>
             <button className={styles.quickBtn} onClick={() => navigate("/clientes")}>
               <UserPlus size={20} />
               <span>Novo Cliente</span>
+              <ChevronRight size={18} className={styles.quickChevron} />
             </button>
           </aside>
         </div>
