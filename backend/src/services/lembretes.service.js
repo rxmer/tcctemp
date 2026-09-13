@@ -92,7 +92,7 @@ export async function verificarEEnviarLembretes() {
         .update({ lembrete_enviado: new Date().toISOString(), lembrete_tentativas: 0 })
         .eq("agendamento_id", ag.agendamento_id)
         .eq("tenant_id", tenantId);
-      logger.info({ agendamentoId: ag.agendamento_id, cliente: ag.cliente.nome }, "Lembrete enviado");
+      logger.info({ agendamentoId: ag.agendamento_id, clienteId: ag.cliente_id }, "Lembrete enviado");
     } catch (err) {
       const novasTentativas = (ag.lembrete_tentativas ?? 0) + 1;
       logger.warn({ err, agendamentoId: ag.agendamento_id, tentativa: novasTentativas }, "Falha ao enviar lembrete");

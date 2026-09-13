@@ -171,7 +171,7 @@ export function AppLayout() {
       await signOut();
       navigate("/login");
     } catch (err) {
-      console.error("[LOGOUT] erro:", err);
+      console.error("[LOGOUT] erro:", err.message);
     }
   };
 

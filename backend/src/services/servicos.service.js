@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { sanitizarPesquisa } from "../utils/validation.js";
 import { dataLocalISO } from "../utils/data.js";
 
 export async function criarServico({ nome_servico, descricao, preco_base, duracao_min, tenantId }) {
@@ -29,9 +30,9 @@ export async function listarServicos(tenantId, { page = 1, limit = 20, search = 
     .is("deletado_em", null);
 
   if (search) {
-    const s = search.replace(/[,%()\\;]/g, "").trim().slice(0, 100);
+    const s = sanitizarPesquisa(search);
     if (s) {
-      query = query.or(`nome_servico.ilike.%${s}%,descricao.ilike.%${s}%`);
+      query = query.or(`nome_servico.ilike.%${s}%`);
     }
   }
 

@@ -27,12 +27,14 @@ describe("agendamentoService", () => {
       let cc = 0;
       supabaseAdmin.from.mockImplementation(() => {
         cc++;
-        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
-        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
-        if (cc === 3) return q({ single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }) });
-        if (cc === 4) return q();
-        if (cc === 5) return q({ single: vi.fn().mockResolvedValue({ data: expected, error: null }) });
-        if (cc === 6) { const q2 = q(); q2.then = (resolve) => resolve({ data: [], error: null }); return q2; }
+        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }) });
+        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }) });
+        if (cc === 3) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
+        if (cc === 4) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
+        if (cc === 5) return q({ single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }) });
+        if (cc === 6) return q();
+        if (cc === 7) return q({ single: vi.fn().mockResolvedValue({ data: expected, error: null }) });
+        if (cc === 8) { const q2 = q(); q2.then = (resolve) => resolve({ data: [], error: null }); return q2; }
         return q();
       });
       const r = await agendamentoService.criarAgendamento({ cliente_id: 1, veiculo_id: 1, servico_id: 1, data_agendamento: "2099-06-27", hora_agendamento: "09:00", tenantId: "t1", criadoPor: "u1" });
@@ -43,7 +45,8 @@ describe("agendamentoService", () => {
       let cc = 0;
       supabaseAdmin.from.mockImplementation(() => {
         cc++;
-        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
+        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }) });
+        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }) });
         return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
       });
       await expect(agendamentoService.criarAgendamento({ cliente_id: 1, veiculo_id: 1, servico_id: 1, data_agendamento: "2099-06-27", hora_agendamento: "09:00", tenantId: "t1", criadoPor: "u1" })).rejects.toThrow("Não há expediente");
@@ -53,7 +56,9 @@ describe("agendamentoService", () => {
       let cc = 0;
       supabaseAdmin.from.mockImplementation(() => {
         cc++;
-        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
+        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }) });
+        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }) });
+        if (cc === 3) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
         return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
       });
       await expect(agendamentoService.criarAgendamento({ cliente_id: 1, veiculo_id: 1, servico_id: 1, data_agendamento: "2099-06-27", hora_agendamento: "19:00", tenantId: "t1", criadoPor: "u1" })).rejects.toThrow("Horário fora do expediente");
@@ -63,9 +68,11 @@ describe("agendamentoService", () => {
       let cc = 0;
       supabaseAdmin.from.mockImplementation(() => {
         cc++;
-        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
-        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
-        if (cc === 3) return q({ single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }) });
+        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }) });
+        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }) });
+        if (cc === 3) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
+        if (cc === 4) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
+        if (cc === 5) return q({ single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }) });
         const q2 = q(); q2.then = (resolve) => resolve({ data: [{ hora_agendamento: "09:00", servico: { duracao_min: 30 } }], error: null, count: 0 }); return q2;
       });
       await expect(agendamentoService.criarAgendamento({ cliente_id: 1, veiculo_id: 1, servico_id: 1, data_agendamento: "2099-06-27", hora_agendamento: "09:00", tenantId: "t1", criadoPor: "u1" })).rejects.toThrow("conflita com outro agendamento");
@@ -75,10 +82,12 @@ describe("agendamentoService", () => {
       let cc = 0;
       supabaseAdmin.from.mockImplementation(() => {
         cc++;
-        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
-        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
-        if (cc === 3) return q({ single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }) });
-        if (cc === 4) return q();
+        if (cc === 1) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }) });
+        if (cc === 2) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }) });
+        if (cc === 3) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) });
+        if (cc === 4) return q({ maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }) });
+        if (cc === 5) return q({ single: vi.fn().mockResolvedValue({ data: { duracao_min: 30 }, error: null }) });
+        if (cc === 6) return q();
         return q({ single: vi.fn().mockResolvedValue({ data: null, error: new Error("Insert error") }) });
       });
       await expect(agendamentoService.criarAgendamento({ cliente_id: 1, veiculo_id: 1, servico_id: 1, data_agendamento: "2099-06-27", hora_agendamento: "09:00", tenantId: "t1", criadoPor: "u1" })).rejects.toThrow("Erro ao criar agendamento");

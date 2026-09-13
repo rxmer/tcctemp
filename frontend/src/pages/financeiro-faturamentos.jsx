@@ -31,7 +31,7 @@ export function Faturamentos() {
       setFaturamentos(result.data);
       setTotal(result.total);
     } catch (err) {
-      console.error("Erro faturamentos:", err);
+      console.error("Erro faturamentos:", err.message);
       showFeedback("error", "Erro ao carregar faturamentos.");
     } finally {
       setLoading(false);

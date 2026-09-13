@@ -1,7 +1,9 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
-import { sendWhatsAppMessage } from "./baileys.client.js";
+import { sendWhatsAppMessage, getConnectionState } from "./baileys.client.js";
+
+const MAX_MENSAGEM_LENGTH = 500;
 
 export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName }) {
   const { data: existingData, error: existingError } = await supabaseAdmin
@@ -145,7 +147,7 @@ export async function registrarMensagem({ tenantId, sessionId, remetente, texto 
       tenant_id: tenantId,
       session_id: sessionId,
       remetente,
-      texto,
+      texto: String(texto ?? "").slice(0, MAX_MENSAGEM_LENGTH),
     });
 
   if (error) logger.warn({ err: error }, "Erro ao registrar mensagem do chatbot");
@@ -186,14 +188,21 @@ export async function desativarSessao(sessionId) {
   if (error) throw new AppError(`Erro ao desativar sessão: ${error.message}`);
 }
 
-const SESSION_TIMEOUT_MINUTES = 5;
+export const SESSION_TIMEOUT_MINUTES = 5;
 
 export async function limparSessoesExpiradas() {
+  const tenantId = getConnectionState().tenantId;
+  if (!tenantId) {
+    logger.debug("Nenhum WhatsApp conectado, pulando limpeza de sessões");
+    return;
+  }
+
   const limite = new Date(Date.now() - SESSION_TIMEOUT_MINUTES * 60 * 1000).toISOString();
 
   const { data: expiradas, error: queryError } = await supabaseAdmin
     .from("chatbot_session")
     .select("id, state")
+    .eq("tenant_id", tenantId)
     .eq("ativo", true)
     .lt("ultima_atividade", limite)
     .neq("state", "FALANDO_COM_ATENDENTE");
@@ -219,6 +228,7 @@ export async function limparSessoesExpiradas() {
   const { data: atendenteExpiradas } = await supabaseAdmin
     .from("chatbot_session")
     .select("id, remote_jid")
+    .eq("tenant_id", tenantId)
     .eq("ativo", true)
     .eq("state", "FALANDO_COM_ATENDENTE")
     .lt("ultima_atividade", limite);
@@ -244,7 +254,9 @@ export async function limparSessoesExpiradas() {
 
     sendWhatsAppMessage(
       sess.remote_jid,
-      "⏳ Parece que o atendente está demorando. O bot está de volta! Como posso ajudar?"
+      "⏳ Parece que o atendente está demorando. O bot está de volta! Como posso ajudar?",
+      "bot",
+      tenantId
     ).catch(() => {});
 
     logger.info({ sessionId: sess.id }, "Sessão FALANDO_COM_ATENDENTE expirada, voltou ao MENU_PRINCIPAL");

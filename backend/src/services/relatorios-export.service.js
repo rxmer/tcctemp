@@ -10,6 +10,11 @@ function formatMoney(value) {
   });
 }
 
+function sanitizarCelula(value) {
+  const s = String(value ?? "");
+  return /^[=+\-@]/.test(s) ? `'${s}` : s;
+}
+
 function formatDateBR(dateStr) {
   if (!dateStr) return "";
   const [y, m, d] = dateStr.split("-");
@@ -104,7 +109,7 @@ export async function gerarExcel(tenantId, filtros = {}) {
 
     for (const row of dados.agendamentos) {
       wsAg.addRow([
-        formatPeriodo(row.periodo, agrupar),
+        sanitizarCelula(formatPeriodo(row.periodo, agrupar)),
         row.total,
         row.por_status?.pendente || 0,
         row.por_status?.confirmado || 0,
@@ -122,7 +127,7 @@ export async function gerarExcel(tenantId, filtros = {}) {
     addHeaderRow(wsSe, ["Serviço", "Quantidade", "Receita"]);
 
     for (const row of dados.servicos) {
-      wsSe.addRow([row.nome, row.quantidade, formatMoney(row.receita)]);
+      wsSe.addRow([sanitizarCelula(row.nome), row.quantidade, formatMoney(row.receita)]);
     }
     autoWidth(wsSe);
     centerCol(wsSe, [2, 3]);
@@ -135,7 +140,7 @@ export async function gerarExcel(tenantId, filtros = {}) {
 
     for (const row of dados.financeiro) {
       wsFi.addRow([
-        row.mes,
+        sanitizarCelula(row.mes),
         formatMoney(row.receitas),
         formatMoney(row.despesas),
         formatMoney(row.recebido),
@@ -152,7 +157,7 @@ export async function gerarExcel(tenantId, filtros = {}) {
     addHeaderRow(wsSt, ["Status", "Quantidade"]);
 
     for (const row of dados.status) {
-      wsSt.addRow([row.label, row.quantidade]);
+      wsSt.addRow([sanitizarCelula(row.label), row.quantidade]);
     }
     autoWidth(wsSt);
     centerCol(wsSt, [2]);
@@ -164,7 +169,7 @@ export async function gerarExcel(tenantId, filtros = {}) {
     addHeaderRow(wsCl, ["Cliente", "Telefone", "Agendamentos"]);
 
     for (const row of dados.clientes_frequentes) {
-      wsCl.addRow([row.nome, row.telefone || "-", row.quantidade]);
+      wsCl.addRow([sanitizarCelula(row.nome), sanitizarCelula(row.telefone || "-"), row.quantidade]);
     }
     autoWidth(wsCl);
     centerCol(wsCl, [3]);

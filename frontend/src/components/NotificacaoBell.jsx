@@ -22,9 +22,9 @@ export function NotificacaoBell() {
       ]);
       setNotificacoes(lista);
       setContagem(cnt.count);
-    } catch (err) {
-      console.error("Erro notificações:", err);
-    }
+} catch (err) {
+        console.error("Erro notificações:", err.message);
+      }
   }
 
   async function carregarContagem() {
@@ -120,7 +120,7 @@ export function NotificacaoBell() {
         setNotificacoes(lista);
         setContagem(cnt.count);
       } catch (err) {
-        console.error("Erro notificações:", err);
+console.error("Erro notificações:", err.message);
       }
     }
 

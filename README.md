@@ -49,14 +49,14 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Expediente** — horários por dia da semana (admin)
 - **Feriados** — bloqueio de datas especiais (admin)
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
-- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 30 min de inatividade
+- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 5 min de inatividade
 - **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente e polling a cada 5s
 - **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas). Sino com ações rápidas para agendamentos passados (marcar falta) e conversas WhatsApp
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
 - **Multi-tenant** — isolamento total por `tenant_id` derivado do token JWT em todas as consultas
 - **Validação de entrada** — schemas Zod em todas as rotas de escrita (criação e atualização)
-- **Segurança** — Helmet, CORS restrito, rate limiting (global + login + exportações), sanitização de erros internos, logs sem dados pessoais, Swagger apenas fora de produção
+- **Segurança** — Helmet, CORS restrito, rate limiting (global + login + exportações), sanitização de erros internos, logs sem dados pessoais, credenciais do WhatsApp criptografadas em repouso (AES-256-GCM via `BAILEYS_AUTH_PASSWORD`), Swagger apenas fora de produção
 - **Manutenção automática** — limpeza de notificações antigas (>30 dias), expiração de sessões do chatbot (incluindo atendimento humano), lembretes com tolerância para reinicialização do servidor
 - **Máscara de telefone** — formatação `(11) 99999-9999` em todo o sistema
 - **Responsividade** — layout adaptável para mobile (≤ 768px), tabelas viram cards
@@ -67,11 +67,11 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - Status do agendamento: pendente → confirmado → em_andamento → finalizado | cancelado | falta
 - Cancelamento com antecedência mínima de 2h
 - Conflito de horário considera duração do serviço (sobreposição de janelas)
-- Finalizar OS → gera faturamento automaticamente + agendamento vira finalizado
+- Finalizar OS → gera faturamento automaticamente + agendamento vira finalizado (funcionário pode finalizar; **a consulta/edição de dados financeiros é exclusiva do admin**)
 - Cancelar OS → agenda volta para confirmado
 - Cliente/veículo/serviço não podem ser excluídos se vinculados a registros ativos
 - Conta paga e faturamento recebido não podem ser pagos novamente
-- Atendimento humano no chatbot: cliente pode voltar ao bot a qualquer momento via keywords ou botões; timeout de 30 min sem atividade retorna automaticamente ao menu
+- Atendimento humano no chatbot: cliente pode voltar ao bot a qualquer momento via keywords ou botões; timeout de 5 min sem atividade retorna automaticamente ao menu
 
 ## Setup para Desenvolvimento
 
@@ -98,6 +98,7 @@ Para a recuperação de senha funcionar, configure em **Authentication → URL C
 cd backend
 cp .env.example .env
 # Edite .env com suas credenciais do Supabase
+# Opcional: defina BAILEYS_AUTH_PASSWORD para criptografar o estado de autenticação do WhatsApp em repouso
 npm install
 npm run dev
 ```
@@ -126,17 +127,17 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 321 testes (23 arquivos)
+cd backend && npm test    # 319 testes (23 arquivos)
 cd frontend && npm test   # 277 testes (41 arquivos)
 ```
 
-> **598 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **596 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
 - [ ] **Deploy** — backend em Railway/Render, frontend na Vercel, banco no Supabase (já está)
 - [ ] **Domínio próprio** — configurar domínio + SSL
-- [ ] **Variáveis de ambiente** — configurar `NODE_ENV=production`, `CORS_ORIGIN` com o domínio (Swagger e `/api-docs` ficam desabilitados automaticamente em produção)
+- [ ] **Variáveis de ambiente** — configurar `NODE_ENV=production`, `CORS_ORIGIN` com o domínio (Swagger e `/api-docs` ficam desabilitados automaticamente em produção) e `BAILEYS_AUTH_PASSWORD` (criptografa as credenciais do WhatsApp)
 - [x] **Esquema SQL** — versionado em `docs/schema.sql`
 - [ ] **Backup automático** — configurar backup diário do banco (Supabase já faz, mas verificar retenção)
 - [ ] **WhatsApp Business API** — substituir Baileys pela API oficial do WhatsApp Business para maior estabilidade (opcional)

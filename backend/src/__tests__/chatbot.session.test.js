@@ -5,6 +5,7 @@ import { sendWhatsAppMessage } from "../chatbot/baileys.client.js";
 
 vi.mock("../chatbot/baileys.client.js", () => ({
   sendWhatsAppMessage: vi.fn().mockResolvedValue(true),
+  getConnectionState: vi.fn().mockReturnValue({ tenantId: "tenant-1", status: "connected" }),
 }));
 
 const TENANT_ID = "tenant-1";
@@ -422,7 +423,9 @@ describe("chatbot.session", () => {
       expect(updateQuery.update).toHaveBeenCalled();
       expect(sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("atendente está demorando")
+        expect.stringContaining("atendente está demorando"),
+        "bot",
+        "tenant-1"
       );
     });
 

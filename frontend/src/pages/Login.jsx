@@ -59,10 +59,7 @@ export function Login() {
     setInfo("");
     setRecLoading(true);
     try {
-      const { existe } = await authService.verificarEmail(recEmail);
-      if (!existe) {
-        throw new Error("Este e-mail não está cadastrado no sistema.");
-      }
+      await authService.verificarEmail(recEmail);
       await supabase.auth.resetPasswordForEmail(recEmail, {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });

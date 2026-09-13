@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
+import { sanitizarPesquisa } from "../utils/validation.js";
 import { dataLocalISO } from "../utils/data.js";
 
 export async function criarCliente({ nome, telefone, email, tenantId }) {
@@ -41,7 +42,7 @@ export async function listarClientes(tenantId, { page = 1, limit = 20, search = 
     .is("deletado_em", null);
 
   if (search) {
-    const s = search.replace(/[,%()\\;]/g, "").trim().slice(0, 100);
+    const s = sanitizarPesquisa(search);
     if (s) {
       query = query.or(`nome.ilike.%${s}%,telefone.ilike.%${s}%,email.ilike.%${s}%`);
     }

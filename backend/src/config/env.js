@@ -17,4 +17,5 @@ export const env = {
   supabaseServiceKey: requiredVars.SUPABASE_SERVICE_ROLE_KEY,
   nodeEnv: process.env.NODE_ENV ?? "production",
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  baileysAuthPassword: process.env.BAILEYS_AUTH_PASSWORD ?? "",
 };

@@ -17,7 +17,7 @@ vi.mock("../services/notificacoes.service.js", () => ({
 
 import * as baileys from "../chatbot/baileys.client.js";
 import * as notificacoes from "../services/notificacoes.service.js";
-import { processMessage, parseDateInput, validarAntecedenciaCancelamento, validarAgendamentoNaoIniciado } from "../chatbot/chatbot.service.js";
+import { processMessage, parseDateInput, validarAntecedenciaCancelamento, validarAgendamentoNaoIniciado, __resetChatbotRateLimit } from "../chatbot/chatbot.service.js";
 
 function mockQuery(overrides = {}) {
   return {
@@ -66,6 +66,7 @@ function dataFutura(dias = 7) {
 
 describe("chatbot.service", () => {
   beforeEach(() => {
+    __resetChatbotRateLimit();
     vi.clearAllMocks();
   });
 
@@ -1938,6 +1939,14 @@ describe("chatbot.service", () => {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({ data: { marca: "Fiat", modelo: "Uno", placa: "ABC-1234" }, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }),
+          });
+        }
+        if (table === "clientes") {
+          return mockQuery({
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }),
           });
         }
         return mockQuery();

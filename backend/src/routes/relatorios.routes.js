@@ -1,10 +1,12 @@
 import { Router } from "express";
 import * as relatoriosController from "../controllers/relatorios.controller.js";
 import { authenticate, requireAdmin } from "../middleware/auth.js";
+import { validateQuery } from "../middleware/validate.js";
 
 export const relatoriosRoutes = Router();
 
 relatoriosRoutes.use(authenticate, requireAdmin);
+relatoriosRoutes.use(validateQuery("relatorios"));
 
 relatoriosRoutes.get("/geral", relatoriosController.geral);
 relatoriosRoutes.get("/agendamentos", relatoriosController.agendamentos);

@@ -32,7 +32,7 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
 
   if (authError) {
     await supabaseAdmin.from("tenants").delete().eq("id", tenantData.id);
-    throw new AppError(`Erro ao criar usuário: ${authError.message}`);
+    throw new AppError("Não foi possível concluir o cadastro. Tente novamente.");
   }
 
   const { error: insertError } = await supabaseAdmin
@@ -67,13 +67,9 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
 }
 
 export async function verificarEmail({ email }) {
-  const { data } = await supabaseAdmin
-    .from("usuarios")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
-
-  return { existe: Boolean(data) };
+  const dominio = email?.split("@")[1] ?? "desconhecido";
+  logger.info({ emailDomain: dominio }, "Solicitação de recuperação de senha recebida");
+  return { enviado: true };
 }
 
 export async function getProfile(userId) {

@@ -36,7 +36,7 @@ export function ContasPagar() {
       setContas(result.data);
       setTotal(result.total);
     } catch (err) {
-      console.error("Erro contas:", err);
+      console.error("Erro contas:", err.message);
       showFeedback("error", "Erro ao carregar contas a pagar.");
     } finally {
       setLoading(false);

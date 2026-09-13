@@ -59,7 +59,10 @@ export async function connect(req, res) {
     res.json({ message: "Conectando..." });
   } catch (err) {
     logger.error({ err }, "Erro ao iniciar Baileys");
-    res.status(500).json({ error: "Erro ao iniciar conexão WhatsApp" });
+    const isExpected = err && err.message && /outro estabelecimento|já está conectado/i.test(err.message);
+    res.status(isExpected ? 409 : 500).json({
+      error: isExpected ? err.message : "Erro ao iniciar conexão WhatsApp",
+    });
   }
 }
 

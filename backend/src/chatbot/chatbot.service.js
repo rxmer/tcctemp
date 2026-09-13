@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
-import { criarSessao, buscarSessao, atualizarSessao, registrarMensagem } from "./chatbot.session.js";
+import { criarSessao, buscarSessao, atualizarSessao, registrarMensagem, SESSION_TIMEOUT_MINUTES } from "./chatbot.session.js";
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
 import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
@@ -12,8 +12,46 @@ import { dataLocalISO } from "../utils/data.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const messageLocks = new Map();
+const messageTimestamps = new Map();
+const rateLimitWarned = new Map();
 const empresaNomeCache = new Map();
 const lidPhoneCache = new Map();
+
+const MAX_MENSAGEM_LENGTH = 500;
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 30_000;
+
+function isRateLimited(remoteJid) {
+  const now = Date.now();
+  const key = remoteJid;
+  const recent = (messageTimestamps.get(key) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    messageTimestamps.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  messageTimestamps.set(key, recent);
+  return false;
+}
+
+async function avisarRateLimit(remoteJid) {
+  const now = Date.now();
+  const lastWarn = rateLimitWarned.get(remoteJid) || 0;
+  if (now - lastWarn < RATE_LIMIT_WINDOW_MS) return;
+  rateLimitWarned.set(remoteJid, now);
+  try {
+    await sendWhatsAppMessage(
+      remoteJid,
+      "⚠️ Você enviou muitas mensagens em pouco tempo. Aguarde um instante e tente novamente."
+    );
+  } catch {}
+}
+
+export function __resetChatbotRateLimit() {
+  messageTimestamps.clear();
+  rateLimitWarned.clear();
+  messageLocks.clear();
+}
 
 async function getEmpresaNome(tenantId) {
   if (empresaNomeCache.has(tenantId)) return empresaNomeCache.get(tenantId);
@@ -65,7 +103,6 @@ const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julh
 
 const ERRO_MAXIMO = 3;
 const ANTECEDENCIA_MINIMA_HORAS = 2;
-const SESSION_TIMEOUT_MINUTOS = 5;
 
 const VALID_TRANSITIONS = {
   "MENU_PRINCIPAL": ["ESCOLHENDO_SERVICO", "CONSULTANDO_AGENDAMENTOS", "CANCELANDO_AGENDAMENTO", "FALANDO_COM_ATENDENTE"],
@@ -114,7 +151,7 @@ async function verificarSessaoExpirada(session) {
   const agora = new Date();
   const ultima = new Date(session.ultima_atividade);
   const diffMin = (agora - ultima) / (1000 * 60);
-  return diffMin >= SESSION_TIMEOUT_MINUTOS;
+  return diffMin >= SESSION_TIMEOUT_MINUTES;
 }
 
 function isAtLeast11Digits(num) {
@@ -1648,6 +1685,30 @@ async function handleOperationalError(jid, session, err, context = "") {
    =================================================================== */
 
 export async function processMessage(tenantId, remoteJid, text, pushName) {
+  const lockKey = `${tenantId}:${remoteJid}`;
+
+  if (messageLocks.has(lockKey)) {
+    logger.warn({ lockKey }, "Mensagem ignorada: processamento anterior ainda em andamento");
+    return;
+  }
+
+  messageLocks.set(lockKey, true);
+  text = String(text ?? "").slice(0, MAX_MENSAGEM_LENGTH);
+
+  try {
+    if (isRateLimited(remoteJid)) {
+      logger.warn({ jidSuffix: remoteJid?.split("@")[1] }, "Mensagem ignorada por rate limit");
+      await avisarRateLimit(remoteJid);
+      return;
+    }
+
+    await processMessageInterno(tenantId, remoteJid, text, pushName);
+  } finally {
+    messageLocks.delete(lockKey);
+  }
+}
+
+async function processMessageInterno(tenantId, remoteJid, text, pushName) {
   let session = null;
   try {
     session = await buscarSessao(tenantId, remoteJid);
@@ -1659,7 +1720,7 @@ export async function processMessage(tenantId, remoteJid, text, pushName) {
       if (session.state === "FALANDO_COM_ATENDENTE" && await atendenteJaRespondeu(session)) {
         await atualizarSessao(session.id, { ultima_atividade: new Date().toISOString() });
       } else {
-        logger.info({ sessionId: session.id, remoteJid }, "Sessão expirada por inatividade");
+        logger.info({ sessionId: session.id, phoneSuffix: remoteJid?.split("@")[0]?.slice(-4) }, "Sessão expirada por inatividade");
         await supabaseAdmin
           .from("chatbot_session")
           .update({ ativo: false })

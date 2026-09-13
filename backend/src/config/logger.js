@@ -15,5 +15,16 @@ export const logger = pino({
           },
         }
       : undefined,
-  redact: ["req.headers.authorization", "req.headers.cookie"],
+  redact: [
+    "req.headers.authorization",
+    "req.headers.cookie",
+    "remoteJid",
+    "ownNumber",
+    "jid",
+    "text",
+    "cliente",
+    "nome",
+    "pushName",
+    "req.body",
+  ],
 });

@@ -98,9 +98,42 @@ export const schemas = {
     senha: z.string().min(8, "Senha deve ter no mínimo 8 caracteres").max(100),
   }),
 
+  criarOS: z.object({
+    agendamento_id: z.number().int().positive(),
+    observacoes: z.string().max(500).optional().nullable(),
+  }),
+  atualizarOS: z.object({
+    status: z.enum(["em_andamento", "finalizado", "cancelado"]).optional(),
+    observacoes: z.string().max(500).optional().nullable(),
+  }),
+
+  atualizarContaPagar: z.object({
+    descricao: z.string().min(2).max(200).optional(),
+    valor: z.number().positive("Valor deve ser positivo").optional(),
+    data_vencimento: z.string().regex(dataRegex, "Data inválida").optional(),
+    data_pagamento: z.string().regex(dataRegex, "Data inválida").optional().nullable(),
+    pago: z.boolean().optional(),
+    observacoes: z.string().max(500).optional().nullable(),
+  }),
+
+  receberFaturamento: z.object({
+    data_pagamento: z.string().regex(dataRegex, "Data inválida").optional().nullable(),
+  }),
+
+  atualizarFuncionario: z.object({
+    nome: z.string().min(2).max(100).optional(),
+    email: z.string().email("E-mail inválido").max(100).optional(),
+  }),
+
+  enviarRespostaChatbot: z.object({
+    mensagem: z.string().trim().min(1, "Mensagem é obrigatória").max(1000, "Mensagem muito longa (máx. 1000 caracteres)"),
+  }),
+
   adicionarItemOS: z.object({
-    servico_id: z.number().int().positive(),
+    servico_id: z.number().int().positive().optional().nullable(),
+    descricao: z.string().min(1, "Descrição é obrigatória").max(200),
     quantidade: z.number().int().positive().default(1),
+    valor_unitario: z.number().positive("Valor unitário deve ser positivo"),
   }),
 
   criarDataBloqueada: z.object({
@@ -137,6 +170,43 @@ export const schemas = {
       .nullable(),
   }),
 };
+
+const queryDataRange = z.object({
+  data_inicio: z.string().regex(dataRegex, "Data inválida (YYYY-MM-DD)").optional(),
+  data_fim: z.string().regex(dataRegex, "Data inválida (YYYY-MM-DD)").optional(),
+});
+
+const paginacao = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+export const querySchemas = {
+  relatorios: queryDataRange.extend({
+    agrupar_por: z.enum(["dia", "semana", "mes"]).optional(),
+    tipo: z.enum(["geral", "agendamentos", "servicos", "financeiro", "clientes_frequentes"]).optional(),
+  }),
+  financeiro: queryDataRange.extend({
+    pago: z.enum(["true", "false"]).optional(),
+    ...paginacao.shape,
+  }),
+  agendamentos: queryDataRange.extend({
+    status: z.enum(["pendente", "confirmado", "em_andamento", "finalizado", "cancelado", "falta"]).optional(),
+    cliente_id: z.coerce.number().int().positive().optional(),
+    ...paginacao.shape,
+  }),
+  ordensServicos: z.object({
+    status: z.enum(["em_andamento", "finalizado", "cancelado"]).optional(),
+    ...paginacao.shape,
+  }),
+};
+
+export function sanitizarPesquisa(value) {
+  return String(value ?? "")
+    .replace(/[^\p{L}\p{N}@._\- ]/gu, "")
+    .trim()
+    .slice(0, 100);
+}
 
 export function validate(schema, data) {
   const result = schema.safeParse(data);

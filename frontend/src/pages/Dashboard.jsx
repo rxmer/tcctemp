@@ -20,7 +20,7 @@ export function Dashboard() {
         setStats(dados);
       } catch (err) {
         setDashError("Não foi possível carregar os dados do dashboard.");
-        console.error("Erro dashboard:", err);
+        console.error("Erro dashboard:", err.message);
       } finally {
         setDashLoading(false);
       }
@@ -103,11 +103,14 @@ export function Dashboard() {
     return `${d}/${m}`;
   }
 
+  const ehAdmin = usuario?.perfil === "admin";
   const STATS = [
     { icon: CalendarDays, label: "Agendamentos hoje", value: String(stats?.agendamentos_hoje ?? 0) },
     { icon: CheckCircle2, label: "Serviços realizados", value: String(stats?.servicos_realizados ?? 0) },
     { icon: Users, label: "Total de clientes", value: String(stats?.total_clientes ?? 0) },
-    { icon: DollarSign, label: "Faturamento mês", value: formatMoney(stats?.faturamento_mes ?? 0) },
+    ...(ehAdmin
+      ? [{ icon: DollarSign, label: "Faturamento mês", value: formatMoney(stats?.faturamento_mes ?? 0) }]
+      : []),
   ];
 
   return (

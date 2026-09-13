@@ -26,7 +26,7 @@ export function Financeiro() {
       const data = await financeiroService.resumo(params);
       setResumo(data);
     } catch (err) {
-      console.error("Erro resumo:", err);
+      console.error("Erro resumo:", err.message);
       showFeedback("error", "Erro ao carregar resumo financeiro.");
     } finally {
       setLoading(false);

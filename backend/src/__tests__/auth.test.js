@@ -110,7 +110,7 @@ describe("authService", () => {
         error: new Error("Email already registered"),
       });
 
-      await expect(signup(input)).rejects.toThrow("Erro ao criar usuário");
+      await expect(signup(input)).rejects.toThrow("Não foi possível concluir o cadastro");
 
       expect(supabaseAdmin.from.mock.calls[1][0]).toBe("tenants");
       expect(supabaseAdmin.from.mock.results[1].value.delete).toHaveBeenCalled();
@@ -213,33 +213,11 @@ describe("authService", () => {
   });
 
   describe("verificarEmail", () => {
-    it("deve retornar existe true quando usuario encontrado", async () => {
-      supabaseAdmin.from.mockReturnValue(
-        q({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: "user-1" }, error: null }) })
-      );
-
+    it("deve responder neutro sem revelar se o e-mail existe", async () => {
       const result = await verificarEmail({ email: "admin@oficina.com" });
 
-      expect(result).toEqual({ existe: true });
-      expect(supabaseAdmin.from).toHaveBeenCalledWith("usuarios");
-    });
-
-    it("deve retornar existe false quando usuario nao encontrado", async () => {
-      supabaseAdmin.from.mockReturnValue(q());
-
-      const result = await verificarEmail({ email: "desconhecido@email.com" });
-
-      expect(result).toEqual({ existe: false });
-    });
-
-    it("deve tratar erro do banco como email inexistente", async () => {
-      supabaseAdmin.from.mockReturnValue(
-        q({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: new Error("DB error") }) })
-      );
-
-      const result = await verificarEmail({ email: "admin@oficina.com" });
-
-      expect(result.existe).toBe(false);
+      expect(result).toEqual({ enviado: true });
+      expect(supabaseAdmin.from).not.toHaveBeenCalled();
     });
   });
 });

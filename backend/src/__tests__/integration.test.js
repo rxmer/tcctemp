@@ -42,6 +42,12 @@ vi.mock("../config/cache.js", () => ({
 
 import { supabaseAdmin } from "../config/supabase.js";
 
+const USUARIO = {
+  id: "user-1",
+  tenant_id: "tenant-1",
+  perfil: "admin",
+};
+
 function mockQuery() {
   return {
     select: vi.fn().mockReturnThis(),
@@ -62,6 +68,14 @@ function mockQuery() {
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
     then: (resolve) => resolve({ data: [], error: null }),
   };
+}
+
+function mockAuthenticatedUser() {
+  supabaseAdmin.from.mockImplementationOnce(() => {
+    const query = mockQuery();
+    query.maybeSingle.mockResolvedValue({ data: USUARIO, error: null });
+    return query;
+  });
 }
 
 describe("Integração - Health", () => {
@@ -100,6 +114,7 @@ describe("Integração - Clientes", () => {
   });
 
   it("GET /api/clientes retorna lista", async () => {
+    mockAuthenticatedUser();
     const clientes = [
       { cliente_id: 1, nome: "João", telefone: "11999999999" },
     ];
@@ -117,6 +132,7 @@ describe("Integração - Clientes", () => {
   });
 
   it("POST /api/clientes cria cliente", async () => {
+    mockAuthenticatedUser();
     const novoCliente = { cliente_id: 1, nome: "Maria", telefone: "11988888888" };
     supabaseAdmin.from.mockReturnValue({
       ...mockQuery(),
@@ -138,6 +154,7 @@ describe("Integração - Serviços", () => {
   });
 
   it("GET /api/servicos retorna lista", async () => {
+    mockAuthenticatedUser();
     supabaseAdmin.from.mockReturnValue(mockQuery());
 
     const res = await request(app)
@@ -154,6 +171,7 @@ describe("Integração - Agendamentos", () => {
   });
 
   it("GET /api/agendamentos retorna lista", async () => {
+    mockAuthenticatedUser();
     supabaseAdmin.from.mockReturnValue(mockQuery());
 
     const res = await request(app)
@@ -170,6 +188,7 @@ describe("Integração - Dashboard", () => {
   });
 
   it("GET /api/dashboard/resumo retorna dados", async () => {
+    mockAuthenticatedUser();
     supabaseAdmin.from.mockReturnValue(mockQuery());
 
     const res = await request(app)

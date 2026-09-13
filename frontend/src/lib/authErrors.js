@@ -2,7 +2,10 @@ const TRADUCOES = [
   [/new password should be different/i, "A nova senha deve ser diferente da senha atual."],
   [/invalid login credentials/i, "E-mail ou senha incorretos."],
   [/email not confirmed/i, "E-mail ainda não confirmado. Verifique sua caixa de entrada."],
-  [/already registered|already exists/i, "Já existe uma conta com este e-mail."],
+  [
+    /already registered|already exists/i,
+    "Não foi possível concluir o cadastro. Tente novamente.",
+  ],
   [/rate limit|too many requests/i, "Muitas tentativas. Aguarde alguns minutos e tente novamente."],
   [/password should be at least/i, "A senha não atende ao tamanho mínimo exigido."],
   [

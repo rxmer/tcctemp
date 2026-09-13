@@ -52,7 +52,7 @@ describe("Login page", () => {
     useAuth.mockReturnValue({
       signIn: vi.fn(),
     });
-    mockVerificarEmail.mockResolvedValue({ existe: true });
+    mockVerificarEmail.mockResolvedValue({ enviado: true });
   });
 
   it("renderiza campos de email e senha", () => {
@@ -144,8 +144,8 @@ describe("Login page", () => {
     });
   });
 
-  it("mostra erro e nao envia email quando o email nao esta cadastrado", async () => {
-    mockVerificarEmail.mockResolvedValue({ existe: false });
+  it("envia email de recuperacao mesmo se o e-mail nao esta cadastrado (sem revelar)", async () => {
+    mockResetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
     renderLogin();
 
     fireEvent.click(screen.getByText(/esqueci minha senha/i));
@@ -153,9 +153,11 @@ describe("Login page", () => {
     fireEvent.click(screen.getByRole("button", { name: /enviar link de recuperação/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("não está cadastrado no sistema");
+      expect(mockVerificarEmail).toHaveBeenCalledWith("inexistente@test.com");
+      expect(mockResetPasswordForEmail).toHaveBeenCalled();
+      expect(screen.getByText(/link de recuperação/i)).toBeInTheDocument();
     });
-    expect(mockResetPasswordForEmail).not.toHaveBeenCalled();
+    expect(screen.queryByText(/não está cadastrado/i)).not.toBeInTheDocument();
   });
 
   it("volta ao login com aviso quando a senha e redefinida em outra aba", async () => {

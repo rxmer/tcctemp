@@ -7,7 +7,7 @@ export const servicosRoutes = Router();
 
 servicosRoutes.use(authenticate);
 
-servicosRoutes.post("/", requireAdmin, servicosController.criar);
+servicosRoutes.post("/", requireAdmin, validateBody("criarServico"), servicosController.criar);
 servicosRoutes.get("/", servicosController.listar);
 servicosRoutes.put("/:id", requireAdmin, validateBody("atualizarServico"), servicosController.atualizar);
 servicosRoutes.delete("/:id", requireAdmin, servicosController.deletar);

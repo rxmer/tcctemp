@@ -143,7 +143,7 @@ npm install -D nodemon
 
 ```env
 PORT=3001
-SUPABASE_URL=https://hgbucbocvktcojmrcbxn.supabase.co
+SUPABASE_URL=https://SEU_PROJETO.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key_aqui
 SUPABASE_JWT_SECRET=sua_jwt_secret_aqui
 ```

@@ -18,6 +18,39 @@ function converterHoraParaMinutos(horaStr) {
   return h * 60 + m;
 }
 
+async function validarClienteVeiculo(tenantId, clienteId, veiculoId) {
+  if (clienteId) {
+    const { data: cliente, error } = await supabaseAdmin
+      .from("clientes")
+      .select("cliente_id")
+      .eq("cliente_id", clienteId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    if (error || !cliente) {
+      throw new AppError("Cliente inválido ou sem vínculo com este estabelecimento", 400);
+    }
+  }
+
+  if (veiculoId) {
+    let query = supabaseAdmin
+      .from("veiculos")
+      .select("veiculo_id")
+      .eq("veiculo_id", veiculoId)
+      .eq("tenant_id", tenantId);
+
+    if (clienteId) {
+      query = query.eq("cliente_id", clienteId);
+    }
+
+    const { data: veiculo, error: veiculoError } = await query.maybeSingle();
+
+    if (veiculoError || !veiculo) {
+      throw new AppError("Veículo inválido ou não pertence a este cliente", 400);
+    }
+  }
+}
+
 export async function buscarAgendamentosDoDia(tenantId, data) {
   const { data: ags, error } = await supabaseAdmin
     .from("agendamentos")
@@ -82,6 +115,11 @@ export async function listarAgendamentosCliente(tenantId, clienteId, statusFilte
 }
 
 export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, data_agendamento, hora_agendamento, observacoes, tenantId, criadoPor, fonte, status }) {
+  if (!cliente_id) {
+    throw new AppError("Cliente é obrigatório", 400);
+  }
+  await validarClienteVeiculo(tenantId, cliente_id, veiculo_id);
+
   const hoje = dataLocalISO();
   if (data_agendamento < hoje) {
     throw new AppError("Não é possível agendar para uma data passada", 400);
@@ -243,6 +281,25 @@ export async function listarAgendamentos(tenantId, filtros = {}) {
 }
 
 export async function atualizarAgendamento(id, tenantId, updates) {
+  let clienteIdParaValidar = updates.cliente_id;
+
+  if (updates.veiculo_id && !updates.cliente_id) {
+    const { data: atual, error: errAtual } = await supabaseAdmin
+      .from("agendamentos")
+      .select("cliente_id, tenant_id")
+      .eq("agendamento_id", id)
+      .eq("tenant_id", tenantId)
+      .is("deletado_em", null)
+      .maybeSingle();
+
+    if (errAtual || !atual) throw new AppError("Agendamento não encontrado", 404);
+    clienteIdParaValidar = atual.cliente_id;
+  }
+
+  if (clienteIdParaValidar || updates.veiculo_id) {
+    await validarClienteVeiculo(tenantId, clienteIdParaValidar, updates.veiculo_id);
+  }
+
   let current = null;
 
   if (updates.status || updates.data_agendamento || updates.hora_agendamento) {

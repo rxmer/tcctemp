@@ -1,4 +1,5 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
+import makeWASocket, { DisconnectReason, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
+import { useEncryptedMultiFileAuthState } from "./encrypted-auth-state.js";
 import { createRequire } from "module";
 import { Boom } from "@hapi/boom";
 import path from "path";
@@ -12,6 +13,8 @@ const require = createRequire(import.meta.url);
 const { sendButtons: helperSendButtons, sendInteractiveMessage: helperSendInteractive } = require("baileys_helper");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const MAX_MENSAGEM_LENGTH = 500;
 
 let socket = null;
 let currentTenantId = null;
@@ -89,6 +92,13 @@ export function getAuthDir(tenantId) {
 }
 
 export async function startBaileys(tenantId) {
+  if (socket && currentTenantId && currentTenantId !== tenantId) {
+    const ativo = ["connected", "connecting", "awaiting_qr", "reconnecting"].includes(connectionState.status);
+    if (ativo) {
+      throw new Error("Outro estabelecimento já está conectado ao WhatsApp desta instância. Encerre a conexão atual antes de conectar outro.");
+    }
+  }
+
   if (socket) {
     socketId++;
     await stopBaileys(true);
@@ -98,7 +108,10 @@ export async function startBaileys(tenantId) {
   currentTenantId = tenantId;
   const authDir = getAuthDir(tenantId);
 
-  const { state: authStateValue, saveCreds } = await useMultiFileAuthState(authDir);
+  const { state: authStateValue, saveCreds } = await useEncryptedMultiFileAuthState(
+    authDir,
+    process.env.BAILEYS_AUTH_PASSWORD
+  );
   authState = authStateValue;
 
   const thisSocketId = ++socketId;
@@ -264,7 +277,7 @@ export async function startBaileys(tenantId) {
       // conectado como cliente e responde para ele mesmo.
       if (ownNumber && ehNumeroProprio(remoteJid, ownNumber)) {
         logger.info(
-          { remoteJid, ownNumber },
+          { phoneSuffix: remoteJid?.split("@")[0]?.slice(-4), jidSuffix: remoteJid?.split("@")[1] },
           "Mensagem do próprio número conectado ignorada (self)"
         );
         continue;
@@ -276,10 +289,10 @@ export async function startBaileys(tenantId) {
 
       if (msg.message?.buttonsResponseMessage) {
         text = msg.message.buttonsResponseMessage.selectedButtonId;
-        logger.debug({ text }, "buttonsResponse");
+        logger.debug({ textLength: text?.length || 0 }, "buttonsResponse");
       } else if (msg.message?.listResponseMessage) {
         text = msg.message.listResponseMessage.singleSelectReply?.selectedRowId;
-        logger.debug({ text }, "listResponse");
+        logger.debug({ textLength: text?.length || 0 }, "listResponse");
       } else if (msg.message?.interactiveResponseMessage) {
         const resp = msg.message.interactiveResponseMessage;
         if (resp.nativeFlowResponseMessage) {
@@ -292,14 +305,14 @@ export async function startBaileys(tenantId) {
               text = params.id || params.display_text;
             } catch {}
           }
-          logger.debug({ text }, "interactiveResponse");
+          logger.debug({ textLength: text?.length || 0 }, "interactiveResponse");
           if (!text && nf.paramsJson) {
             text = nf.paramsJson.replace(/[{}"']/g, "").trim();
           }
         }
       } else if (msg.message?.templateButtonReplyMessage) {
         text = msg.message.templateButtonReplyMessage.selectedId;
-        logger.debug({ text }, "templateButtonReply");
+        logger.debug({ textLength: text?.length || 0 }, "templateButtonReply");
       } else if (msg.message?.conversation) {
         text = msg.message.conversation;
       } else if (msg.message?.extendedTextMessage?.text) {
@@ -307,6 +320,11 @@ export async function startBaileys(tenantId) {
       }
 
       if (!text || text === "") continue;
+
+      if (text.length > MAX_MENSAGEM_LENGTH) {
+        logger.warn({ phoneSuffix: remoteJid?.split("@")[0]?.slice(-4), textLength: text.length }, "Mensagem truncada por exceder limite de tamanho");
+        text = text.slice(0, MAX_MENSAGEM_LENGTH);
+      }
 
       const pushName = msg.pushName || "Cliente";
 
@@ -366,8 +384,11 @@ export function setOnOutgoingMessage(fn) {
   onOutgoingMessage = fn;
 }
 
-export async function sendWhatsAppMessage(jid, text, origem = "bot") {
+export async function sendWhatsAppMessage(jid, text, origem = "bot", tenantId = null) {
   if (!socket) throw new Error("WhatsApp não conectado");
+  if (tenantId && currentTenantId !== tenantId) {
+    throw new Error("WhatsApp de outro estabelecimento conectado");
+  }
   await socket.sendMessage(jid, { text });
   if (onOutgoingMessage) {
     try {
