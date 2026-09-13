@@ -181,6 +181,14 @@ const paginacao = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
+// Rotas usadas como "catálogo" para popular seletores no frontend (OS, Dashboard):
+// recebem limit alto mas finito — valida tipo/número sem rejeitar o contrato atual do app.
+const LIMITE_SELECAO = 10000;
+const selecao = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(LIMITE_SELECAO).optional(),
+});
+
 export const querySchemas = {
   relatorios: queryDataRange.extend({
     agrupar_por: z.enum(["dia", "semana", "mes"]).optional(),
@@ -193,7 +201,7 @@ export const querySchemas = {
   agendamentos: queryDataRange.extend({
     status: z.enum(["pendente", "confirmado", "em_andamento", "finalizado", "cancelado", "falta"]).optional(),
     cliente_id: z.coerce.number().int().positive().optional(),
-    ...paginacao.shape,
+    ...selecao.shape,
   }),
   ordensServicos: z.object({
     status: z.enum(["em_andamento", "finalizado", "cancelado"]).optional(),
