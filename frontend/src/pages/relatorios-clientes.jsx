@@ -1,5 +1,7 @@
 import { relatoriosService } from "../services/relatorios.service";
 import { RelatorioBase } from "../components/RelatorioBase";
+import { ClientesRanking } from "../components/relatorios/ClientesRanking";
+import { Users } from "lucide-react";
 
 export function RelatorioClientes() {
   return (
@@ -7,24 +9,15 @@ export function RelatorioClientes() {
       titulo="Clientes Frequentes"
       subtitle="Ranking de clientes por agendamentos"
       cardTitulo="Clientes mais frequentes"
-      cardSub="Por quantidade de agendamentos"
+      cardSub="Por quantidade de agendamentos no período"
       comAgrupar={false}
+      icone={Users}
+      accentHex="#d4a843"
+      totalTexto={(d) => `${(d ?? []).length} clientes`}
       fetcher={relatoriosService.clientesFrequentes}
       tipoExport="clientes_frequentes"
       renderChart={(dados) => (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {(dados ?? []).length > 0 ? (
-            (dados ?? []).map((c, i) => (
-              <div key={c.cliente_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)" }}>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: i === 0 ? "var(--accent)" : "var(--text-secondary)", minWidth: 24 }}>#{i + 1}</span>
-                <span style={{ flex: 1, fontSize: 14 }}>{c.nome}</span>
-                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{c.quantidade}x</span>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Nenhum dado disponível.</p>
-          )}
-        </div>
+        <ClientesRanking dados={dados ?? []} max={10} />
       )}
     />
   );

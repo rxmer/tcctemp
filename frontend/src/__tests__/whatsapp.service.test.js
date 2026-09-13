@@ -32,10 +32,18 @@ describe("whatsappService", () => {
     });
   });
 
-  it("listSessions chama apiFetch com timestamp", () => {
+  it("listSessions chama apiFetch com parametros de paginacao, ordenacao e filtros", () => {
+    whatsappService.listSessions({ page: 2, limit: 10, ordem: "nome", estado: "atendente", busca: "João" });
+    const url = apiFetch.mock.calls[0][0];
+    expect(url).toMatch(/^\/api\/chatbot\/sessions\?_=\d+&page=2&limit=10&ordem=nome&estado=atendente&busca=Jo(%C3%A3|ã)o$/);
+  });
+
+  it("listSessions usa padroes quando sem argumentos", () => {
     whatsappService.listSessions();
     const url = apiFetch.mock.calls[0][0];
-    expect(url).toMatch(/^\/api\/chatbot\/sessions\?_=\d+$/);
+    expect(url).toMatch(/^\/api\/chatbot\/sessions\?_=\d+&page=1&limit=20&ordem=recentes$/);
+    expect(url).not.toContain("estado=");
+    expect(url).not.toContain("busca=");
   });
 
   it("getSession chama apiFetch com id e timestamp", () => {

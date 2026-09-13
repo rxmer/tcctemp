@@ -77,7 +77,16 @@ export async function disconnect(req, res) {
 }
 
 export async function listSessions(req, res) {
-  const sessions = await sessionService.listarSessoes(req.tenantId);
+  const { page, limit, ordem = "recentes", estado, busca } = req.query;
+
+  const sessions = await sessionService.listarSessoes(req.tenantId, {
+    page: page ? Number(page) : 1,
+    limit: limit ? Number(limit) : 20,
+    ordem,
+    estado: estado || null,
+    busca: busca?.trim() || "",
+  });
+
   res.json(sessions);
 }
 

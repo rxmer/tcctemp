@@ -49,7 +49,7 @@ export function ChatWidget() {
   const carregarSessoes = useCallback(async () => {
     try {
       const data = await whatsappService.listSessions();
-      setSessoes(data ?? []);
+      setSessoes(Array.isArray(data) ? data : (data?.data ?? []));
     } catch { /* silencioso */ }
   }, []);
 

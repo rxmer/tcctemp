@@ -30,6 +30,8 @@ function mockQuery(overrides = {}) {
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    ilike: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
     then: (resolve) => resolve({ data: [], error: null }),
@@ -155,20 +157,58 @@ describe("chatbot.session", () => {
   });
 
   describe("listarSessoes", () => {
-    it("deve listar sessoes do tenant", async () => {
+    function mockListar({ count, data }) {
+      const countQuery = mockQuery({
+        then: (resolve) => resolve({ data: null, count, error: null }),
+      });
+      const dataQuery = mockQuery({
+        then: (resolve) => resolve({ data, error: null }),
+      });
+      supabaseAdmin.from.mockReturnValueOnce(countQuery).mockReturnValueOnce(dataQuery);
+      return { countQuery, dataQuery };
+    }
+
+    it("deve listar sessoes do tenant com total", async () => {
       const expected = [{ id: SESSION_ID }];
-      supabaseAdmin.from.mockReturnValue(mockQuery({
-        then: (resolve) => resolve({ data: expected, error: null }),
-      }));
+      const { dataQuery } = mockListar({ count: 3, data: expected });
 
       const result = await sessionService.listarSessoes(TENANT_ID);
-      expect(result).toEqual(expected);
+
+      expect(result).toEqual({ data: expected, total: 3 });
+      expect(dataQuery.order).toHaveBeenCalledWith("ultima_atividade", { ascending: false });
+      expect(dataQuery.range).toHaveBeenCalledWith(0, 19);
+    });
+
+    it("deve ordenar por nome quando ordem=nome e paginar", async () => {
+      const { countQuery, dataQuery } = mockListar({ count: 55, data: [] });
+
+      await sessionService.listarSessoes(TENANT_ID, { page: 2, limit: 10, ordem: "nome" });
+
+      expect(countQuery.eq).toHaveBeenCalledWith("tenant_id", TENANT_ID);
+      expect(dataQuery.order).toHaveBeenCalledWith("client_name", { ascending: true, nullsFirst: true });
+      expect(dataQuery.range).toHaveBeenCalledWith(10, 19);
+    });
+
+    it("deve aplicar filtro por grupo de estado e busca", async () => {
+      const { countQuery, dataQuery } = mockListar({ count: 1, data: [] });
+
+      await sessionService.listarSessoes(TENANT_ID, { estado: "atendente", busca: "João" });
+
+      expect(countQuery.eq).toHaveBeenCalledWith("tenant_id", TENANT_ID);
+      expect(countQuery.eq).toHaveBeenCalledWith("state", "FALANDO_COM_ATENDENTE");
+      expect(dataQuery.eq).toHaveBeenCalledWith("state", "FALANDO_COM_ATENDENTE");
+      expect(dataQuery.or).toHaveBeenCalledWith(expect.stringContaining("client_name.ilike.%João%"));
+      expect(dataQuery.or).toHaveBeenCalledWith(expect.stringContaining("client_phone.ilike.%João%"));
     });
 
     it("deve lancar erro na falha", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery({
+      const countQuery = mockQuery({
+        then: (resolve) => resolve({ data: null, count: null, error: null }),
+      });
+      const dataQuery = mockQuery({
         then: (resolve) => resolve({ data: null, error: new Error("List error") }),
-      }));
+      });
+      supabaseAdmin.from.mockReturnValueOnce(countQuery).mockReturnValueOnce(dataQuery);
 
       await expect(
         sessionService.listarSessoes(TENANT_ID)

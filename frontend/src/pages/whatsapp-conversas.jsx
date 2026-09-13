@@ -1,10 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
-import { PageHeader, SkeletonCard, Alert } from "../components/ui";
+import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
+import { PageHeader, SkeletonCard, Alert, Select, Pagination } from "../components/ui";
 import styles from "../styles/pages/whatsapp.module.css";
 import { formatPhone } from "../utils/formatPhone";
+
+const LIMIT = 20;
+
+const ORDEM_OPCOES = [
+  ["recentes", "Mais recentes"],
+  ["nome", "Nome A-Z"],
+];
+
+const ESTADO_OPCOES = [
+  ["atendente", "Com atendente"],
+  ["menu", "No menu"],
+  ["agendando", "Agendando"],
+];
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -26,28 +40,57 @@ function estadoLabel(estado) {
 
 export function WhatsAppConversas() {
   const [sessions, setSessions] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [ordem, setOrdem] = useState("recentes");
+  const [estado, setEstado] = useState("");
+  const [busca, setBusca] = useState("");
+  const [buscaInput, setBuscaInput] = useState("");
   const { feedback, showFeedback } = useFeedback();
   const navigate = useNavigate();
-  const mounted = useRef(true);
+
+  useDebouncedEffect(() => {
+    setPage(1);
+    setBusca(buscaInput.trim());
+  }, [buscaInput]);
 
   useEffect(() => {
-    mounted.current = true;
-    async function load() {
+    let ativo = true;
+    async function carregar() {
       try {
         setLoading(true);
-        const data = await whatsappService.listSessions();
-        if (mounted.current) setSessions(data);
+        const result = await whatsappService.listSessions({
+          page,
+          limit: LIMIT,
+          ordem,
+          estado,
+          busca,
+        });
+        if (!ativo) return;
+        const lista = Array.isArray(result) ? result : (result?.data ?? []);
+        setSessions(lista);
+        setTotal(result?.total ?? lista.length);
       } catch (err) {
-        if (mounted.current) showFeedback("error", err.message);
+        if (ativo) showFeedback("error", err.message);
       } finally {
-        if (mounted.current) setLoading(false);
+        if (ativo) setLoading(false);
       }
     }
 
-    load();
-    return () => { mounted.current = false; };
-  }, []);
+    carregar();
+    return () => { ativo = false; };
+  }, [page, ordem, estado, busca]);
+
+  function handleOrdem(e) {
+    setPage(1);
+    setOrdem(e.target.value);
+  }
+
+  function handleEstado(e) {
+    setPage(1);
+    setEstado(e.target.value);
+  }
 
   return (
     <>
@@ -60,15 +103,48 @@ export function WhatsAppConversas() {
 
       <div className={styles.card} style={{ marginTop: 0 }}>
         <div className={styles.cardHeader}>
-          <h2>Últimas conversas</h2>
-          <p>{sessions.length} conversa(s)</p>
+          <h2>Conversas</h2>
+          <p>{total} conversa(s) encontrada(s)</p>
+        </div>
+
+        <div className={styles.toolbar}>
+          <input
+            type="search"
+            className={styles.toolbarSearch}
+            placeholder="Buscar por nome ou telefone..."
+            value={buscaInput}
+            onChange={(e) => setBuscaInput(e.target.value)}
+            aria-label="Buscar conversas"
+          />
+          <Select
+            name="ordem"
+            aria-label="Ordenar conversas"
+            value={ordem}
+            onChange={handleOrdem}
+            options={ORDEM_OPCOES}
+            placeholder={null}
+            wrapperClassName={styles.toolbarField}
+            className={`input-field ${styles.toolbarSelect}`}
+          />
+          <Select
+            name="estado"
+            aria-label="Filtrar por situação"
+            value={estado}
+            onChange={handleEstado}
+            options={ESTADO_OPCOES}
+            placeholder="Todas as situações"
+            wrapperClassName={styles.toolbarField}
+            className={`input-field ${styles.toolbarSelect}`}
+          />
         </div>
 
         {loading ? (
           <div style={{ padding: 16 }}><SkeletonCard lines={4} /></div>
         ) : sessions.length === 0 ? (
           <div className={styles.emptyState}>
-            Nenhuma conversa ainda. O chatbot começará a registrar as conversas assim que for conectado.
+            {busca || estado
+              ? "Nenhuma conversa encontrada com os filtros atuais."
+              : "Nenhuma conversa ainda. O chatbot começará a registrar as conversas assim que for conectado."}
           </div>
         ) : (
           <div className={styles.sessionsGrid}>
@@ -90,6 +166,8 @@ export function WhatsAppConversas() {
             ))}
           </div>
         )}
+
+        <Pagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
       </div>
     </>
   );

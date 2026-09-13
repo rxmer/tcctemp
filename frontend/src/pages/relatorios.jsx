@@ -1,12 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "../context/useAuth";
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, SkeletonCard, Button, TenantChip } from "../components/ui";
+import { PageHeader, Button, TenantChip } from "../components/ui";
+import { ClientesRanking } from "../components/relatorios/ClientesRanking";
+import { EmptyRelatorio } from "../components/relatorios/EmptyRelatorio";
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
 import styles from "../styles/pages/relatorios.module.css";
-import { Download, FileText } from "lucide-react";
+import {
+  Download, FileText, CalendarCheck2, CheckCircle2, XCircle, Clock3,
+  CalendarDays, Users, Award,
+} from "lucide-react";
 
 const STATUS_CORES = {
   pendente: "#f59e0b",
@@ -14,7 +19,17 @@ const STATUS_CORES = {
   em_andamento: "#8b5cf6",
   finalizado: "#22c55e",
   cancelado: "#ef4444",
+  falta: "#e11d48",
 };
+
+const STATUS_ORDEM = ["pendente", "confirmado", "em_andamento", "finalizado", "cancelado", "falta"];
+
+const KPI_CONFIG = [
+  { chave: "pendente", label: "Pendentes", icone: Clock3, cor: "scAmber" },
+  { chave: "confirmado", label: "Confirmados", icone: CalendarDays, cor: "scGold" },
+  { chave: "finalizado", label: "Concluídos", icone: CheckCircle2, cor: "scGreen" },
+  { chave: "cancelado", label: "Cancelados", icone: XCircle, cor: "scRed" },
+];
 
 export function Relatorios() {
   const { tenant } = useAuth();
@@ -36,6 +51,29 @@ export function Relatorios() {
     return params;
   }
 
+  const carregar = useCallback(async () => {
+    const seq = ++reqSeq.current;
+    setLoading(true);
+    setErro(null);
+    try {
+      const [status, clientes] = await Promise.all([
+        relatoriosService.status(getParams()),
+        relatoriosService.clientesFrequentes(getParams()),
+      ]);
+      if (seq !== reqSeq.current) return;
+      setDados({ status, clientes });
+    } catch {
+      if (seq !== reqSeq.current) return;
+      setErro("Erro ao carregar relatórios. Tente novamente.");
+    } finally {
+      if (seq === reqSeq.current) setLoading(false);
+    }
+  }, [filtroData]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
   async function handleExportar(formato) {
     setExportando(true);
     try {
@@ -51,33 +89,47 @@ export function Relatorios() {
     }
   }
 
-  useEffect(() => {
-    async function carregar() {
-      const seq = ++reqSeq.current;
-      setLoading(true);
-      setErro(null);
-      try {
-        const [status, clientes] = await Promise.all([
-          relatoriosService.status(getParams()),
-          relatoriosService.clientesFrequentes(getParams()),
-        ]);
-        if (seq !== reqSeq.current) return;
-        setDados({ status, clientes });
-      } catch {
-        if (seq !== reqSeq.current) return;
-        setErro("Erro ao carregar relatórios. Tente novamente.");
-      } finally {
-        if (seq === reqSeq.current) setLoading(false);
-      }
-    }
-    carregar();
-  }, [filtroData]);
+  const { status, clientes, total, kpis } = useMemo(() => {
+    const st = dados?.status ?? [];
+    const totalRaw = st.reduce((s, x) => s + (Number(x.quantidade) || 0), 0);
+    const sorted = [...st].sort(
+      (a, b) => STATUS_ORDEM.indexOf(a.status) - STATUS_ORDEM.indexOf(b.status)
+    );
+    const kpi = KPI_CONFIG.map((conf) => {
+      const item = sorted.find((s) => s.status === conf.chave);
+      const valor = item?.quantidade ?? 0;
+      return { ...conf, valor, pct: totalRaw > 0 ? Math.round((valor / totalRaw) * 100) : 0 };
+    });
+    return { status: sorted, clientes: dados?.clientes ?? [], total: totalRaw, kpis: kpi };
+  }, [dados]);
 
   if (loading && !dados) {
     return (
       <>
         <PageHeader title="Relatórios" subtitle="Visão geral da empresa" />
-        <SkeletonCard lines={8} />
+        <div className={styles.skeletonStats}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={styles.skeletonStatCard}>
+              <div className={`skeleton ${styles.skStatIcon}`} />
+              <div className={`skeleton ${styles.skStatValue}`} />
+              <div className={`skeleton ${styles.skStatLabel}`} />
+            </div>
+          ))}
+        </div>
+        <div className={styles.grid}>
+          <div className={styles.skeletonChart}>
+            <div className={`skeleton ${styles.skChartTitle}`} />
+            <div className={`skeleton ${styles.skDonutSkel}`} />
+          </div>
+          <div className={styles.skeletonChart}>
+            <div className={`skeleton ${styles.skChartTitle}`} />
+            <div className={styles.skRows}>
+              {[0, 1, 2, 3, 4].map((r) => (
+                <div key={r} className={`skeleton ${styles.skRow}`} />
+              ))}
+            </div>
+          </div>
+        </div>
       </>
     );
   }
@@ -88,11 +140,16 @@ export function Relatorios() {
         action={<TenantChip nome={tenant?.nome} />}
       />
 
-      <div className={styles.filtros}>
-        <div className={styles.filtroGroup}>
-          <label className={styles.filtroLabel}>Mês</label>
-          <input type="month" className={styles.filtroInput} value={filtroData}
-            onChange={(e) => setFiltroData(e.target.value)} />
+      <div className={styles.toolbar}>
+        <div className={styles.filtros}>
+          <div className={styles.filtroGroup}>
+            <label className={styles.filtroLabel} htmlFor="rel-filtro-mes">Mês</label>
+            <input id="rel-filtro-mes" type="month" className={styles.filtroInput} value={filtroData}
+              onChange={(e) => setFiltroData(e.target.value)} />
+          </div>
+          {filtroData && (
+            <Button variant="ghost" onClick={() => setFiltroData("")}>Limpar</Button>
+          )}
         </div>
 
         <div className={styles.exportActions}>
@@ -108,50 +165,117 @@ export function Relatorios() {
       {erro && (
         <div className={styles.errorContainer}>
           <span className={styles.errorMsg}>{erro}</span>
-          <button className={styles.retryBtn} onClick={() => setFiltroData(filtroData)}>Tentar novamente</button>
+          <button className={styles.retryBtn} onClick={carregar}>Tentar novamente</button>
         </div>
       )}
 
+      <div className={styles.statGrid}>
+        {kpis.map((k) => (
+          <div key={k.chave} className={`${styles.statCard} ${styles[k.cor]}`}>
+            <span className={styles.statIcon}><k.icone size={20} /></span>
+            <span className={styles.statValue}>{k.valor}</span>
+            <span className={styles.statLabel}>{k.label}</span>
+            <span className={styles.statSub}>{k.pct}% do total</span>
+          </div>
+        ))}
+      </div>
+
       <div className={styles.grid}>
-        <div className={styles.card}>
-          <h2>Status dos agendamentos</h2>
-          <p className={styles.cardSub}>Distribuição geral</p>
-          <div className={styles.chartWrap}>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={dados?.status || []} dataKey="quantidade" nameKey="label"
-                  cx="50%" cy="50%" outerRadius={90} innerRadius={50}
-                  label={({ label, percent }) => `${label} (${(percent * 100).toFixed(0)}%)`}>
-                  {(dados?.status || []).map((entry) => (
-                    <Cell key={entry.status}
-                      fill={STATUS_CORES[entry.status] || "#888"} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(val, name) => [val, name]}
-                  contentStyle={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 6 }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+        <div className={styles.card} style={{ "--card-accent": "#d4a843" }}>
+          <div className={styles.cardHead}>
+            <div className={styles.cardHeadLeft}>
+              <span className={styles.cardIcon}><CalendarCheck2 size={18} /></span>
+              <div>
+                <h2 className={styles.cardTitle}>Status dos agendamentos</h2>
+                <p className={styles.cardSub}>Distribuição por situação no período</p>
+              </div>
+            </div>
+            <span className={styles.cardChip}>{total} agendamentos</span>
+          </div>
+          <div className={styles.cardBody}>
+            {status.length === 0 ? (
+              <EmptyRelatorio
+                titulo="Sem agendamentos no período"
+                texto="A distribuição por status aparece aqui quando houver agendamentos."
+                icone={CalendarCheck2}
+              />
+            ) : (
+              <div className={styles.donutLayout}>
+                <div className={styles.donutWrap}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={status}
+                        dataKey="quantidade"
+                        nameKey="label"
+                        cx="50%" cy="50%"
+                        innerRadius={64}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        cornerRadius={6}
+                        strokeWidth={0}
+                      >
+                        {status.map((entry) => (
+                          <Cell key={entry.status}
+                            fill={STATUS_CORES[entry.status] || "#888"}>
+                          </Cell>
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(val, name) => [val, name]}
+                        contentStyle={{
+                          background: "var(--bg-surface)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "var(--radius-sm)",
+                          fontSize: 13,
+                          boxShadow: "var(--shadow-md)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className={styles.donutCenter}>
+                    <span className={styles.donutCenterValue}>{total}</span>
+                    <span className={styles.donutCenterLabel}>agendamentos</span>
+                  </div>
+                </div>
+
+                <div className={styles.legendList}>
+                  {status.map((s) => {
+                    const pct = total > 0 ? Math.round((Number(s.quantidade) / total) * 100) : 0;
+                    return (
+                      <div key={s.status} className={styles.legendItem}
+                        style={{ "--dot": STATUS_CORES[s.status] || "#888" }}>
+                        <div className={styles.legendTop}>
+                          <span className={styles.legendDot} />
+                          <span className={styles.legendName}>{s.label}</span>
+                          <span className={styles.legendCount}>{s.quantidade}</span>
+                          <span className={styles.legendPct}>{pct}%</span>
+                        </div>
+                        <span className={styles.legendBar}>
+                          <span className={styles.legendBarFill} style={{ transform: `scaleX(${pct / 100})` }} />
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         <div className={styles.card}>
-          <h2>Clientes mais frequentes</h2>
-          <p className={styles.cardSub}>Por quantidade de agendamentos</p>
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-            {(dados?.clientes ?? []).length > 0 ? (
-              (dados?.clientes ?? []).slice(0, 5).map((c, i) => (
-                <div key={c.cliente_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "var(--bg-elevated)", borderRadius: "var(--radius-sm)" }}>
-                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: i === 0 ? "var(--accent)" : "var(--text-secondary)", minWidth: 24 }}>#{i + 1}</span>
-                  <span style={{ flex: 1, fontSize: 14 }}>{c.nome}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{c.quantidade}x</span>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Nenhum dado disponível.</p>
-            )}
+          <div className={styles.cardHead}>
+            <div className={styles.cardHeadLeft}>
+              <span className={styles.cardIcon}><Users size={18} /></span>
+              <div>
+                <h2 className={styles.cardTitle}>Clientes mais frequentes</h2>
+                <p className={styles.cardSub}>Top 5 por quantidade de agendamentos</p>
+              </div>
+            </div>
+            <span className={styles.cardChip}><Award size={13} /> Top 5</span>
+          </div>
+          <div className={styles.cardBody}>
+            <ClientesRanking dados={clientes} max={5} />
           </div>
         </div>
       </div>

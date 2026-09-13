@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { supabaseAdmin } from "../config/supabase.js";
 import * as baileysClient from "../chatbot/baileys.client.js";
 import * as chatbotService from "../chatbot/chatbot.service.js";
-import { resetSession } from "../chatbot/chatbot.controller.js";
+import * as sessionService from "../chatbot/chatbot.session.js";
+import { resetSession, listSessions } from "../chatbot/chatbot.controller.js";
 
 const TENANT_ID = "tenant-1";
 const REMOTE_JID = "5511999999999@s.whatsapp.net";
@@ -97,5 +98,50 @@ describe("chatbot.controller - resetSession", () => {
     expect(res.status).toHaveBeenCalledWith(404);
     expect(baileysClient.sendWhatsAppMessage).not.toHaveBeenCalled();
     expect(chatbotService.sendMenu).not.toHaveBeenCalled();
+  });
+});
+
+describe("chatbot.controller - listSessions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("repassa parametros de paginacao, filtro e ordem", async () => {
+    const resultado = { data: [buildSession()], total: 1 };
+    sessionService.listarSessoes.mockResolvedValue(resultado);
+
+    const req = {
+      tenantId: TENANT_ID,
+      query: { page: "2", limit: "10", ordem: "nome", estado: "atendente", busca: "João" },
+    };
+    const res = mockRes();
+
+    await listSessions(req, res);
+
+    expect(sessionService.listarSessoes).toHaveBeenCalledWith(TENANT_ID, {
+      page: 2,
+      limit: 10,
+      ordem: "nome",
+      estado: "atendente",
+      busca: "João",
+    });
+    expect(res.json).toHaveBeenCalledWith(resultado);
+  });
+
+  it("usa valores padrao quando parametros ausentes", async () => {
+    sessionService.listarSessoes.mockResolvedValue({ data: [], total: 0 });
+
+    const req = { tenantId: TENANT_ID, query: {} };
+    const res = mockRes();
+
+    await listSessions(req, res);
+
+    expect(sessionService.listarSessoes).toHaveBeenCalledWith(TENANT_ID, {
+      page: 1,
+      limit: 20,
+      ordem: "recentes",
+      estado: null,
+      busca: "",
+    });
   });
 });

@@ -1,121 +1,72 @@
-.tenantChip {
+/* src/styles/pages/relatorios.module.css */
+
+/* ── TOOLBAR DE FILTROS ─────────────────────────────────────── */
+.toolbar {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  padding: 10px 14px;
   border-radius: var(--radius-md);
-  font-size: 13px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
 }
 
-.tenantDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
+.toolbar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 85%);
+  opacity: 0.45;
 }
 
 .filtros {
   display: flex;
   align-items: flex-end;
   gap: 14px;
-  margin-bottom: 18px;
   flex-wrap: wrap;
+  flex: 1;
 }
 
 .filtroGroup {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .filtroLabel {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
 }
 
 .filtroInput {
-  background: var(--bg-surface);
+  background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 14px;
   font-family: inherit;
   color: inherit;
   min-width: 180px;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.loading {
-  text-align: center;
-  padding: 60px 0;
-  color: var(--text-secondary);
-  font-size: 15px;
+.filtroInput:hover {
+  border-color: var(--border-focus);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-
-.card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 24px;
-}
-
-.card h2 {
-  font-size: 18px;
-  font-family: var(--font-display);
-}
-
-.cardSub {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-  margin-bottom: 14px;
-}
-
-.chartWrap {
-  width: 100%;
-}
-
-.errorContainer {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.errorMsg {
-  display: block;
-  color: var(--danger);
-  font-size: 15px;
-  margin-bottom: 16px;
-}
-
-.retryBtn {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.retryBtn:hover {
-  opacity: 0.9;
-}
-
-@media (max-width: 1000px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+.filtroInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
 .exportActions {
@@ -123,4 +74,725 @@
   gap: 8px;
   align-items: flex-end;
   margin-left: auto;
+}
+
+/* ── GRID GERAL ─────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.gridWide {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+/* ── CARDS DE MÉTRICA (KPIs) ───────────────────────────────── */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.statCard {
+  --sc-accent: var(--accent);
+  --sc-soft: #e6b84d;
+  --sc-dim: var(--accent-dim);
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+  animation: cardIn 0.45s ease-out both;
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sc-accent) 0%, transparent 85%);
+  opacity: 0.4;
+  transition: opacity var(--transition);
+}
+
+.statCard:hover {
+  border-color: var(--sc-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.statCard:hover::before {
+  opacity: 1;
+}
+
+.scGold {
+  --sc-accent: #d4a843;
+  --sc-soft: #e6b84d;
+  --sc-dim: rgba(212, 168, 67, 0.14);
+}
+
+.scGreen {
+  --sc-accent: #22c55e;
+  --sc-soft: #86efac;
+  --sc-dim: rgba(34, 197, 94, 0.12);
+}
+
+.scRed {
+  --sc-accent: #ef4444;
+  --sc-soft: #fca5a5;
+  --sc-dim: rgba(239, 68, 68, 0.12);
+}
+
+.scAmber {
+  --sc-accent: #f59e0b;
+  --sc-soft: #fcd34d;
+  --sc-dim: rgba(245, 158, 11, 0.12);
+}
+
+.statIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--sc-dim);
+  color: var(--sc-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sc-soft);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.statSub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+/* ── CARD DE GRÁFICO/RANKING ────────────────────────────────── */
+.card {
+  --card-accent: var(--accent);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+  animation: cardIn 0.45s ease-out both;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--card-accent, var(--accent)) 0%, transparent 85%);
+  opacity: 0.4;
+  transition: opacity var(--transition);
+}
+
+.card:hover {
+  border-color: rgba(212, 168, 67, 0.22);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cardHeadLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.cardSub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.cardChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.cardBody {
+  width: 100%;
+}
+
+/* ── DONUT + LEGENDA ────────────────────────────────────────── */
+.donutLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 280px;
+}
+
+.donutWrap {
+  position: relative;
+  height: 280px;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  gap: 2px;
+}
+
+.donutCenterValue {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.donutCenterLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.legendList {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.legendItem {
+  --dot: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.legendTop {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--dot);
+  flex-shrink: 0;
+}
+
+.legendName {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legendCount {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendPct {
+  color: var(--text-muted);
+  font-size: 12px;
+  min-width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendBar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.legendBarFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dot);
+  transform-origin: left center;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── RANKING DE CLIENTES ────────────────────────────────────── */
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rankItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.rankItem:hover {
+  border-color: rgba(212, 168, 67, 0.3);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.rankMedal {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankMedalTop {
+  background: var(--accent-gradient);
+  color: #0c0c0c;
+  border: none;
+  box-shadow: var(--shadow-accent);
+}
+
+.rankAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: #0c0c0c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-accent);
+}
+
+.rankBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rankName {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rankPhone {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.rankProgress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.rankProgressFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+  transform-origin: left center;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rankCount {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+}
+
+.rankCount small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* ── ESTADO VAZIO ───────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 56px 16px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.emptyText {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 280px;
+}
+
+/* ── ERRO ───────────────────────────────────────────────────── */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 56px 20px;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+  margin-bottom: 22px;
+}
+
+.errorMsg {
+  color: var(--error);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.retryBtn {
+  background: var(--accent-gradient);
+  color: #1a1a1a;
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+}
+
+.retryBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-accent);
+}
+
+/* ── SKELETON ───────────────────────────────────────────────── */
+.skeletonStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.skeletonStatCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skStatIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+}
+
+.skStatValue {
+  width: 55%;
+  height: 30px;
+  border-radius: 6px;
+}
+
+.skStatLabel {
+  width: 40%;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.skeletonChart {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 320px;
+}
+
+.skChartTitle {
+  width: 45%;
+  height: 20px;
+  border-radius: 6px;
+}
+
+.skBars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.skBar {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+}
+
+.skDonutSkel {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.skRows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skRow {
+  height: 56px;
+  border-radius: var(--radius-md);
+}
+
+/* ── TEMA CLARO ─────────────────────────────────────────────── */
+:global([data-theme="light"]) .statCard,
+:global([data-theme="light"]) .card,
+:global([data-theme="light"]) .toolbar,
+:global([data-theme="light"]) .skeletonStatCard,
+:global([data-theme="light"]) .skeletonChart {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+}
+
+:global([data-theme="light"]) .rankItem {
+  background: #f5f4f0;
+}
+
+:global([data-theme="light"]) .rankProgress {
+  background: #e5e4e0;
+}
+
+:global([data-theme="light"]) .legendBar {
+  background: var(--bg-elevated);
+}
+
+:global([data-theme="light"]) .card:hover {
+  border-color: rgba(138, 101, 0, 0.22);
+}
+
+:global([data-theme="light"]) .scGold {
+  --sc-soft: #8a6500;
+  --sc-dim: rgba(138, 101, 0, 0.1);
+}
+
+:global([data-theme="light"]) .scGreen {
+  --sc-soft: #15803d;
+  --sc-dim: rgba(21, 128, 61, 0.1);
+}
+
+:global([data-theme="light"]) .scRed {
+  --sc-soft: #dc2626;
+  --sc-dim: rgba(220, 38, 38, 0.09);
+}
+
+:global([data-theme="light"]) .scAmber {
+  --sc-soft: #b45309;
+  --sc-dim: rgba(180, 83, 9, 0.1);
+}
+
+:global([data-theme="light"]) .rankMedalTop {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .rankAvatar {
+  color: #1a1a1a;
+}
+
+/* ── RESPONSIVO ─────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .statGrid,
+  .skeletonStats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .donutLayout {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    padding: 14px;
+  }
+
+  .exportActions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .exportActions .btn {
+    flex: 1;
+  }
+
+  .filtroInput {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filtroGroup {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .statGrid,
+  .skeletonStats {
+    grid-template-columns: 1fr;
+  }
+
+  .statGrid,
+  .skeletonStats {
+    margin-bottom: 18px;
+  }
+
+  .donutWrap {
+    height: 240px;
+  }
+
+  .card {
+    padding: 18px;
+  }
 }

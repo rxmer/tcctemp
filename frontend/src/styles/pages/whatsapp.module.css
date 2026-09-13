@@ -114,6 +114,49 @@
 }
 
 /* Sessions page */
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.toolbarSearch {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 11px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.toolbarSearch::placeholder {
+  color: var(--text-muted);
+}
+
+.toolbarSearch:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  background: var(--bg-surface);
+}
+
+.toolbarField {
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  flex: 1 1 190px;
+}
+
+.toolbarSelect {
+  width: 100%;
+}
+
 .sessionsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

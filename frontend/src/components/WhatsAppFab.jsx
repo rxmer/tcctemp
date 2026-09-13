@@ -56,7 +56,8 @@ export function WhatsAppFab() {
       setLoading(true);
       try {
         const data = await whatsappService.listSessions();
-        setSessions(data.slice(0, 10));
+        const lista = Array.isArray(data) ? data : (data?.data ?? []);
+        setSessions(lista.slice(0, 10));
       } catch {
         /* ignorado */
       }

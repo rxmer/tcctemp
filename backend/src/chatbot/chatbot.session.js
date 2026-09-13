@@ -69,16 +69,81 @@ export async function atualizarSessao(sessionId, updates) {
   return data;
 }
 
-export async function listarSessoes(tenantId) {
-  const { data, error } = await supabaseAdmin
-    .from("chatbot_session")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .order("ultima_atividade", { ascending: false })
-    .limit(50);
+const GRUPOS_ESTADO = {
+  atendente: { tipo: "eq", valor: "FALANDO_COM_ATENDENTE" },
+  menu: { tipo: "eq", valor: "MENU_PRINCIPAL" },
+  agendando: {
+    tipo: "in",
+    valor: [
+      "ESCOLHENDO_SERVICO",
+      "ESCOLHENDO_VEICULO",
+      "ESCOLHENDO_DATA",
+      "ESCOLHENDO_HORARIO",
+      "DIGITANDO_NOME",
+      "DIGITANDO_TELEFONE",
+      "DIGITANDO_VEICULO_MARCA",
+      "DIGITANDO_VEICULO_MODELO",
+      "DIGITANDO_VEICULO_PLACA",
+      "CONFIRMANDO_AGENDAMENTO",
+      "AGENDAMENTO_CONFIRMADO",
+    ],
+  },
+};
 
+function aplicarFiltrosSessao(query, tenantId, estado, busca) {
+  let q = query.eq("tenant_id", tenantId);
+
+  if (estado) {
+    const grupo = GRUPOS_ESTADO[estado];
+    if (grupo?.tipo === "in") q = q.in("state", grupo.valor);
+    else q = q.eq("state", grupo?.valor ?? estado);
+  }
+
+  if (busca) {
+    q = q.or(`client_name.ilike.%${busca}%,client_phone.ilike.%${busca}%`);
+  }
+
+  return q;
+}
+
+export async function listarSessoes(
+  tenantId,
+  { page = 1, limit = 20, ordem = "recentes", estado = null, busca = "" } = {}
+) {
+  const pagina = Math.max(1, Number(page) || 1);
+  const tamanho = Math.min(100, Math.max(1, Number(limit) || 20));
+  const inicio = (pagina - 1) * tamanho;
+
+  const { count, error: countError } = await aplicarFiltrosSessao(
+    supabaseAdmin
+      .from("chatbot_session")
+      .select("id", { count: "exact", head: true }),
+    tenantId,
+    estado,
+    busca
+  );
+
+  if (countError) throw new AppError(`Erro ao listar sessões: ${countError.message}`);
+
+  let query = aplicarFiltrosSessao(
+    supabaseAdmin.from("chatbot_session").select("*"),
+    tenantId,
+    estado,
+    busca
+  );
+
+  if (ordem === "nome") {
+    query = query.order("client_name", { ascending: true, nullsFirst: true });
+  } else {
+    query = query.order("ultima_atividade", { ascending: false });
+  }
+
+  query = query.range(inicio, inicio + tamanho - 1);
+
+  const { data, error } = await query;
   if (error) throw new AppError(`Erro ao listar sessões: ${error.message}`);
-  return data;
+
+  return { data: data ?? [], total: count ?? 0 };
 }
 
 export async function contarNaoLidas(tenantId) {

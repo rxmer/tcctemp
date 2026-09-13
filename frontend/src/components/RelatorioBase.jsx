@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, Button, SkeletonCard, TenantChip } from "./ui";
+import { PageHeader, Button, TenantChip } from "./ui";
 import styles from "../styles/pages/relatorios.module.css";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, BarChart3 } from "lucide-react";
 
 export function formatMoney(v) {
   return Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -22,7 +22,35 @@ export function formatPeriodo(p, agrupar) {
   return p;
 }
 
-export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupar = true, fetcher, renderChart, tipoExport }) {
+function SkeletonRelatorioWide() {
+  return (
+    <div className={styles.gridWide}>
+      <div className={styles.skeletonChart}>
+        <div className={`skeleton ${styles.skChartTitle}`} />
+        <div className={styles.skBars}>
+          {[45, 70, 55, 85, 60, 40, 75, 50].map((h, i) => (
+            <div key={i} className={`skeleton ${styles.skBar}`} style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function RelatorioBase({
+  titulo,
+  subtitle,
+  cardTitulo,
+  cardSub,
+  comAgrupar = true,
+  fetcher,
+  renderChart,
+  tipoExport,
+  icone: Icone = BarChart3,
+  accentHex,
+  align = "wide",
+  totalTexto,
+}) {
   const { tenant } = useAuth();
   const [dados, setDados] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +112,7 @@ export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupa
     return (
       <>
         <PageHeader title={titulo} subtitle={subtitle} />
-        <SkeletonCard lines={8} />
+        <SkeletonRelatorioWide />
       </>
     );
   }
@@ -95,29 +123,31 @@ export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupa
         action={<TenantChip nome={tenant?.nome} />}
       />
 
-      <div className={styles.filtros}>
-        <div className={styles.filtroGroup}>
-          <label className={styles.filtroLabel}>Mês</label>
-          <input type="month" className={styles.filtroInput} value={filtroData}
-            onChange={(e) => setFiltroData(e.target.value)} />
-        </div>
-        {comAgrupar && (
+      <div className={styles.toolbar}>
+        <div className={styles.filtros}>
           <div className={styles.filtroGroup}>
-            <label className={styles.filtroLabel}>Agrupar</label>
-            <select className={styles.filtroInput} value={agrupar}
-              onChange={(e) => setAgrupar(e.target.value)}>
-              <option value="dia">Por dia</option>
-              <option value="semana">Por semana</option>
-              <option value="mes">Por mês</option>
-            </select>
+            <label className={styles.filtroLabel} htmlFor="rel-filtro-mes">Mês</label>
+            <input id="rel-filtro-mes" type="month" className={styles.filtroInput} value={filtroData}
+              onChange={(e) => setFiltroData(e.target.value)} />
           </div>
-        )}
+          {comAgrupar && (
+            <div className={styles.filtroGroup}>
+              <label className={styles.filtroLabel} htmlFor="rel-filtro-agrupar">Agrupar</label>
+              <select id="rel-filtro-agrupar" className={styles.filtroInput} value={agrupar}
+                onChange={(e) => setAgrupar(e.target.value)}>
+                <option value="dia">Por dia</option>
+                <option value="semana">Por semana</option>
+                <option value="mes">Por mês</option>
+              </select>
+            </div>
+          )}
+        </div>
 
         <div className={styles.exportActions}>
-          <Button onClick={() => handleExportar("excel")}>
+          <Button onClick={() => handleExportar("excel")} disabled={exportando}>
             <Download size={14} /> Excel
           </Button>
-          <Button variant="ghost" onClick={() => handleExportar("pdf")}>
+          <Button variant="ghost" onClick={() => handleExportar("pdf")} disabled={exportando}>
             <FileText size={14} /> PDF
           </Button>
         </div>
@@ -130,11 +160,21 @@ export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupa
         </div>
       )}
 
-      <div className={styles.grid}>
-        <div className={styles.card}>
-          <h2>{cardTitulo}</h2>
-          <p className={styles.cardSub}>{cardSub}</p>
-          <div className={styles.chartWrap}>
+      <div className={align === "wide" ? styles.gridWide : styles.grid}>
+        <div className={styles.card} style={accentHex ? { "--card-accent": accentHex } : undefined}>
+          <div className={styles.cardHead}>
+            <div className={styles.cardHeadLeft}>
+              <span className={styles.cardIcon}><Icone size={18} /></span>
+              <div>
+                <h2 className={styles.cardTitle}>{cardTitulo}</h2>
+                <p className={styles.cardSub}>{cardSub}</p>
+              </div>
+            </div>
+            {totalTexto && dados && (
+              <span className={styles.cardChip}>{totalTexto(dados)}</span>
+            )}
+          </div>
+          <div className={styles.cardBody}>
             {renderChart(dados, agrupar)}
           </div>
         </div>

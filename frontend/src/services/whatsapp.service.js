@@ -13,7 +13,12 @@ export const whatsappService = {
       method: "POST",
     }),
 
-  listSessions: () => apiFetch(`/api/chatbot/sessions?_=${Date.now()}`),
+  listSessions: ({ page = 1, limit = 20, ordem = "recentes", estado = "", busca = "" } = {}) => {
+    const params = new URLSearchParams({ _: Date.now(), page, limit, ordem });
+    if (estado) params.set("estado", estado);
+    if (busca) params.set("busca", busca);
+    return apiFetch(`/api/chatbot/sessions?${params}`);
+  },
 
   getUnreadCount: () => apiFetch(`/api/chatbot/sessions/unread?_=${Date.now()}`),
 
