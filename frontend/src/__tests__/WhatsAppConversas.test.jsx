@@ -4,7 +4,10 @@ import { MemoryRouter } from "react-router-dom";
 import { WhatsAppConversas } from "../pages/whatsapp-conversas";
 
 vi.mock("../services/whatsapp.service", () => ({
-  whatsappService: { listSessions: vi.fn() },
+  whatsappService: {
+    listSessions: vi.fn(),
+    getStatus: vi.fn().mockResolvedValue({ status: "connected" }),
+  },
 }));
 
 vi.mock("../hooks/useFeedback", () => ({ useFeedback: vi.fn() }));
