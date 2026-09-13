@@ -79,6 +79,11 @@ export async function disconnect(req, res) {
 export async function listSessions(req, res) {
   const { page, limit, ordem = "recentes", estado, busca } = req.query;
 
+  const { status } = baileysClient.getConnectionState();
+  if (status !== "connected") {
+    return res.json({ data: [], total: 0, conectado: false });
+  }
+
   const sessions = await sessionService.listarSessoes(req.tenantId, {
     page: page ? Number(page) : 1,
     limit: limit ? Number(limit) : 20,

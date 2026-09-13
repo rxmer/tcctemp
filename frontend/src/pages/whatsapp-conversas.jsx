@@ -47,15 +47,33 @@ export function WhatsAppConversas() {
   const [estado, setEstado] = useState("");
   const [busca, setBusca] = useState("");
   const [buscaInput, setBuscaInput] = useState("");
+  const [conectado, setConectado] = useState(true);
   const { feedback, showFeedback } = useFeedback();
   const navigate = useNavigate();
-
   useDebouncedEffect(() => {
     setPage(1);
     setBusca(buscaInput.trim());
   }, [buscaInput]);
 
   useEffect(() => {
+    let ativo = true;
+    whatsappService
+      .getStatus()
+      .then((st) => { if (ativo) setConectado(st?.status === "connected"); })
+      .catch(() => { if (ativo) setConectado(false); })
+      .finally(() => { if (ativo) setLoading(false); });
+
+    return () => { ativo = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!conectado) {
+      setSessions([]);
+      setTotal(0);
+      setLoading(false);
+      return;
+    }
+
     let ativo = true;
     async function carregar() {
       try {
@@ -67,6 +85,7 @@ export function WhatsAppConversas() {
           estado,
           busca,
         });
+
         if (!ativo) return;
         const lista = Array.isArray(result) ? result : (result?.data ?? []);
         setSessions(lista);
@@ -80,7 +99,7 @@ export function WhatsAppConversas() {
 
     carregar();
     return () => { ativo = false; };
-  }, [page, ordem, estado, busca]);
+  }, [conectado, page, ordem, estado, busca]);
 
   function handleOrdem(e) {
     setPage(1);
