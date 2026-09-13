@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, SkeletonCard, Button } from "../components/ui";
+import { PageHeader, SkeletonCard, Button, TenantChip } from "../components/ui";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
@@ -85,11 +85,7 @@ export function Relatorios() {
   return (
     <>
       <PageHeader title="Relatórios" subtitle="Visão geral da empresa"
-        action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} /><span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
       <div className={styles.filtros}>

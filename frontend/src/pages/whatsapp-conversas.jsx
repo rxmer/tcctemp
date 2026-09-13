@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
-import { PageHeader, SkeletonCard } from "../components/ui";
+import { PageHeader, SkeletonCard, Alert } from "../components/ui";
 import styles from "../styles/pages/whatsapp.module.css";
 import { formatPhone } from "../utils/formatPhone";
 
@@ -56,7 +56,7 @@ export function WhatsAppConversas() {
         subtitle="Histórico de conversas com clientes pelo chatbot"
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`}>{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={styles.card} style={{ marginTop: 0 }}>
         <div className={styles.cardHeader}>

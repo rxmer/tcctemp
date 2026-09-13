@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { expedienteService } from "../services/expediente.service";
-import { Button, PageHeader, SkeletonCard } from "../components/ui";
-import { Card, CardHeader, styles as crud } from "../components/crud";
+import { Button, PageHeader, Alert, TenantChip, SkeletonCard } from "../components/ui";
+import { Card, CardHeader } from "../components/crud";
 
 const DIAS_SEMANA = [
   { id: 0, nome: "Domingo" },
@@ -80,15 +80,10 @@ export function Expediente() {
       <PageHeader
         title="Expediente"
         subtitle="Configure os horários de funcionamento"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <Card>
         <CardHeader title="Horários da semana" subtitle="Defina os horários de abertura e fechamento para cada dia" />

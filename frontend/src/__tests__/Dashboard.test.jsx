@@ -16,6 +16,8 @@ vi.mock("../services/dashboard.service", () => ({
 vi.mock("../styles/pages/Dashboard.module.css", () => ({
   default: {
     dashLoading: "dashLoading",
+    dashContent: "dashContent",
+    lowerGrid: "lowerGrid",
     dashError: "dashError",
     dashErrorIcon: "dashErrorIcon",
     statGrid: "statGrid",
@@ -23,6 +25,40 @@ vi.mock("../styles/pages/Dashboard.module.css", () => ({
     statIcon: "statIcon",
     statValue: "statValue",
     statLabel: "statLabel",
+    proximosSection: "proximosSection",
+    sectionTitle: "sectionTitle",
+    proximosList: "proximosList",
+    proximoCard: "proximoCard",
+    proximoTime: "proximoTime",
+    proximoDate: "proximoDate",
+    proximoInfo: "proximoInfo",
+    proximoCliente: "proximoCliente",
+    proximoDetalhe: "proximoDetalhe",
+    proximoStatus: "proximoStatus",
+    statusConfirmado: "statusConfirmado",
+    statusPendente: "statusPendente",
+    emptyProximos: "emptyProximos",
+    quickCol: "quickCol",
+    quickTitle: "quickTitle",
+    quickBtn: "quickBtn",
+    quickChevron: "quickChevron",
+    skeletonStatGrid: "skeletonStatGrid",
+    skeletonStat: "skeletonStat",
+    skeletonStatIcon: "skeletonStatIcon",
+    skStatValue: "skStatValue",
+    skStatLabel: "skStatLabel",
+    skeletonLowerGrid: "skeletonLowerGrid",
+    skeletonProximos: "skeletonProximos",
+    skTitle: "skTitle",
+    skeletonProximo: "skeletonProximo",
+    skTime: "skTime",
+    skListBody: "skListBody",
+    skName: "skName",
+    skDetail: "skDetail",
+    skPill: "skPill",
+    skeletonQuick: "skeletonQuick",
+    skActionTitle: "skActionTitle",
+    skAction: "skAction",
     debugCard: "debugCard",
     debugTitle: "debugTitle",
     debugGrid: "debugGrid",
@@ -105,7 +141,7 @@ describe("Dashboard page", () => {
     });
   });
 
-  it("mostra nome do usuario no header", async () => {
+  it("mostra a data no header", async () => {
     useAuth.mockReturnValue({
       loading: false,
       usuario: { id: "user-1", nome: "João Silva", perfil: "admin" },
@@ -120,8 +156,9 @@ describe("Dashboard page", () => {
 
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
+    const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
     await waitFor(() => {
-      expect(screen.getByText("Bem-vindo, João!")).toBeInTheDocument();
+      expect(screen.getByText(hoje)).toBeInTheDocument();
     });
   });
 

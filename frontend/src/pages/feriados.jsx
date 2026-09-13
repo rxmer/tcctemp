@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
 import { useAuth } from "../context/useAuth";
 import { datasBloqueadasService } from "../services/datas-bloqueadas.service";
-import { Input, Button, PageHeader, SkeletonCard, Card } from "../components/ui";
+import { Input, Button, PageHeader, Alert, SkeletonCard, Card } from "../components/ui";
 import { Trash2, Megaphone } from "lucide-react";
+import { formatDate } from "../utils/format";
 
 export function Feriados() {
   const { tenant } = useAuth();
@@ -59,11 +60,6 @@ export function Feriados() {
     }
   }
 
-  function formatDate(dateStr) {
-    const [y, m, d] = dateStr.split("-");
-    return `${d}/${m}/${y}`;
-  }
-
   return (
     <>
       <PageHeader
@@ -71,7 +67,7 @@ export function Feriados() {
         subtitle="Gerencie datas bloqueadas para agendamentos"
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className="responsiveGrid" style={{ display: "grid", gridTemplateColumns: "1fr 1.8fr", gap: 18 }}>
         <Card>

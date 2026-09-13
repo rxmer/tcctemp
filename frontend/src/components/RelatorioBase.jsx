@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../context/useAuth";
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, Button, SkeletonCard } from "./ui";
+import { PageHeader, Button, SkeletonCard, TenantChip } from "./ui";
 import styles from "../styles/pages/relatorios.module.css";
 import { Download, FileText } from "lucide-react";
 
@@ -92,11 +92,7 @@ export function RelatorioBase({ titulo, subtitle, cardTitulo, cardSub, comAgrupa
   return (
     <>
       <PageHeader title={titulo} subtitle={subtitle}
-        action={
-          <div className={styles.tenantChip}>
-            <span className={styles.tenantDot} /><span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
       <div className={styles.filtros}>

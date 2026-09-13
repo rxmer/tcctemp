@@ -6,11 +6,12 @@ import { agendamentosService } from "../services/agendamentos.service";
 import { clientesService } from "../services/clientes.service";
 import { veiculosService } from "../services/veiculos.service";
 import { servicosService } from "../services/servicos.service";
-import { Input, Button, PageHeader, Pagination, Calendar, SkeletonTable } from "../components/ui";
+import { Input, Button, PageHeader, Alert, TenantChip, Select, Pagination, Calendar, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import styles from "../styles/pages/agendamentos.module.css";
 import { List, CalendarDays, Pencil, Trash2, CheckCircle2, Play, CheckSquare, XCircle, UserX, ArrowRight, Smartphone, Clock } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
+import { formatDate } from "../utils/format";
 
 const STATUS_MAP = {
   pendente: "Pendente",
@@ -218,12 +219,6 @@ export function Agendamentos() {
     }
   }
 
-  function formatDate(dateStr) {
-    if (!dateStr) return "-";
-    const [y, m, d] = dateStr.split("-");
-    return `${d}/${m}/${y}`;
-  }
-
   function formatTime(timeStr) {
     if (!timeStr) return "-";
     return timeStr.slice(0, 5);
@@ -238,15 +233,10 @@ export function Agendamentos() {
       <PageHeader
         title="Agendamentos"
         subtitle="Gerencie os agendamentos da sua empresa"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.filtros}>
         <div className={crud.filtroGroup}>
@@ -259,19 +249,16 @@ export function Agendamentos() {
           />
         </div>
 
-        <div className={crud.filtroGroup}>
-          <label className={crud.filtroLabel}>Filtrar por status</label>
-          <select
-            className={crud.filtroInput}
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
-          >
-            <option value="">Todos</option>
-            {Object.entries(STATUS_MAP).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Filtrar por status"
+          wrapperClassName={crud.filtroGroup}
+          labelClassName={crud.filtroLabel}
+          className={crud.filtroInput}
+          placeholder="Todos"
+          value={filtroStatus}
+          onChange={(e) => setFiltroStatus(e.target.value)}
+          options={Object.entries(STATUS_MAP)}
+        />
 
         <div className={styles.filtroActions}>
           <Button
@@ -311,59 +298,44 @@ export function Agendamentos() {
           </div>
 
           <form onSubmit={handleSubmit} className={crud.formActions}>
-            <div className={crud.fieldGroup}>
-              <label className={crud.fieldLabel}>Cliente</label>
-              <select
-                name="cliente_id"
-                className={crud.fieldSelect}
-                value={form.cliente_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Selecione um cliente</option>
-                {clientes.map((c) => (
-                  <option key={c.cliente_id} value={c.cliente_id}>
-                    {c.nome} {c.telefone ? formatPhone(c.telefone) : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Cliente"
+              name="cliente_id"
+              wrapperClassName={crud.fieldGroup}
+              labelClassName={crud.fieldLabel}
+              className={crud.fieldSelect}
+              placeholder="Selecione um cliente"
+              value={form.cliente_id}
+              onChange={handleChange}
+              required
+              options={clientes.map((c) => [c.cliente_id, `${c.nome} ${c.telefone ? formatPhone(c.telefone) : ""}`])}
+            />
 
-            <div className={crud.fieldGroup}>
-              <label className={crud.fieldLabel}>Veículo</label>
-              <select
-                name="veiculo_id"
-                className={crud.fieldSelect}
-                value={form.veiculo_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Selecione um veículo</option>
-                {veiculosDoCliente.map((v) => (
-                  <option key={v.veiculo_id} value={v.veiculo_id}>
-                    {v.placa} - {v.marca} {v.modelo}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Veículo"
+              name="veiculo_id"
+              wrapperClassName={crud.fieldGroup}
+              labelClassName={crud.fieldLabel}
+              className={crud.fieldSelect}
+              placeholder="Selecione um veículo"
+              value={form.veiculo_id}
+              onChange={handleChange}
+              required
+              options={veiculosDoCliente.map((v) => [v.veiculo_id, `${v.placa} - ${v.marca} ${v.modelo}`])}
+            />
 
-            <div className={crud.fieldGroup}>
-              <label className={crud.fieldLabel}>Serviço</label>
-              <select
-                name="servico_id"
-                className={crud.fieldSelect}
-                value={form.servico_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Selecione um serviço</option>
-                {servicos.filter((s) => s.ativo).map((s) => (
-                  <option key={s.servico_id} value={s.servico_id}>
-                    {s.nome_servico} - R$ {Number(s.preco_base).toFixed(2)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Serviço"
+              name="servico_id"
+              wrapperClassName={crud.fieldGroup}
+              labelClassName={crud.fieldLabel}
+              className={crud.fieldSelect}
+              placeholder="Selecione um serviço"
+              value={form.servico_id}
+              onChange={handleChange}
+              required
+              options={servicos.filter((s) => s.ativo).map((s) => [s.servico_id, `${s.nome_servico} - R$ ${Number(s.preco_base).toFixed(2)}`])}
+            />
 
             <div className={crud.row}>
               <Input
@@ -429,7 +401,7 @@ export function Agendamentos() {
               {selectedDate ? (
                 <div className={styles.dayList}>
                   <div className={crud.cardHeader}>
-                    <h2>Agendamentos de {formatDate(selectedDate)}</h2>
+                    <h2>Agendamentos de {formatDate(selectedDate, "-")}</h2>
                     <p>{mesAgendamentos.filter((ag) => ag.data_agendamento === selectedDate && ag.status !== "cancelado").length} agendamento(s)</p>
                   </div>
                   {mesAgendamentos.filter((ag) => ag.data_agendamento === selectedDate && ag.status !== "cancelado").length === 0 ? (
@@ -524,7 +496,7 @@ export function Agendamentos() {
                       {agendamentos.map((ag) => (
                         <tr key={ag.agendamento_id}>
                           <td className={styles.dataCell}>
-                            <div>{formatDate(ag.data_agendamento)}</div>
+                            <div>{formatDate(ag.data_agendamento, "-")}</div>
                             <div className={styles.horaCell}>{formatTime(ag.hora_agendamento)}</div>
                           </td>
                           <td>{ag.cliente?.nome ?? "-"}</td>

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
 import { usePolling } from "../hooks/usePolling";
 import { comunicadosService } from "../services/comunicados.service";
-import { Button, PageHeader } from "../components/ui";
+import { Button, PageHeader, Alert } from "../components/ui";
 import { Card, CardHeader, styles as crud } from "../components/crud";
 import { Megaphone, CheckCircle2, XCircle, Loader2, Clock } from "lucide-react";
 
@@ -103,7 +103,7 @@ export function Comunicados() {
         subtitle="Envie avisos pelo WhatsApp para os seus clientes"
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.pageGrid + " responsiveGrid"} style={{ gridTemplateColumns: "1fr 1.5fr" }}>
         <Card>

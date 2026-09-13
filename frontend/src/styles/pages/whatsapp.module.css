@@ -303,3 +303,30 @@
   display: flex;
   gap: 10px;
 }
+
+/* ── TEMA CLARO ────────────────────────────────────────────── */
+:global([data-theme="light"]) .connected {
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+}
+
+:global([data-theme="light"]) .disconnected {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
+:global([data-theme="light"]) .awaitingQr {
+  background: rgba(180, 83, 9, 0.1);
+  color: #b45309;
+}
+
+:global([data-theme="light"]) .reconnecting {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+:global([data-theme="light"]) .estadoBadge {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.22);
+}

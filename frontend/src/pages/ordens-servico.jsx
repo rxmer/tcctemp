@@ -5,9 +5,10 @@ import { useAuth } from "../context/useAuth";
 import { ordensServicoService } from "../services/ordens-servico.service";
 import { agendamentosService } from "../services/agendamentos.service";
 import { servicosService } from "../services/servicos.service";
-import { Button, PageHeader, Pagination, SkeletonTable } from "../components/ui";
-import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
+import { Button, PageHeader, Alert, TenantChip, Select, Pagination, SkeletonTable } from "../components/ui";
+import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, StatusBadge, styles as crud } from "../components/crud";
 import { CheckCircle2, Clock, Trash2, ChevronRight, ChevronUp } from "lucide-react";
+import { formatMoney } from "../utils/format";
 
 const STATUS_MAP = {
   em_andamento: "Em andamento",
@@ -15,10 +16,10 @@ const STATUS_MAP = {
   cancelado: "Cancelado",
 };
 
-const STATUS_COLORS = {
-  em_andamento: { background: "rgba(59,130,246,0.1)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.2)" },
-  finalizado: { background: "rgba(34,197,94,0.1)", color: "#86efac", border: "1px solid rgba(34,197,94,0.2)" },
-  cancelado: { background: "rgba(239,68,68,0.1)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.2)" },
+const STATUS_VARIANTS = {
+  em_andamento: "info",
+  finalizado: "success",
+  cancelado: "danger",
 };
 
 export function OrdensServico() {
@@ -181,10 +182,6 @@ export function OrdensServico() {
     }
   }
 
-  function formatMoney(value) {
-    return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  }
-
   function formatDate(dateStr) {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("pt-BR");
@@ -201,9 +198,9 @@ export function OrdensServico() {
       key: "status",
       label: "Status",
       render: (o) => (
-        <span className={crud.statusBadge} style={STATUS_COLORS[o.status] ?? {}}>
+        <StatusBadge variant={STATUS_VARIANTS[o.status] ?? "neutral"}>
           {STATUS_MAP[o.status] ?? o.status}
-        </span>
+        </StatusBadge>
       ),
     },
     {
@@ -223,26 +220,22 @@ export function OrdensServico() {
       <PageHeader
         title="Ordens de Serviço"
         subtitle="Gerencie as ordens de serviço"
-        action={
-          <div className={crud.tenantChip}>
-            <span className={crud.tenantDot} />
-            <span>{tenant?.nome}</span>
-          </div>
-        }
+        action={<TenantChip nome={tenant?.nome} />}
       />
 
-      {feedback && <div className={`alert alert-${feedback.type}`} role="alert">{feedback.message}</div>}
+      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <div className={crud.filtros} style={{ justifyContent: "space-between" }}>
-        <div className={crud.filtroGroup}>
-          <label className={crud.filtroLabel}>Filtrar por status</label>
-          <select className={`input-field ${crud.filtroInput}`} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
-            <option value="">Todas</option>
-            {Object.entries(STATUS_MAP).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Filtrar por status"
+          wrapperClassName={crud.filtroGroup}
+          labelClassName={crud.filtroLabel}
+          className={`input-field ${crud.filtroInput}`}
+          placeholder="Todas"
+          value={filtroStatus}
+          onChange={(e) => setFiltroStatus(e.target.value)}
+          options={Object.entries(STATUS_MAP)}
+        />
 
         <Button onClick={() => setShowCriar(!showCriar)}>
           {showCriar ? "Cancelar" : "Nova OS"}
@@ -253,17 +246,17 @@ export function OrdensServico() {
         <Card>
           <CardHeader title="Criar ordem de serviço" />
           <form onSubmit={handleCriar} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div className={crud.fieldGroup}>
-              <label className={crud.fieldLabel}>Agendamento</label>
-              <select className={`input-field ${crud.fieldSelect}`} value={agendamentoId} onChange={(e) => setAgendamentoId(e.target.value)} required>
-                <option value="">Selecione um agendamento confirmado</option>
-                {agendamentos.map((a) => (
-                  <option key={a.agendamento_id} value={a.agendamento_id}>
-                    {a.cliente?.nome ?? "N/A"} - {a.servico?.nome_servico ?? "N/A"} - {a.data_agendamento} {a.hora_agendamento?.slice(0, 5)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Agendamento"
+              wrapperClassName={crud.fieldGroup}
+              labelClassName={crud.fieldLabel}
+              className={`input-field ${crud.fieldSelect}`}
+              placeholder="Selecione um agendamento confirmado"
+              value={agendamentoId}
+              onChange={(e) => setAgendamentoId(e.target.value)}
+              required
+              options={agendamentos.map((a) => [a.agendamento_id, `${a.cliente?.nome ?? "N/A"} - ${a.servico?.nome_servico ?? "N/A"} - ${a.data_agendamento} ${a.hora_agendamento?.slice(0, 5)}`])}
+            />
 
             <div className={crud.fieldGroup}>
               <label className={crud.fieldLabel}>Observações</label>
@@ -306,9 +299,9 @@ export function OrdensServico() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <span className={crud.statusBadge} style={STATUS_COLORS[osDetalhes.status] ?? {}}>
+                <StatusBadge variant={STATUS_VARIANTS[osDetalhes.status] ?? "neutral"}>
                   {STATUS_MAP[osDetalhes.status] ?? osDetalhes.status}
-                </span>
+                </StatusBadge>
 
                 {osDetalhes.status === "em_andamento" && (
                   <div style={{ display: "flex", gap: 8 }}>
