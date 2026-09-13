@@ -1,285 +1,314 @@
-.tenantChip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-}
+/* src/styles/pages/financeiro.module.css */
 
-.tenantDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-}
-
-.filtros {
-  display: flex;
-  align-items: flex-end;
-  gap: 14px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.filtroGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.filtroLabel {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.filtroInput {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  color: inherit;
-  min-width: 180px;
-}
-
-.abas {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 18px;
-}
-
-.aba {
-  padding: 10px 18px;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  cursor: pointer;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--text-secondary);
-  transition: 0.15s;
-  border-bottom: none;
-}
-
-.aba:hover {
-  color: var(--text);
-}
-
-.abaAtiva {
-  color: var(--accent);
-  font-weight: 600;
-  border-color: var(--accent);
-  border-bottom: 2px solid var(--accent);
-}
-
+/* ── RESUMO (cards de métricas) ─────────────────────────────── */
 .resumoGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 20px;
 }
 
 .resumoCard {
-  background: var(--bg-surface);
+  --done-soft: #86efac;
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 24px;
-}
-
-.resumoIcon {
-  font-size: 24px;
-  margin-bottom: 8px;
-}
-
-.resumoValue {
-  font-size: 28px;
-  font-family: var(--font-display);
-  font-weight: 700;
-}
-
-.resumoLabel {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.resumoDet {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 8px;
-}
-
-.resumoPos {
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.resumoPos .resumoValue {
-  color: #15803d;
-}
-
-.resumoNeg {
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.resumoNeg .resumoValue {
-  color: #b91c1c;
-}
-
-.contasLayout {
-  display: grid;
-  grid-template-columns: 1fr 1.8fr;
-  gap: 18px;
-}
-
-.formCard,
-.listCard {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 24px;
-}
-
-.cardHeader h2 {
-  font-size: 20px;
-  font-family: var(--font-display);
-}
-
-.cardHeader p {
-  margin-top: 4px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.contaForm {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.formActions {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
 
-.tableWrapper {
-  margin-top: 14px;
-  overflow-x: auto;
+.resumoCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--card-accent, var(--accent)) 0%, transparent 85%);
+  opacity: 0.4;
+  transition: opacity var(--transition);
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+.resumoCard:hover {
+  border-color: var(--card-border, var(--border-focus));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.table th {
-  text-align: left;
-  padding: 10px 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
+.resumoCard:hover::before {
+  opacity: 1;
+}
+
+/* accentos por tipo */
+.receitas {
+  --card-accent: #22c55e;
+  --card-soft: #86efac;
+  --card-dim: rgba(34, 197, 94, 0.12);
+  --card-border: rgba(34, 197, 94, 0.35);
+}
+
+.despesas {
+  --card-accent: #ef4444;
+  --card-soft: #fca5a5;
+  --card-dim: rgba(239, 68, 68, 0.12);
+  --card-border: rgba(239, 68, 68, 0.35);
+}
+
+.saldoPos {
+  --card-accent: #22c55e;
+  --card-soft: #86efac;
+  --card-dim: rgba(34, 197, 94, 0.12);
+  --card-border: rgba(34, 197, 94, 0.35);
+}
+
+.saldoNeg {
+  --card-accent: #ef4444;
+  --card-soft: #fca5a5;
+  --card-dim: rgba(239, 68, 68, 0.12);
+  --card-border: rgba(239, 68, 68, 0.35);
+}
+
+.resumoIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--card-dim);
+  color: var(--card-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resumoValue {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--card-soft);
+}
+
+.resumoLabel {
   font-size: 12px;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.08em;
+  font-weight: 600;
 }
 
-.table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+.resumoDet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
-.table tbody tr:hover {
-  background: var(--bg-elevated);
+.resumoDetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
 }
 
-.valorCell {
+.resumoDetLabel {
+  color: var(--text-secondary);
+}
+
+.resumoDetValue {
   font-family: var(--font-display);
   font-weight: 600;
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
-.osId {
+.done .resumoDetValue {
+  color: var(--done-soft);
+}
+
+.resumoTag {
+  margin-top: auto;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card-dim);
+  color: var(--card-soft);
+  border: 1px solid var(--card-border);
+}
+
+/* ── ATALHOS DE NAVEGAÇÃO ───────────────────────────────────── */
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  margin: 28px 0 12px;
+}
+
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.navCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.navCard:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  transform: translateY(-1px);
+}
+
+.navCard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.navIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.navBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 700;
 }
 
-.statusBadge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
+.navDesc {
   font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.statusPago {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
-}
-
-.statusPendente {
-  background: rgba(250, 204, 21, 0.15);
-  color: #a16207;
-}
-
-.actionBtns {
-  display: flex;
-  gap: 4px;
-}
-
-.actionBtn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  transition: background 0.15s;
-}
-
-.actionBtn:hover {
-  background: var(--bg-elevated);
-}
-
-.emptyState {
-  padding: 40px 0;
-  text-align: center;
   color: var(--text-secondary);
-  font-size: 14px;
 }
 
+.navChevron {
+  margin-left: auto;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: color var(--transition), transform var(--transition);
+}
+
+.navCard:hover .navChevron {
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+/* ── SKELETON ───────────────────────────────────────────────── */
+.skeletonCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeletonIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+}
+
+.skValue {
+  width: 60%;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.skLabel {
+  width: 40%;
+  height: 12px;
+  border-radius: 4px;
+}
+
+/* ── TEMA CLARO ─────────────────────────────────────────────── */
+:global([data-theme="light"]) .resumoCard {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+  --done-soft: #15803d;
+}
+
+:global([data-theme="light"]) .receitas {
+  --card-soft: #15803d;
+  --card-dim: rgba(21, 128, 61, 0.1);
+  --card-border: rgba(21, 128, 61, 0.22);
+}
+
+:global([data-theme="light"]) .despesas {
+  --card-soft: #dc2626;
+  --card-dim: rgba(220, 38, 38, 0.09);
+  --card-border: rgba(220, 38, 38, 0.2);
+}
+
+:global([data-theme="light"]) .saldoPos {
+  --card-soft: #15803d;
+  --card-dim: rgba(21, 128, 61, 0.1);
+  --card-border: rgba(21, 128, 61, 0.22);
+}
+
+:global([data-theme="light"]) .saldoNeg {
+  --card-soft: #dc2626;
+  --card-dim: rgba(220, 38, 38, 0.09);
+  --card-border: rgba(220, 38, 38, 0.2);
+}
+
+:global([data-theme="light"]) .skeletonCard {
+  background: #ffffff;
+}
+
+/* ── RESPONSIVO ─────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .resumoGrid {
     grid-template-columns: 1fr;
   }
+}
 
-  .contasLayout {
+@media (max-width: 768px) {
+  .navGrid {
     grid-template-columns: 1fr;
   }
 
-  .row {
-    grid-template-columns: 1fr;
-  }
-
-  .abas {
-    flex-direction: column;
+  .resumoCard,
+  .skeletonCard {
+    padding: 22px;
   }
 }
