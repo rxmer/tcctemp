@@ -380,29 +380,49 @@ describe("chatbot.session", () => {
   });
 
   describe("limparSessoesExpiradas", () => {
-    it("deve reiniciar sessoes expiradas e incluir FALANDO_COM_ATENDENTE", async () => {
-      const expiradas = [
+    it("deve reiniciar apenas sessoes em fluxo, ignorando MENU_PRINCIPAL e FALANDO_COM_ATENDENTE", async () => {
+      const emFluxo = [
         { id: "sess-1", state: "ESCOLHENDO_SERVICO" },
         { id: "sess-2", state: "ESCOLHENDO_DATA" },
       ];
 
       const selectQuery = mockQuery({
-        then: (resolve) => resolve({ data: expiradas, error: null }),
+        then: (resolve) => resolve({ data: emFluxo, error: null }),
       });
 
       const selectAtendente = mockQuery({
         then: (resolve) => resolve({ data: [], error: null }),
       });
 
+      const updateQuery = mockQuery();
+
       supabaseAdmin.from
         .mockReturnValueOnce(selectQuery)
-        .mockReturnValueOnce(mockQuery())
-        .mockReturnValueOnce(mockQuery())
+        .mockReturnValueOnce(updateQuery)
+        .mockReturnValueOnce(updateQuery)
         .mockReturnValueOnce(selectAtendente);
 
       await sessionService.limparSessoesExpiradas();
 
-      expect(selectQuery.neq).toHaveBeenCalledWith("state", "FALANDO_COM_ATENDENTE");
+      expect(selectQuery.not).toHaveBeenCalledWith("state", "in", ["MENU_PRINCIPAL", "FALANDO_COM_ATENDENTE"]);
+      expect(updateQuery.update).toHaveBeenCalledWith(
+        expect.objectContaining({ state: "MENU_PRINCIPAL", state_data: {} })
+      );
+    });
+
+    it("usa timeout de 10 min para FALANDO_COM_ATENDENTE", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        then: (resolve) => resolve({ data: [], error: null }),
+      }));
+
+      await sessionService.limparSessoesExpiradas();
+
+      const atendenteQuery = supabaseAdmin.from.mock.results[0]?.value;
+      const limiteAtendente = String(atendenteQuery?.lt.mock.calls.at(-1)?.[1] ?? "");
+      const diffMin = (Date.now() - new Date(limiteAtendente).getTime()) / 60_000;
+
+      expect(diffMin).toBeGreaterThan(9);
+      expect(diffMin).toBeLessThan(11);
     });
 
     it("nao deve derrubar sessao FALANDO_COM_ATENDENTE quando o atendente ja respondeu", async () => {

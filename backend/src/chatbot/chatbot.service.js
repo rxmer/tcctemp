@@ -1717,16 +1717,22 @@ async function processMessageInterno(tenantId, remoteJid, text, pushName) {
     if (session) session.empresaNome = empresaNome;
 
     if (session && await verificarSessaoExpirada(session)) {
-      if (session.state === "FALANDO_COM_ATENDENTE" && await atendenteJaRespondeu(session)) {
+      const atendenteEngajado =
+        session.state === "FALANDO_COM_ATENDENTE" && (await atendenteJaRespondeu(session));
+      if (atendenteEngajado) {
         await atualizarSessao(session.id, { ultima_atividade: new Date().toISOString() });
       } else {
-        logger.info({ sessionId: session.id, phoneSuffix: remoteJid?.split("@")[0]?.slice(-4) }, "Sessão expirada por inatividade");
-        await supabaseAdmin
-          .from("chatbot_session")
-          .update({ ativo: false })
-          .eq("id", session.id);
-        await sendWhatsAppMessage(remoteJid, "⏰ Seu atendimento foi encerrado por inatividade. Caso deseje continuar, basta enviar uma mensagem.");
-        session = null;
+        logger.info(
+          { sessionId: session.id, phoneSuffix: remoteJid?.split("@")[0]?.slice(-4) },
+          "Sessão expirada por inatividade, reutilizada no MENU_PRINCIPAL"
+        );
+        await atualizarSessao(session.id, {
+          state: "MENU_PRINCIPAL",
+          state_data: {},
+          ultima_atividade: new Date().toISOString(),
+        });
+        session.state = "MENU_PRINCIPAL";
+        session.state_data = {};
       }
     }
 

@@ -1036,6 +1036,36 @@ describe("chatbot.service", () => {
       );
     });
 
+    it("deve reutilizar sessao expirada em fluxo, voltando ao menu sem recriar a sessao", async () => {
+      const expirada = buildSession({
+        state: "ESCOLHENDO_SERVICO",
+        state_data: { servicos: [] },
+        ultima_atividade: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      });
+
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: expirada, error: null }),
+            single: vi.fn().mockResolvedValue({ data: expirada, error: null }),
+          });
+        }
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "oi", "João");
+
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("encerrado por inatividade")
+      );
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Bem-vindo")
+      );
+      expect(baileys.sendButtons).toHaveBeenCalled();
+    });
+
     it("deve voltar ao menu ao clicar botao voltar_bot", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({

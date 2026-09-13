@@ -254,6 +254,7 @@ export async function desativarSessao(sessionId) {
 }
 
 export const SESSION_TIMEOUT_MINUTES = 5;
+export const ATENDENTE_TIMEOUT_MINUTES = 10;
 
 export async function limparSessoesExpiradas() {
   const tenantId = getConnectionState().tenantId;
@@ -263,21 +264,22 @@ export async function limparSessoesExpiradas() {
   }
 
   const limite = new Date(Date.now() - SESSION_TIMEOUT_MINUTES * 60 * 1000).toISOString();
+  const limiteAtendente = new Date(Date.now() - ATENDENTE_TIMEOUT_MINUTES * 60 * 1000).toISOString();
 
-  const { data: expiradas, error: queryError } = await supabaseAdmin
+  const { data: emFluxo, error: queryError } = await supabaseAdmin
     .from("chatbot_session")
-    .select("id, state")
+    .select("id")
     .eq("tenant_id", tenantId)
     .eq("ativo", true)
     .lt("ultima_atividade", limite)
-    .neq("state", "FALANDO_COM_ATENDENTE");
+    .not("state", "in", ["MENU_PRINCIPAL", "FALANDO_COM_ATENDENTE"]);
 
   if (queryError) {
     logger.warn({ err: queryError }, "Erro ao buscar sessões expiradas");
     return;
   }
 
-  for (const sess of (expiradas ?? [])) {
+  for (const sess of (emFluxo ?? [])) {
     await supabaseAdmin
       .from("chatbot_session")
       .update({
@@ -287,7 +289,7 @@ export async function limparSessoesExpiradas() {
       })
       .eq("id", sess.id);
 
-    logger.info({ sessionId: sess.id }, "Sessão expirada reiniciada para MENU_PRINCIPAL");
+    logger.info({ sessionId: sess.id }, "Sessão em fluxo expirada reiniciada para MENU_PRINCIPAL");
   }
 
   const { data: atendenteExpiradas } = await supabaseAdmin
@@ -296,7 +298,7 @@ export async function limparSessoesExpiradas() {
     .eq("tenant_id", tenantId)
     .eq("ativo", true)
     .eq("state", "FALANDO_COM_ATENDENTE")
-    .lt("ultima_atividade", limite);
+    .lt("ultima_atividade", limiteAtendente);
 
   for (const sess of (atendenteExpiradas ?? [])) {
     const { data: atendenteRespondeu } = await supabaseAdmin
@@ -327,5 +329,5 @@ export async function limparSessoesExpiradas() {
     logger.info({ sessionId: sess.id }, "Sessão FALANDO_COM_ATENDENTE expirada, voltou ao MENU_PRINCIPAL");
   }
 
-  logger.info({ quantidade: (expiradas?.length ?? 0) + (atendenteExpiradas?.length ?? 0) }, "Sessões expiradas reiniciadas");
+  logger.info({ quantidade: (emFluxo?.length ?? 0) + (atendenteExpiradas?.length ?? 0) }, "Sessões expiradas reiniciadas");
 }

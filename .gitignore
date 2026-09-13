@@ -15,3 +15,5 @@ dist/
 rt-tds-extracted/
 coverage/
 a fazer.png
+out/
+docs/puml/
