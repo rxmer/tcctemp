@@ -515,8 +515,8 @@ export async function sendMenu(jid, session) {
     ? [
         { id: "menu_consultar", text: "📋 Meus Agendamentos" },
         { id: "menu_agendar", text: "📅 Novo Agendamento" },
-        { id: "menu_cancelar", text: "❌ Cancelar" },
-        { id: "menu_atendente", text: "👤 Atendente" },
+        { id: "menu_cancelar", text: "❌ Cancelar Agendamento" },
+        { id: "menu_atendente", text: "👤 Falar com Atendente" },
       ]
     : [
         { id: "menu_agendar", text: "📅 Agendar Serviço" },
@@ -1181,7 +1181,7 @@ async function handleConfirmandoAgendamento(action, jid, session) {
     `🚗 Veículo: ${veiculoStr}\n` +
     `📅 Data: ${formatDateBr(result.data_agendamento)}\n` +
     `🕒 Horário: ${result.hora_agendamento}\n\n` +
-    `Se precisar alterar ou cancelar, utilize a opção "Consultar" no menu.`;
+    `Se precisar alterar ou cancelar, utilize a opção "Meus Agendamentos" no menu.`;
 
   await atualizarSessao(session.id, {
     state: "AGENDAMENTO_CONFIRMADO",
