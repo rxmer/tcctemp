@@ -211,20 +211,24 @@ describe("chatbot.controller - disconnect", () => {
   });
 
   it("para o Baileys e mantém sessão salva por padrão", async () => {
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+
     const req = { tenantId: TENANT_ID, query: {} };
     const res = mockRes();
 
     await disconnect(req, res);
 
     expect(baileysClient.stopBaileys).toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({ message: "Desconectado" });
+    expect(res.json).toHaveBeenCalledWith({ message: "Desconectado e sessão limpa" });
+
+    fs.existsSync.mockRestore();
   });
 
-  it("apaga a sessão salva quando limpar=true", async () => {
+  it("apaga a sessão salva ao desconectar", async () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     const rmSyncSpy = vi.spyOn(fs, "rmSync").mockReturnValue(undefined);
 
-    const req = { tenantId: TENANT_ID, query: { limpar: "true" } };
+    const req = { tenantId: TENANT_ID, query: {} };
     const res = mockRes();
 
     await disconnect(req, res);
@@ -241,10 +245,10 @@ describe("chatbot.controller - disconnect", () => {
     fs.existsSync.mockRestore();
   });
 
-  it("não quebra quando limpar=true e a pasta não existe", async () => {
+  it("não quebra quando a pasta não existe", async () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(false);
 
-    const req = { tenantId: TENANT_ID, query: { limpar: "true" } };
+    const req = { tenantId: TENANT_ID, query: {} };
     const res = mockRes();
 
     await disconnect(req, res);

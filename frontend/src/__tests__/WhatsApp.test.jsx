@@ -97,41 +97,25 @@ describe("WhatsApp page", () => {
     await waitFor(() => { expect(showFeedback).toHaveBeenCalled(); });
   });
 
-  it("exibe botao de desconectar ao conectar e chama disconnect", async () => {
+  it("exibe botao de desconectar, confirma e chama disconnect", async () => {
     whatsappService.getStatus.mockResolvedValue({ status: "connected" });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /desconectar e limpar sess/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Desconectar" })).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole("button", { name: "Desconectar" }));
     await waitFor(() => { expect(whatsappService.disconnect).toHaveBeenCalled(); });
   });
 
-  it("limpar sessao confirma e chama disconnect com limpar=true", async () => {
-    const confirm = vi.fn().mockResolvedValue(true);
-    const showFeedback = vi.fn();
-    useConfirm.mockReturnValue({ confirm, ConfirmModal: () => null });
-    useFeedback.mockReturnValue({ feedback: null, showFeedback });
-    whatsappService.getStatus.mockResolvedValue({ status: "connected" });
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /desconectar e limpar sess/i })).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByRole("button", { name: /desconectar e limpar sess/i }));
-    await waitFor(() => { expect(confirm).toHaveBeenCalled(); });
-    expect(whatsappService.disconnect).toHaveBeenCalledWith(true);
-    await waitFor(() => { expect(showFeedback).toHaveBeenCalledWith("success", "Desconectado e sessão limpa"); });
-  });
-
-  it("cancela dialogo de limpar sessao e nao desconecta", async () => {
+  it("cancela dialogo de desconectar e nao desconecta", async () => {
     const confirm = vi.fn().mockResolvedValue(false);
     useConfirm.mockReturnValue({ confirm, ConfirmModal: () => null });
     whatsappService.getStatus.mockResolvedValue({ status: "connected" });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /desconectar e limpar sess/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Desconectar" })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: /desconectar e limpar sess/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Desconectar" }));
     await waitFor(() => { expect(confirm).toHaveBeenCalled(); });
     expect(whatsappService.disconnect).not.toHaveBeenCalled();
   });

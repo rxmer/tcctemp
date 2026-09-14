@@ -8,8 +8,8 @@ export const whatsappService = {
       method: "POST",
     }),
 
-  disconnect: (limpar = false) =>
-    apiFetch(`/api/chatbot/disconnect${limpar ? "?limpar=true" : ""}`, {
+  disconnect: () =>
+    apiFetch("/api/chatbot/disconnect", {
       method: "POST",
     }),
 

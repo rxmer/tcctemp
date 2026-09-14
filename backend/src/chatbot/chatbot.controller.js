@@ -68,19 +68,14 @@ export async function connect(req, res) {
 }
 
 export async function disconnect(req, res) {
-  const limpar = req.query.limpar === "true";
   try {
     await baileysClient.stopBaileys();
-    if (limpar) {
-      const authDir = path.join(__dirname, "..", "..", "..", `baileys_auth_${req.tenantId}`);
-      if (fs.existsSync(authDir)) {
-        fs.rmSync(authDir, { recursive: true, force: true });
-        logger.info({ tenantId: req.tenantId }, "Auth removida — sessão limpa ao desconectar");
-      }
-      res.json({ message: "Desconectado e sessão limpa" });
-    } else {
-      res.json({ message: "Desconectado" });
+    const authDir = path.join(__dirname, "..", "..", "..", `baileys_auth_${req.tenantId}`);
+    if (fs.existsSync(authDir)) {
+      fs.rmSync(authDir, { recursive: true, force: true });
+      logger.info({ tenantId: req.tenantId }, "Auth removida — sessão limpa ao desconectar");
     }
+    res.json({ message: "Desconectado e sessão limpa" });
   } catch (err) {
     logger.error({ err }, "Erro ao desconectar");
     res.json({ message: "Desconectado" });

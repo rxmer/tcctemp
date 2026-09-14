@@ -123,7 +123,7 @@ npm run dev
 3. O chatbot estará ativo para os clientes
 4. Widget de conversas aparece no canto inferior direito para acompanhar e responder mensagens
 
-O QR Code tem validade de 60s com rotação automática limitada a 3 (~3 min); ao expirar, a tela oferece a opção de recarregar para gerar um novo. Ao desconectar, a sessão salva é mantida para reconectar sem novo QR; a opção **"Desconectar e limpar sessão"** apaga a autenticação salva, exigindo novo QR na próxima conexão.
+O QR Code tem validade de 60s com rotação automática limitada a 3 (~3 min); ao expirar, a tela oferece a opção de recarregar para gerar um novo. O botão **"Desconectar"** sempre apaga a autenticação salva, então a próxima conexão exigirá um novo QR Code.
 
 ### 6. Banco de Dados
 
@@ -133,10 +133,10 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 
 ```bash
 cd backend && npm test    # 344 testes (23 arquivos)
-cd frontend && npm test   # 306 testes (44 arquivos)
+cd frontend && npm test   # 305 testes (44 arquivos)
 ```
 
-> **650 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **649 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 

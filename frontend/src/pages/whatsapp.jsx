@@ -71,15 +71,15 @@ export function WhatsApp() {
     }
   }
 
-  async function handleDisconnect(limpar = false) {
-    const ok = limpar
-      ? await confirm("Desconectar e apagar a sessão salva? Você precisará escanear o QR Code novamente para reconectar.")
-      : true;
+  async function handleDisconnect() {
+    const ok = await confirm(
+      "Desconectar e apagar a sessão salva? Você precisará escanear o QR Code novamente para reconectar."
+    );
     if (!ok) return;
     try {
       setLoading(true);
-      await whatsappService.disconnect(limpar);
-      showFeedback("success", limpar ? "Desconectado e sessão limpa" : "Desconectado");
+      await whatsappService.disconnect();
+      showFeedback("success", "Desconectado e sessão limpa");
       await carregarStatus();
     } catch (err) {
       showFeedback("error", err.message);
@@ -155,14 +155,9 @@ export function WhatsApp() {
               </Button>
             )}
             {state.status === "connected" && (
-              <>
-                <Button variant="ghost" onClick={() => handleDisconnect(false)} loading={loading} fullWidth>
-                  Desconectar
-                </Button>
-                <Button variant="ghost" onClick={() => handleDisconnect(true)} loading={loading} fullWidth>
-                  Desconectar e limpar sessão
-                </Button>
-              </>
+              <Button variant="ghost" onClick={handleDisconnect} loading={loading} fullWidth>
+                Desconectar
+              </Button>
             )}
           </div>
         </div>
