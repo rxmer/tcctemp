@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { WhatsApp } from "../pages/whatsapp";
 
@@ -11,7 +11,8 @@ vi.mock("../styles/pages/whatsapp.module.css", () => ({
     waGrid: "waGrid", statusCard: "statusCard", statusLabel: "statusLabel",
     disconnected: "disconnected", connected: "connected", awaitingQr: "awaitingQr",
     reconnecting: "reconnecting", actions: "actions", qrCard: "qrCard",
-    tenantChip: "tenantChip", tenantDot: "tenantDot",
+    tenantChip: "tenantChip", tenantDot: "tenantDot", qrExpired: "qrExpired",
+    qrExpiredAction: "qrExpiredAction", qrExpiredText: "qrExpiredText", qrExpiredIcon: "qrExpiredIcon",
   },
 }));
 
@@ -72,6 +73,17 @@ describe("WhatsApp page", () => {
     whatsappService.getStatus.mockResolvedValue({ status: "awaiting_qr", qr: "data:image/png;base64,abc" });
     renderPage();
     await waitFor(() => { expect(screen.getByText("Aguardando QR Code")).toBeInTheDocument(); });
+  });
+
+  it("exibe QR expirado com texto de recarregar e recarregar chama connect", async () => {
+    whatsappService.getStatus.mockResolvedValue({ status: "qr_expired" });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Selecione para recarregar o QRCode")).toBeInTheDocument();
+    });
+    const btn = screen.getByRole("button", { name: /Selecione para recarregar o QRCode/i });
+    fireEvent.click(btn);
+    await waitFor(() => { expect(whatsappService.connect).toHaveBeenCalled(); });
   });
 
   it("mostra erro ao carregar status", async () => {

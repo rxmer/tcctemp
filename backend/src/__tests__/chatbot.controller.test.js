@@ -3,7 +3,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import * as baileysClient from "../chatbot/baileys.client.js";
 import * as chatbotService from "../chatbot/chatbot.service.js";
 import * as sessionService from "../chatbot/chatbot.session.js";
-import { resetSession, listSessions, getUnreadCount } from "../chatbot/chatbot.controller.js";
+import { resetSession, listSessions, getUnreadCount, connect } from "../chatbot/chatbot.controller.js";
 
 const TENANT_ID = "tenant-1";
 const REMOTE_JID = "5511999999999@s.whatsapp.net";
@@ -15,6 +15,7 @@ vi.mock("../chatbot/baileys.client.js", () => ({
   sendWhatsAppMessage: vi.fn().mockResolvedValue(true),
   getConnectionState: vi.fn().mockReturnValue({ status: "disconnected" }),
   startBaileys: vi.fn(),
+  resetQrExpirationCount: vi.fn(),
   stopBaileys: vi.fn(),
 }));
 
@@ -156,6 +157,50 @@ describe("chatbot.controller - listSessions", () => {
       estado: null,
       busca: "",
     });
+  });
+});
+
+describe("chatbot.controller - connect", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("inicia o Baileys e reseta o contador de expiração do QR", async () => {
+    baileysClient.getConnectionState.mockReturnValue({ status: "disconnected", tenantId: null });
+
+    const req = { tenantId: TENANT_ID };
+    const res = mockRes();
+
+    await connect(req, res);
+
+    expect(baileysClient.resetQrExpirationCount).toHaveBeenCalled();
+    expect(baileysClient.startBaileys).toHaveBeenCalledWith(TENANT_ID);
+    expect(res.json).toHaveBeenCalledWith({ message: "Conectando..." });
+  });
+
+  it("recarrega o QR após expirar (qr_expired)", async () => {
+    baileysClient.getConnectionState.mockReturnValue({ status: "qr_expired", tenantId: TENANT_ID });
+
+    const req = { tenantId: TENANT_ID };
+    const res = mockRes();
+
+    await connect(req, res);
+
+    expect(baileysClient.resetQrExpirationCount).toHaveBeenCalled();
+    expect(baileysClient.startBaileys).toHaveBeenCalledWith(TENANT_ID);
+    expect(res.json).toHaveBeenCalledWith({ message: "Conectando..." });
+  });
+
+  it("retorna mensagem quando já está conectado", async () => {
+    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID });
+
+    const req = { tenantId: TENANT_ID };
+    const res = mockRes();
+
+    await connect(req, res);
+
+    expect(baileysClient.startBaileys).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ message: "Já conectado" });
   });
 });
 

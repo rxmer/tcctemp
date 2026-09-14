@@ -32,6 +32,10 @@ let intentionalDisconnect = false;
 let socketId = 0;
 let desconexaoNotificada = false;
 let ciclosLimpezaAuth = 0;
+let qrExpirationCount = 0;
+
+const QR_ROTATION_TIMEOUT = 60000;
+const MAX_QR_ROTATIONS = 3;
 
 export function normalizarNumero(jid) {
   if (!jid) return null;
@@ -83,6 +87,24 @@ export function getConnectionState() {
   return { ...connectionState, tenantId: currentTenantId };
 }
 
+export function resetQrExpirationCount() {
+  qrExpirationCount = 0;
+}
+
+function encerrarSocketAposQRExpirado() {
+  if (!socket) return;
+  socketId++;
+  const socketAntigo = socket;
+  socket = null;
+  try {
+    socketAntigo.ws?.close();
+  } catch {}
+  try {
+    socketAntigo.end(undefined);
+  } catch {}
+  logger.info("Socket encerrado após QR expirado");
+}
+
 export function getAuthDir(tenantId) {
   const dir = path.join(__dirname, "..", "..", "..", `baileys_auth_${tenantId}`);
   if (!fs.existsSync(dir)) {
@@ -130,7 +152,7 @@ export async function startBaileys(tenantId) {
     keepAliveIntervalMs: 30000,
     markOnlineOnConnect: false,
     browser: ["Chrome (Windows)", "Chrome", "120.0.0"],
-    qrTimeout: 120000,
+    qrTimeout: QR_ROTATION_TIMEOUT,
     fireInitQueries: false,
   });
 
@@ -156,6 +178,21 @@ export async function startBaileys(tenantId) {
     }
 
     if (qr) {
+      if (connectionState.status === "awaiting_qr") {
+        qrExpirationCount++;
+        logger.info(
+          { count: qrExpirationCount, max: MAX_QR_ROTATIONS },
+          "QR rotacionado pelo Baileys - contabilizando expiração"
+        );
+        if (qrExpirationCount >= MAX_QR_ROTATIONS) {
+          connectionState.status = "qr_expired";
+          connectionState.qrCode = null;
+          connectionState.error = null;
+          encerrarSocketAposQRExpirado();
+          logger.info("QR expirado após múltiplas rotações, aguardando recarga manual");
+          return;
+        }
+      }
       connectionState.qrCode = qr;
       connectionState.status = "awaiting_qr";
       connectionState.error = null;
@@ -166,6 +203,7 @@ export async function startBaileys(tenantId) {
       connectionState.status = "connected";
       connectionState.qrCode = null;
       connectionState.error = null;
+      qrExpirationCount = 0;
       const meId =
         socket?.user?.id ||
         authState?.creds?.me?.id ||
@@ -232,6 +270,23 @@ export async function startBaileys(tenantId) {
         setTimeout(() => startBaileys(tenantId), 1500);
       } else if (!statusCode && connectionState.status === "connected") {
         logger.info("Close sem statusCode após conexão ativa, ignorando (cleanup do servidor)");
+      } else if (connectionState.status === "awaiting_qr") {
+        qrExpirationCount++;
+        if (qrExpirationCount < MAX_QR_ROTATIONS) {
+          connectionState.status = "connecting";
+          connectionState.qrCode = null;
+          logger.info(
+            { count: qrExpirationCount, max: MAX_QR_ROTATIONS },
+            "QR expirado (close sem escaneamento), rotacionando novo QR Code automaticamente"
+          );
+          setTimeout(() => startBaileys(tenantId), 1000);
+        } else {
+          connectionState.status = "qr_expired";
+          connectionState.qrCode = null;
+          connectionState.error = null;
+          encerrarSocketAposQRExpirado();
+          logger.info("QR expirado após múltiplas tentativas, aguardando recarga manual");
+        }
       } else if (connectionState.status === "connecting" || connectionState.status === "reconnecting") {
         logger.info({ currentStatus: connectionState.status }, "Close durante reconexão, ignorando");
       } else {
@@ -375,6 +430,7 @@ export async function stopBaileys(keepState = false) {
       lastDisconnectReason: null,
       phoneNumber: null,
     };
+    qrExpirationCount = 0;
   }
 }
 

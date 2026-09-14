@@ -5,13 +5,14 @@ import { useFeedback } from "../hooks/useFeedback";
 import { PageHeader, Button, Alert } from "../components/ui";
 import { QRCodeCanvas } from "qrcode.react";
 import styles from "../styles/pages/whatsapp.module.css";
-import { CheckCircle2, Loader2, Smartphone } from "lucide-react";
+import { CheckCircle2, Loader2, RotateCw, Smartphone } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
 
 const STATUS_LABELS = {
   disconnected: { label: "Desconectado", cls: styles.disconnected },
   connected: { label: "Conectado", cls: styles.connected },
   awaiting_qr: { label: "Aguardando QR Code", cls: styles.awaitingQr },
+  qr_expired: { label: "QR Code Expirado", cls: styles.qrExpired },
   reconnecting: { label: "Reconectando...", cls: styles.reconnecting },
   connecting: { label: "Conectando...", cls: styles.reconnecting },
 };
@@ -49,7 +50,7 @@ export function WhatsApp() {
     };
   }, [state.status]);
 
-  const fast = ["awaiting_qr", "connecting", "reconnecting"].includes(state.status);
+  const fast = ["awaiting_qr", "qr_expired", "connecting", "reconnecting"].includes(state.status);
   usePolling(carregarStatus, fast ? 3000 : 10000);
 
   async function handleConnect() {
@@ -109,6 +110,11 @@ export function WhatsApp() {
                   WhatsApp conectado
                 </p>
               </div>
+            ) : state.status === "qr_expired" ? (
+              <button type="button" className={styles.qrExpiredAction} onClick={handleConnect}>
+                <RotateCw size={48} className={styles.qrExpiredIcon} />
+                <p className={styles.qrExpiredText}>Selecione para recarregar o QRCode</p>
+              </button>
             ) : state.status === "awaiting_qr" ? (
               <div style={{ fontSize: 48, textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
                 <Loader2 size={48} className="spin" />

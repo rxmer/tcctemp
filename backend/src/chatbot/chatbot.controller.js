@@ -55,6 +55,7 @@ export async function connect(req, res) {
   }
 
   try {
+    baileysClient.resetQrExpirationCount();
     await baileysClient.startBaileys(tenantId);
     res.json({ message: "Conectando..." });
   } catch (err) {
