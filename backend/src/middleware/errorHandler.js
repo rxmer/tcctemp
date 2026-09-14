@@ -15,6 +15,10 @@ export function errorHandler(err, _req, res, _next) {
     return res.status(err.statusCode).json({ error: publicMessage });
   }
 
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ error: "Arquivo muito grande. O limite é 25MB." });
+  }
+
   logger.error({ err }, err.message);
 
   if (err?.code === "PGRST301") {

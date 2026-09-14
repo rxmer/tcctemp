@@ -5,6 +5,7 @@ import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
 import { PageHeader, Button, SkeletonCard } from "../components/ui";
+import { AudioRecorder } from "../components/AudioRecorder";
 import styles from "../styles/pages/whatsapp.module.css";
 import { ArrowLeft, Send, RotateCcw } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
@@ -92,6 +93,15 @@ export function ConversaDetalhe() {
     }
   }
 
+  async function handleEnviarAudio(blob) {
+    try {
+      await whatsappService.sendAudio(id, blob);
+      await carregarMensagens();
+    } catch (err) {
+      showFeedback("error", err.message);
+    }
+  }
+
   async function handleReset() {
     const ok = await confirm("Reiniciar o fluxo do bot para este cliente?");
     if (!ok) return;
@@ -149,7 +159,11 @@ export function ConversaDetalhe() {
                         : m.remetente === "atendente" ? styles.bubbleAtendente
                         : styles.bubbleBot}`}>
                       <span className={styles.bubbleAutor}>{autorLabel(m, session)}</span>
-                      {m.texto}
+                      {m.tipo_media === "audio" && m.media_url ? (
+                        <audio controls preload="none" src={m.media_url} className={styles.bubbleAudio} />
+                      ) : (
+                        m.texto
+                      )}
                       <span className={styles.bubbleHora}>{horaLabel(m.criado_em)}</span>
                     </div>
                   </div>
@@ -158,6 +172,7 @@ export function ConversaDetalhe() {
             </div>
 
             <form className={styles.convInputRow} onSubmit={handleEnviar}>
+              <AudioRecorder onSend={handleEnviarAudio} />
               <textarea
                 className={styles.convInput}
                 placeholder="Responder como atendente..."

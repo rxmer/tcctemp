@@ -2,17 +2,22 @@ import { supabase } from "../lib/supabase";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 const REQUEST_TIMEOUT = 30000;
+const UPLOAD_TIMEOUT = 60000;
 
 async function doFetch(path, options, session) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  const timeout = options.timeout ?? REQUEST_TIMEOUT;
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const baseHeaders = isFormData ? {} : { "Content-Type": "application/json" };
 
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       signal: controller.signal,
       headers: {
-        "Content-Type": "application/json",
+        ...baseHeaders,
         ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
         ...options.headers,
       },
@@ -31,13 +36,15 @@ async function doFetch(path, options, session) {
     return { ok: true, data };
   } catch (err) {
     if (err.name === "AbortError") {
-      throw new Error("Requisição excedeu o tempo limite. Tente novamente.");
+      throw new Error("Requisição excedeu o tempo limite. Tente novamente.", { cause: err });
     }
     throw err;
   } finally {
     clearTimeout(timeoutId);
   }
 }
+
+export { REQUEST_TIMEOUT, UPLOAD_TIMEOUT };
 
 export async function apiFetch(path, options = {}) {
   const { data: { session } } = await supabase.auth.getSession();

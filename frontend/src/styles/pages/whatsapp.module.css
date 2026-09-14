@@ -381,6 +381,100 @@
   gap: 10px;
 }
 
+.recMicBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.recMicBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.recBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+}
+
+.recMic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.recTimer {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.recIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+
+.recIconBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.recReady {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.recPreview {
+  flex: 1;
+  height: 40px;
+  min-width: 0;
+  max-width: 300px;
+}
+
+.recError {
+  font-size: 12px;
+  color: #ef4444;
+  align-self: center;
+}
+
+.bubbleAudio {
+  display: block;
+  max-width: 260px;
+  height: 44px;
+}
+
 /* ── TEMA CLARO ────────────────────────────────────────────── */
 :global([data-theme="light"]) .connected {
   background: rgba(21, 128, 61, 0.1);

@@ -335,6 +335,12 @@
   margin-top: 3px;
 }
 
+.bubbleAudio {
+  display: block;
+  max-width: 240px;
+  height: 40px;
+}
+
 .chatInputRow {
   display: flex;
   gap: 8px;

@@ -19,6 +19,8 @@ vi.mock("@whiskeysockets/baileys", () => {
     ev: { on: vi.fn((evt, fn) => { listeners[evt] = fn; }) },
     ws: { close: vi.fn() },
     end: vi.fn(),
+    sendMessage: vi.fn().mockResolvedValue({}),
+    updateMediaMessage: vi.fn().mockResolvedValue({}),
     user: { id: "5511999999999:15@s.whatsapp.net" },
   };
   qrListeners = listeners;
@@ -26,10 +28,19 @@ vi.mock("@whiskeysockets/baileys", () => {
     default: vi.fn(() => socket),
     DisconnectReason: { loggedOut: 401, timedOut: 408, connectionClosed: 428, connectionReplaced: 440 },
     makeCacheableSignalKeyStore: vi.fn((keys) => keys),
+    downloadMediaMessage: vi.fn().mockResolvedValue(Buffer.from([1, 2, 3, 4])),
   };
 });
 
-import { normalizarNumero, ehNumeroProprio, startBaileys, stopBaileys, getConnectionState } from "../chatbot/baileys.client.js";
+import {
+  normalizarNumero,
+  ehNumeroProprio,
+  startBaileys,
+  stopBaileys,
+  getConnectionState,
+  sendWhatsAppAudio,
+  setOnMediaMessageHandler,
+} from "../chatbot/baileys.client.js";
 
 const QR_TENANT_ID = "tenant-qrflow";
 
@@ -180,5 +191,111 @@ describe("baileys.client - fluxo de expiração do QR", () => {
     expect(qrListeners["connection.update"]).toBeDefined();
     expect(getConnectionState().status).toBe("qr_expired");
     expect(getConnectionState().qrCode).toBeNull();
+  });
+});
+
+describe("baileys.client - envio de áudio", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+  });
+
+  afterEach(async () => {
+    await stopBaileys();
+  });
+
+  it("envia o áudio como nota de voz (ptt) pelo socket", async () => {
+    await startBaileys(QR_TENANT_ID);
+    const { default: makeWASocket } = await import("@whiskeysockets/baileys");
+    const socket = makeWASocket();
+
+    const buffer = Buffer.from([0x4f, 0x67, 0x67, 0x53]); // OggS
+    await sendWhatsAppAudio("5511988887777@s.whatsapp.net", buffer, "audio/ogg; codecs=opus", QR_TENANT_ID);
+
+    expect(socket.sendMessage).toHaveBeenCalledWith("5511988887777@s.whatsapp.net", {
+      audio: buffer,
+      mimetype: "audio/ogg",
+      ptt: true,
+    });
+  });
+
+  it("normaliza o mimetype removendo parâmetros adicionais", async () => {
+    await startBaileys(QR_TENANT_ID);
+    const { default: makeWASocket } = await import("@whiskeysockets/baileys");
+    const socket = makeWASocket();
+
+    await sendWhatsAppAudio("5511988887777@s.whatsapp.net", Buffer.from("x"), "audio/ogg; codecs=opus", QR_TENANT_ID);
+
+    expect(socket.sendMessage).toHaveBeenCalledWith(
+      "5511988887777@s.whatsapp.net",
+      expect.objectContaining({ mimetype: "audio/ogg" })
+    );
+  });
+
+  it("lanca erro quando o WhatsApp nao esta conectado", async () => {
+    await expect(
+      sendWhatsAppAudio("5511988887777@s.whatsapp.net", Buffer.from("x"), "audio/ogg")
+    ).rejects.toThrow("WhatsApp não conectado");
+  });
+
+  it("lanca erro para buffer vazio", async () => {
+    await startBaileys(QR_TENANT_ID);
+    await expect(
+      sendWhatsAppAudio("5511988887777@s.whatsapp.net", Buffer.alloc(0), "audio/ogg", QR_TENANT_ID)
+    ).rejects.toThrow("Áudio inválido ou vazio");
+  });
+});
+
+describe("baileys.client - recebimento de áudio", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+  });
+
+  afterEach(async () => {
+    await stopBaileys();
+  });
+
+  async function emitirMensagens(mensagens) {
+    const handler = qrListeners["messages.upsert"];
+    await handler({ messages: mensagens, type: "notify" });
+  }
+
+  it("baixa o áudio e repassa ao handler de mídia", async () => {
+    await startBaileys(QR_TENANT_ID);
+    const mediaHandler = vi.fn().mockResolvedValue(true);
+    setOnMediaMessageHandler(mediaHandler);
+
+    const msg = {
+      key: { fromMe: false, remoteJid: "5511988887777@s.whatsapp.net" },
+      message: { audioMessage: { mimetype: "audio/ogg; codecs=opus", ptt: true } },
+      pushName: "Maria",
+    };
+    await emitirMensagens([msg]);
+
+    const buffer = Buffer.from([1, 2, 3, 4]);
+    expect(mediaHandler).toHaveBeenCalledWith(
+      QR_TENANT_ID,
+      "5511988887777@s.whatsapp.net",
+      "Maria",
+      buffer,
+      "audio/ogg; codecs=opus"
+    );
+  });
+
+  it("ignora áudio sem handler e sem erro quando download falha", async () => {
+    await startBaileys(QR_TENANT_ID);
+    const mediaHandler = vi.fn().mockResolvedValue(true);
+    setOnMediaMessageHandler(mediaHandler);
+    const { downloadMediaMessage } = await import("@whiskeysockets/baileys");
+    downloadMediaMessage.mockRejectedValue(new Error("download failed"));
+
+    const msg = {
+      key: { fromMe: false, remoteJid: "5511988887777@s.whatsapp.net" },
+      message: { audioMessage: { mimetype: "audio/ogg; codecs=opus" } },
+      pushName: "Maria",
+    };
+    await emitirMensagens([msg]);
+    expect(mediaHandler).not.toHaveBeenCalled();
   });
 });

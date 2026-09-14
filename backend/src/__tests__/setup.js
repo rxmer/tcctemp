@@ -40,11 +40,31 @@ const mockAuthAdmin = {
   updateUserById: vi.fn(),
 };
 
+function buildStorageQuery(overrides = {}) {
+  return {
+    upload: vi.fn().mockResolvedValue({ data: { path: "tenant/sess/file.ogg" }, error: null }),
+    createSignedUrl: vi.fn().mockResolvedValue({ data: { signedUrl: "https://signed.test/audio.ogg?token=abc" }, error: null }),
+    getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: "https://public.test/audio.ogg" } }),
+    remove: vi.fn().mockResolvedValue({ data: [], error: null }),
+    list: vi.fn().mockResolvedValue({ data: [], error: null }),
+    ...overrides,
+  };
+}
+
+const mockStorageFrom = vi.fn(() => buildStorageQuery());
+const mockStorage = {
+  from: mockStorageFrom,
+  getBucket: vi.fn().mockResolvedValue({ data: { name: "chatbot-audios" }, error: null }),
+  createBucket: vi.fn().mockResolvedValue({ data: { name: "chatbot-audios" }, error: null }),
+  listBuckets: vi.fn().mockResolvedValue({ data: [], error: null }),
+};
+
 vi.mock("../config/supabase.js", () => ({
   supabaseAdmin: {
     from: mockFrom,
     rpc: vi.fn(),
     auth: { admin: mockAuthAdmin },
+    storage: mockStorage,
   },
 }));
 
@@ -67,4 +87,4 @@ export function mockError(message) {
   mockFrom.mockReturnValue(buildQuery(rv));
 }
 
-export { mockFrom, mockAuthAdmin };
+export { mockFrom, mockAuthAdmin, mockStorage, mockStorageFrom };

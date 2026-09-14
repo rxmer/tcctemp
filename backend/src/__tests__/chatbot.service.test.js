@@ -17,7 +17,8 @@ vi.mock("../services/notificacoes.service.js", () => ({
 
 import * as baileys from "../chatbot/baileys.client.js";
 import * as notificacoes from "../services/notificacoes.service.js";
-import { processMessage, parseDateInput, validarAntecedenciaCancelamento, validarAgendamentoNaoIniciado, __resetChatbotRateLimit } from "../chatbot/chatbot.service.js";
+import { processMessage, processAudioMessage, parseDateInput, validarAntecedenciaCancelamento, validarAgendamentoNaoIniciado, __resetChatbotRateLimit } from "../chatbot/chatbot.service.js";
+import { mockStorageFrom } from "./setup.js";
 
 function mockQuery(overrides = {}) {
   return {
@@ -2232,6 +2233,72 @@ describe("chatbot.service", () => {
 
       const result = await validarAgendamentoNaoIniciado(1, "t1");
       expect(result).toContain("2 horas");
+    });
+  });
+
+  describe("processAudioMessage", () => {
+    const audioBuffer = Buffer.from("audio-bytes");
+
+    it("registra o áudio do cliente em sessão existente (FALANDO_COM_ATENDENTE) e notifica", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({ state: "FALANDO_COM_ATENDENTE" }), error: null }),
+      }));
+
+      await processAudioMessage(TENANT_ID, REMOTE_JID, "Maria", audioBuffer, "audio/ogg; codecs=opus");
+
+      expect(mockStorageFrom).toHaveBeenCalled();
+      expect(notificacoes.criarNotificacao).toHaveBeenCalledWith(expect.objectContaining({
+        tipo: "chatbot_mensagem_cliente",
+        referenciaId: SESSION_ID,
+      }));
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalled();
+    });
+
+    it("envia dica sobre o áudio quando a sessão não está com o atendente", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({ state: "MENU_PRINCIPAL" }), error: null }),
+      }));
+
+      await processAudioMessage(TENANT_ID, REMOTE_JID, "Maria", audioBuffer, "audio/ogg; codecs=opus");
+
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("áudio")
+      );
+      expect(notificacoes.criarNotificacao).not.toHaveBeenCalled();
+    });
+
+    it("cria sessão e registra o áudio quando não existe sessão", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        single: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
+      }));
+
+      await processAudioMessage(TENANT_ID, REMOTE_JID, "João", audioBuffer, "audio/ogg");
+
+      expect(mockStorageFrom).toHaveBeenCalled();
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(REMOTE_JID, expect.stringContaining("áudio"));
+    });
+
+    it("não quebra quando o upload no storage falha", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
+      }));
+
+      const storageQuery = {
+        upload: vi.fn().mockResolvedValue({ data: null, error: new Error("upload failed") }),
+        createSignedUrl: vi.fn(),
+        getPublicUrl: vi.fn(),
+        remove: vi.fn(),
+        list: vi.fn(),
+      };
+      mockStorageFrom.mockReturnValueOnce(storageQuery);
+
+      await expect(
+        processAudioMessage(TENANT_ID, REMOTE_JID, "Maria", audioBuffer, "audio/ogg")
+      ).resolves.toBeUndefined();
+      expect(notificacoes.criarNotificacao).not.toHaveBeenCalled();
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalled();
     });
   });
 });

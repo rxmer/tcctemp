@@ -4,6 +4,7 @@ import { usePolling } from "../hooks/usePolling";
 import { whatsappService } from "../services/whatsapp.service";
 import styles from "./ChatWidget.module.css";
 import { MessageCircle, X, ArrowLeft, Send, RotateCcw } from "lucide-react";
+import { AudioRecorder } from "./AudioRecorder";
 
 function autorLabel(m, session) {
   if (m.remetente === "cliente") return session?.client_name || "Cliente";
@@ -139,6 +140,14 @@ export function ChatWidget() {
     }
   }
 
+  async function handleEnviarAudio(blob) {
+    if (!activeSession) return;
+    try {
+      await whatsappService.sendAudio(activeSession.id, blob);
+      await carregarMensagens();
+    } catch { /* silencioso */ }
+  }
+
   async function handleReset() {
     if (!activeSession) return;
     try {
@@ -198,7 +207,11 @@ export function ChatWidget() {
                           : m.remetente === "atendente" ? styles.bubbleAtendente
                           : styles.bubbleBot}`}>
                         <span className={styles.bubbleAutor}>{autorLabel(m, activeSession)}</span>
-                        {m.texto}
+                        {m.tipo_media === "audio" && m.media_url ? (
+                          <audio controls preload="none" src={m.media_url} className={styles.bubbleAudio} />
+                        ) : (
+                          m.texto
+                        )}
                         <span className={styles.bubbleHora}>{horaLabel(m.criado_em)}</span>
                       </div>
                     </div>
@@ -207,6 +220,7 @@ export function ChatWidget() {
               </div>
 
               <form className={styles.chatInputRow} onSubmit={handleEnviar}>
+                <AudioRecorder onSend={handleEnviarAudio} />
                 <textarea
                   className={styles.chatInput}
                   placeholder="Responder..."

@@ -132,11 +132,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 344 testes (23 arquivos)
-cd frontend && npm test   # 305 testes (44 arquivos)
+cd backend && npm test    # 370 testes (24 arquivos)
+cd frontend && npm test   # 313 testes (45 arquivos)
 ```
 
-> **649 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **683 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 

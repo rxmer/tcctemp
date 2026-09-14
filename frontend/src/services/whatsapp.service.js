@@ -30,6 +30,16 @@ export const whatsappService = {
       body: JSON.stringify({ mensagem }),
     }),
 
+  sendAudio: (id, blob) => {
+    const formData = new FormData();
+    formData.append("audio", blob, "audio.ogg");
+    return apiFetch(`/api/chatbot/sessions/${id}/reply-audio`, {
+      method: "POST",
+      body: formData,
+      timeout: 60000,
+    });
+  },
+
   getMensagens: (id) => apiFetch(`/api/chatbot/sessions/${id}/mensagens?_=${Date.now()}`),
 
   resetSessao: (id) =>

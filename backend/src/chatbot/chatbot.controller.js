@@ -5,11 +5,13 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import * as baileysClient from "./baileys.client.js";
 import * as sessionService from "./chatbot.session.js";
-import { processMessage, sendMenu } from "./chatbot.service.js";
+import { processMessage, processAudioMessage, sendMenu } from "./chatbot.service.js";
+import { salvarAudio } from "./chatbot.media.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 baileysClient.setOnMessageHandler(processMessage);
+baileysClient.setOnMediaMessageHandler(processAudioMessage);
 baileysClient.setOnOutgoingMessage((jid, text, origem) =>
   sessionService.registrarMensagemPorJid(jid, text, origem || "bot")
 );
@@ -152,6 +154,60 @@ export async function sendReply(req, res) {
     .update({ ultima_atividade: new Date().toISOString(), atendente_engajado: true })
     .eq("id", id);
   res.json({ message: "Mensagem enviada" });
+}
+
+export async function sendReplyAudio(req, res) {
+  const { id } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ error: "Arquivo de áudio é obrigatório" });
+  }
+
+  const mimetype = String(req.file.mimetype ?? "");
+  if (!mimetype.toLowerCase().startsWith("audio/")) {
+    return res.status(415).json({ error: "O arquivo deve ser um áudio" });
+  }
+
+  const { data: session, error } = await supabaseAdmin
+    .from("chatbot_session")
+    .select("*")
+    .eq("id", id)
+    .eq("tenant_id", req.tenantId)
+    .single();
+
+  if (error) {
+    return res.status(404).json({ error: "Sessão não encontrada" });
+  }
+
+  const caminho = await salvarAudio({
+    tenantId: req.tenantId,
+    sessionId: session.id,
+    buffer: req.file.buffer,
+    mimetype,
+  });
+
+  await baileysClient.sendWhatsAppAudio(
+    session.remote_jid,
+    req.file.buffer,
+    mimetype,
+    req.tenantId
+  );
+
+  await sessionService.registrarMensagem({
+    tenantId: req.tenantId,
+    sessionId: session.id,
+    remetente: "atendente",
+    texto: "[🎤 Áudio]",
+    tipoMedia: "audio",
+    mediaUrl: caminho,
+  });
+
+  await supabaseAdmin
+    .from("chatbot_session")
+    .update({ ultima_atividade: new Date().toISOString(), atendente_engajado: true })
+    .eq("id", id);
+
+  res.json({ message: "Áudio enviado" });
 }
 
 export async function getMensagens(req, res) {

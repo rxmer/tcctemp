@@ -4,7 +4,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import * as baileysClient from "../chatbot/baileys.client.js";
 import * as chatbotService from "../chatbot/chatbot.service.js";
 import * as sessionService from "../chatbot/chatbot.session.js";
-import { resetSession, listSessions, getUnreadCount, connect, disconnect } from "../chatbot/chatbot.controller.js";
+import { resetSession, listSessions, getUnreadCount, connect, disconnect, sendReplyAudio } from "../chatbot/chatbot.controller.js";
 
 const TENANT_ID = "tenant-1";
 const REMOTE_JID = "5511999999999@s.whatsapp.net";
@@ -12,8 +12,10 @@ const SESSION_ID = "sess-1";
 
 vi.mock("../chatbot/baileys.client.js", () => ({
   setOnMessageHandler: vi.fn(),
+  setOnMediaMessageHandler: vi.fn(),
   setOnOutgoingMessage: vi.fn(),
   sendWhatsAppMessage: vi.fn().mockResolvedValue(true),
+  sendWhatsAppAudio: vi.fn().mockResolvedValue(true),
   getConnectionState: vi.fn().mockReturnValue({ status: "disconnected" }),
   startBaileys: vi.fn(),
   resetQrExpirationCount: vi.fn(),
@@ -25,11 +27,17 @@ vi.mock("../chatbot/chatbot.session.js", () => ({
   contarNaoLidas: vi.fn(),
   listarMensagens: vi.fn(),
   registrarMensagemPorJid: vi.fn(),
+  registrarMensagem: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("../chatbot/chatbot.service.js", () => ({
   processMessage: vi.fn(),
+  processAudioMessage: vi.fn(),
   sendMenu: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("../chatbot/chatbot.media.js", () => ({
+  salvarAudio: vi.fn().mockResolvedValue("tenant/sess/audio-1.ogg"),
 }));
 
 function mockQuery(overrides = {}) {
@@ -301,5 +309,88 @@ describe("chatbot.controller - getUnreadCount", () => {
 
     expect(sessionService.contarNaoLidas).toHaveBeenCalledWith(TENANT_ID);
     expect(res.json).toHaveBeenCalledWith(resultado);
+  });
+});
+
+describe("chatbot.controller - sendReplyAudio", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function buildReq(overrides = {}) {
+    return {
+      params: { id: SESSION_ID },
+      tenantId: TENANT_ID,
+      file: {
+        buffer: Buffer.from("fake-audio-bytes"),
+        mimetype: "audio/ogg; codecs=opus",
+        size: 15,
+      },
+      ...overrides,
+    };
+  }
+
+  it("envia o áudio, salva no storage e registra no histórico", async () => {
+    supabaseAdmin.from.mockReturnValue(mockQuery({
+      single: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
+    }));
+    const { salvarAudio } = await import("../chatbot/chatbot.media.js");
+
+    const req = buildReq();
+    const res = mockRes();
+    await sendReplyAudio(req, res);
+
+    expect(salvarAudio).toHaveBeenCalledWith({
+      tenantId: TENANT_ID,
+      sessionId: SESSION_ID,
+      buffer: req.file.buffer,
+      mimetype: "audio/ogg; codecs=opus",
+    });
+    expect(baileysClient.sendWhatsAppAudio).toHaveBeenCalledWith(
+      REMOTE_JID,
+      req.file.buffer,
+      "audio/ogg; codecs=opus",
+      TENANT_ID
+    );
+    expect(sessionService.registrarMensagem).toHaveBeenCalledWith({
+      tenantId: TENANT_ID,
+      sessionId: SESSION_ID,
+      remetente: "atendente",
+      texto: expect.stringContaining("Áudio"),
+      tipoMedia: "audio",
+      mediaUrl: "tenant/sess/audio-1.ogg",
+    });
+    expect(res.json).toHaveBeenCalledWith({ message: "Áudio enviado" });
+  });
+
+  it("responde 400 quando o arquivo não é enviado", async () => {
+    const req = buildReq({ file: null });
+    const res = mockRes();
+    await sendReplyAudio(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(baileysClient.sendWhatsAppAudio).not.toHaveBeenCalled();
+  });
+
+  it("rejeita arquivos que não são de áudio", async () => {
+    const req = buildReq({ file: { buffer: Buffer.from("x"), mimetype: "application/pdf", size: 1 } });
+    const res = mockRes();
+    await sendReplyAudio(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(baileysClient.sendWhatsAppAudio).not.toHaveBeenCalled();
+  });
+
+  it("responde 404 quando a sessão não existe", async () => {
+    supabaseAdmin.from.mockReturnValue(mockQuery({
+      single: vi.fn().mockResolvedValue({ data: null, error: new Error("não encontrada") }),
+    }));
+
+    const req = buildReq();
+    const res = mockRes();
+    await sendReplyAudio(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(baileysClient.sendWhatsAppAudio).not.toHaveBeenCalled();
   });
 });

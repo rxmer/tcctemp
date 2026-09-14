@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import { criarSessao, buscarSessao, atualizarSessao, registrarMensagem, SESSION_TIMEOUT_MINUTES } from "./chatbot.session.js";
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
+import { salvarAudio } from "./chatbot.media.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
 import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
 import { verificarDataBloqueada } from "../services/datas-bloqueadas.service.js";
@@ -1729,6 +1730,72 @@ async function handleOperationalError(jid, session, err, context = "") {
 /* ===================================================================
    ENTRY POINT
    =================================================================== */
+
+export async function processAudioMessage(tenantId, remoteJid, pushName, buffer, mimetype) {
+  let session = null;
+  try {
+    session = await buscarSessao(tenantId, remoteJid);
+
+    let caminho = null;
+    if (session) {
+      caminho = await salvarAudio({ tenantId, sessionId: session.id, buffer, mimetype });
+      await registrarMensagem({
+        tenantId,
+        sessionId: session.id,
+        remetente: "cliente",
+        texto: "[🎤 Áudio]",
+        tipoMedia: "audio",
+        mediaUrl: caminho,
+      });
+      await atualizarSessao(session.id, { ultima_mensagem: "[🎤 Áudio]" });
+
+      if (session.state === "FALANDO_COM_ATENDENTE") {
+        criarNotificacao({
+          tenantId,
+          tipo: "chatbot_mensagem_cliente",
+          titulo: `Mensagem de ${session.client_name || "Cliente"}`,
+          mensagem: "🎤 Cliente enviou uma nota de voz pelo WhatsApp.",
+          referenciaTipo: "chatbot",
+          referenciaId: session.id,
+        }).catch(() => {});
+      } else if (!session.atendente_engajado) {
+        await sendWhatsAppMessage(
+          remoteJid,
+          "🎤 Recebi seu áudio! Se preferir, você também pode digitar a sua mensagem (o atendente levará em conta ambos)."
+        );
+      }
+    } else {
+      const phone = extractPhone(remoteJid);
+      session = await criarSessao({
+        tenantId,
+        remoteJid,
+        clientPhone: phone,
+        clientName: pushName,
+      });
+      caminho = await salvarAudio({ tenantId, sessionId: session.id, buffer, mimetype });
+      await registrarMensagem({
+        tenantId,
+        sessionId: session.id,
+        remetente: "cliente",
+        texto: "[🎤 Áudio]",
+        tipoMedia: "audio",
+        mediaUrl: caminho,
+      });
+      await atualizarSessao(session.id, { ultima_mensagem: "[🎤 Áudio]" });
+      await sendWhatsAppMessage(
+        remoteJid,
+        "🎤 Recebi seu áudio! Se preferir, você também pode digitar a sua mensagem."
+      );
+    }
+
+    logger.info(
+      { caminho: !!caminho, phoneSuffix: remoteJid?.split("@")[0]?.slice(-4) },
+      "Áudio recebido registrado no histórico"
+    );
+  } catch (err) {
+    logger.error({ err, sessionId: session?.id }, "Erro ao processar áudio recebido");
+  }
+}
 
 export async function processMessage(tenantId, remoteJid, text, pushName) {
   const lockKey = `${tenantId}:${remoteJid}`;

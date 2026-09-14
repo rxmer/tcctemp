@@ -10,6 +10,7 @@ vi.mock("../services/whatsapp.service", () => ({
     listSessions: vi.fn(),
     getMensagens: vi.fn(),
     sendReply: vi.fn(),
+    sendAudio: vi.fn(),
     resetSessao: vi.fn(),
     getSession: vi.fn(),
   },
@@ -53,6 +54,7 @@ vi.mock("../components/ChatWidget.module.css", () => ({
     bubbleBot: "bubbleBot",
     bubbleAutor: "bubbleAutor",
     bubbleHora: "bubbleHora",
+    bubbleAudio: "bubbleAudio",
     chatInputRow: "chatInputRow",
     chatInput: "chatInput",
     chatSend: "chatSend",
@@ -160,5 +162,22 @@ describe("ChatWidget", () => {
 
     expect(await screen.findByText("PAGINA WHATSAPP")).toBeInTheDocument();
     expect(screen.queryByText("Conversas WhatsApp")).not.toBeInTheDocument();
+  });
+
+  it("exibe player de áudio e botão de microfone na conversa do pop-up", async () => {
+    whatsappService.getMensagens.mockResolvedValue([
+      { id: "ma1", remetente: "atendente", texto: "[🎤 Áudio]", tipo_media: "audio", media_url: "https://cdn.supabase.co/audio.ogg", criado_em: "2026-01-10T10:00:00Z" },
+    ]);
+
+    renderWidget();
+    fireEvent.click(screen.getByTitle("Conversas WhatsApp"));
+    await screen.findByText("Maria Silva");
+    fireEvent.click(screen.getByText("Maria Silva"));
+
+    await waitFor(() => {
+      expect(document.querySelector("audio[src='https://cdn.supabase.co/audio.ogg']")).not.toBeNull();
+    });
+    expect(screen.queryByText("[🎤 Áudio]")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gravar nota de voz" })).toBeInTheDocument();
   });
 });

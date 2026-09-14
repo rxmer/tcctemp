@@ -8,6 +8,10 @@ vi.mock("../chatbot/baileys.client.js", () => ({
   getConnectionState: vi.fn().mockReturnValue({ tenantId: "tenant-1", status: "connected" }),
 }));
 
+vi.mock("../chatbot/chatbot.media.js", () => ({
+  obterUrlAssinada: vi.fn().mockResolvedValue("https://signed.test/audio.ogg?token=abc"),
+}));
+
 const TENANT_ID = "tenant-1";
 const REMOTE_JID = "5511999999999@s.whatsapp.net";
 const SESSION_ID = "uuid-session-1";
@@ -271,6 +275,31 @@ describe("chatbot.session", () => {
         })
       ).resolves.toBeUndefined();
     });
+
+    it("deve inserir tipo_media e media_url para mensagens de áudio", async () => {
+      const query = mockQuery({
+        then: (resolve) => resolve({ data: null, error: null }),
+      });
+      supabaseAdmin.from.mockReturnValue(query);
+
+      await sessionService.registrarMensagem({
+        tenantId: TENANT_ID,
+        sessionId: SESSION_ID,
+        remetente: "cliente",
+        texto: "[🎤 Áudio]",
+        tipoMedia: "audio",
+        mediaUrl: "tenant/sess/audio-1.ogg",
+      });
+
+      expect(query.insert).toHaveBeenCalledWith(expect.objectContaining({
+        tenant_id: TENANT_ID,
+        session_id: SESSION_ID,
+        remetente: "cliente",
+        texto: "[🎤 Áudio]",
+        tipo_media: "audio",
+        media_url: "tenant/sess/audio-1.ogg",
+      }));
+    });
   });
 
   describe("registrarMensagemPorJid", () => {
@@ -295,6 +324,8 @@ describe("chatbot.session", () => {
         session_id: SESSION_ID,
         remetente: "atendente",
         texto: "Texto",
+        tipo_media: null,
+        media_url: null,
       });
     });
 
@@ -311,7 +342,7 @@ describe("chatbot.session", () => {
 
   describe("listarMensagens", () => {
     it("deve listar mensagens da sessao ordenadas", async () => {
-      const expected = [{ id: "m1", remetente: "cliente", texto: "Olá" }];
+      const expected = [{ id: "m1", remetente: "cliente", texto: "Olá", tipo_media: null, media_url: null }];
       const orderMock = vi.fn().mockReturnThis();
       supabaseAdmin.from.mockReturnValue(mockQuery({
         order: orderMock,
@@ -321,6 +352,25 @@ describe("chatbot.session", () => {
       const result = await sessionService.listarMensagens(TENANT_ID, SESSION_ID);
       expect(result).toEqual(expected);
       expect(orderMock).toHaveBeenCalledWith("criado_em", { ascending: true });
+    });
+
+    it("deve assinar a URL dos áudios recebidos", async () => {
+      const mensagens = [
+        { id: "m1", remetente: "cliente", texto: "[🎤 Áudio]", tipo_media: "audio", media_url: "tenant/sess/audio-1.ogg", criado_em: "2026-09-01T10:00:00Z" },
+        { id: "m2", remetente: "bot", texto: "Olá", tipo_media: null, media_url: null, criado_em: "2026-09-01T10:01:00Z" },
+      ];
+      const orderMock = vi.fn().mockReturnThis();
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        order: orderMock,
+        limit: vi.fn().mockResolvedValue({ data: mensagens, error: null }),
+      }));
+
+      const { obterUrlAssinada } = await import("../chatbot/chatbot.media.js");
+      const result = await sessionService.listarMensagens(TENANT_ID, SESSION_ID);
+
+      expect(obterUrlAssinada).toHaveBeenCalledWith("tenant/sess/audio-1.ogg");
+      expect(result[0].media_url).toBe("https://signed.test/audio.ogg?token=abc");
+      expect(result[1].media_url).toBeNull();
     });
 
     it("deve lancar erro na falha", async () => {

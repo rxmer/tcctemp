@@ -2,6 +2,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
 import { sendWhatsAppMessage, getConnectionState } from "./baileys.client.js";
+import { obterUrlAssinada } from "./chatbot.media.js";
 
 const MAX_MENSAGEM_LENGTH = 500;
 
@@ -205,7 +206,7 @@ export async function contarNaoLidas(tenantId) {
   return { total, sessoes: resultado };
 }
 
-export async function registrarMensagem({ tenantId, sessionId, remetente, texto }) {
+export async function registrarMensagem({ tenantId, sessionId, remetente, texto, tipoMedia = null, mediaUrl = null }) {
   const { error } = await supabaseAdmin
     .from("chatbot_mensagem")
     .insert({
@@ -213,6 +214,8 @@ export async function registrarMensagem({ tenantId, sessionId, remetente, texto 
       session_id: sessionId,
       remetente,
       texto: String(texto ?? "").slice(0, MAX_MENSAGEM_LENGTH),
+      tipo_media: tipoMedia || null,
+      media_url: mediaUrl || null,
     });
 
   if (error) logger.warn({ err: error }, "Erro ao registrar mensagem do chatbot");
@@ -234,14 +237,25 @@ export async function registrarMensagemPorJid(remoteJid, texto, remetente = "bot
 export async function listarMensagens(tenantId, sessionId) {
   const { data, error } = await supabaseAdmin
     .from("chatbot_mensagem")
-    .select("id, remetente, texto, criado_em")
+    .select("id, remetente, texto, tipo_media, media_url, criado_em")
     .eq("tenant_id", tenantId)
     .eq("session_id", sessionId)
     .order("criado_em", { ascending: true })
     .limit(300);
 
   if (error) throw new AppError(`Erro ao listar mensagens: ${error.message}`);
-  return data;
+
+  const comUrl = [];
+  for (const msg of data ?? []) {
+    if (msg.tipo_media === "audio" && msg.media_url) {
+      const url = await obterUrlAssinada(msg.media_url);
+      if (url) comUrl.push({ ...msg, media_url: url });
+      else comUrl.push({ ...msg, media_url: null });
+    } else {
+      comUrl.push({ ...msg, media_url: msg.media_url ?? null });
+    }
+  }
+  return comUrl;
 }
 
 export async function desativarSessao(sessionId) {

@@ -60,6 +60,23 @@ describe("whatsappService", () => {
     });
   });
 
+  it("sendAudio envia FormData com o blob e timeout longo", () => {
+    const blob = new Blob([new Uint8Array([1, 2, 3])], { type: "audio/ogg" });
+    whatsappService.sendAudio("session-1", blob);
+
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [url, opts] = apiFetch.mock.calls[0];
+    expect(url).toBe("/api/chatbot/sessions/session-1/reply-audio");
+    expect(opts.method).toBe("POST");
+    expect(opts.timeout).toBe(60000);
+    expect(opts.body).toBeInstanceOf(FormData);
+    const file = opts.body.get("audio");
+    expect(file).toBeInstanceOf(File);
+    expect(file.name).toBe("audio.ogg");
+    expect(file.type).toBe("audio/ogg");
+    expect(file.size).toBe(blob.size);
+  });
+
   it("getMensagens chama apiFetch com id e timestamp", () => {
     whatsappService.getMensagens("abc-123");
     const url = apiFetch.mock.calls[0][0];

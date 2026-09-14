@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS chatbot_mensagem (
   session_id UUID NOT NULL REFERENCES chatbot_session(id) ON DELETE CASCADE,
   remetente TEXT NOT NULL CHECK (remetente IN ('cliente', 'bot', 'atendente')),
   texto TEXT NOT NULL,
+  tipo_media TEXT NULL,
+  media_url TEXT NULL,
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 

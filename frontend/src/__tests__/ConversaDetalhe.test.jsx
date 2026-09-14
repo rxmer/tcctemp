@@ -8,6 +8,7 @@ vi.mock("../services/whatsapp.service", () => ({
     getSession: vi.fn(),
     getMensagens: vi.fn(),
     sendReply: vi.fn(),
+    sendAudio: vi.fn(),
     resetSessao: vi.fn(),
   },
 }));
@@ -89,6 +90,18 @@ describe("ConversaDetalhe page", () => {
     await waitFor(() => {
       expect(whatsappService.sendReply).toHaveBeenCalledWith(SESSION_ID, "Texto do atendente");
     });
+  });
+
+  it("exibe bolha de áudio com player para mensagens de mídia", async () => {
+    whatsappService.getMensagens.mockResolvedValue([
+      { id: "ma1", remetente: "cliente", texto: "[🎤 Áudio]", tipo_media: "audio", media_url: "https://cdn.supabase.co/audio.ogg", criado_em: "2026-01-10T10:00:00Z" },
+    ]);
+    renderPage();
+
+    await waitFor(() => {
+      expect(document.querySelector("audio[src='https://cdn.supabase.co/audio.ogg']")).not.toBeNull();
+    });
+    expect(screen.queryByText("[🎤 Áudio]")).toBeNull();
   });
 
   it("nao envia mensagem vazia", async () => {

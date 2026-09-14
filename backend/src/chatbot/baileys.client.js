@@ -1,4 +1,4 @@
-import makeWASocket, { DisconnectReason, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
+import makeWASocket, { DisconnectReason, makeCacheableSignalKeyStore, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { useEncryptedMultiFileAuthState } from "./encrypted-auth-state.js";
 import { createRequire } from "module";
 import { Boom } from "@hapi/boom";
@@ -28,6 +28,7 @@ let connectionState = {
 };
 
 let onMessageHandler = null;
+let onMediaMessageHandler = null;
 let intentionalDisconnect = false;
 let socketId = 0;
 let desconexaoNotificada = false;
@@ -81,6 +82,10 @@ const baileysLogger = pino({ level: "silent" });
 
 export function setOnMessageHandler(handler) {
   onMessageHandler = handler;
+}
+
+export function setOnMediaMessageHandler(handler) {
+  onMediaMessageHandler = handler;
 }
 
 export function getConnectionState() {
@@ -374,6 +379,24 @@ export async function startBaileys(tenantId) {
         text = msg.message.extendedTextMessage.text;
       }
 
+      if (!text && msg.message?.audioMessage) {
+        const mimetype = msg.message.audioMessage.mimetype || "audio/ogg; codecs=opus";
+        const pushName = msg.pushName || "Cliente";
+        try {
+          const buffer = await downloadMediaMessage(msg, "buffer", {}, {
+            logger: baileysLogger,
+            reuploadRequest: (m) => (typeof socket?.updateMediaMessage === "function" ? socket.updateMediaMessage(m) : m),
+          });
+          logger.info({ jidSuffix: remoteJid?.split("@")[1], size: buffer?.length || 0, mimetype }, "Áudio recebido");
+          if (onMediaMessageHandler) {
+            await onMediaMessageHandler(tenantId, remoteJid, pushName, buffer, mimetype);
+          }
+        } catch (err) {
+          logger.error({ err, phoneSuffix: remoteJid?.split("@")[0]?.slice(-4) }, "Erro ao processar áudio recebido");
+        }
+        continue;
+      }
+
       if (!text || text === "") continue;
 
       if (text.length > MAX_MENSAGEM_LENGTH) {
@@ -453,6 +476,23 @@ export async function sendWhatsAppMessage(jid, text, origem = "bot", tenantId = 
       logger.warn({ err }, "Erro ao registrar mensagem enviada no histórico");
     }
   }
+}
+
+export async function sendWhatsAppAudio(jid, buffer, mimetype, tenantId = null) {
+  if (!socket) throw new Error("WhatsApp não conectado");
+  if (tenantId && currentTenantId !== tenantId) {
+    throw new Error("WhatsApp de outro estabelecimento conectado");
+  }
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error("Áudio inválido ou vazio");
+  }
+  const audioMeta = {
+    audio: buffer,
+    mimetype: String(mimetype ?? "").split(";")[0] || "audio/ogg; codecs=opus",
+    ptt: true,
+  };
+  await socket.sendMessage(jid, audioMeta);
+  logger.info({ jidSuffix: jid?.split("@")[1], size: buffer.length }, "Áudio enviado como nota de voz");
 }
 
 export async function sendButtons(jid, text, buttons, footer) {
