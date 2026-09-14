@@ -104,6 +104,19 @@ describe("chatbot.controller - resetSession", () => {
 describe("chatbot.controller - listSessions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID });
+  });
+
+  it("retorna lista vazia e nao consulta sessoes quando WhatsApp desconectado", async () => {
+    baileysClient.getConnectionState.mockReturnValue({ status: "disconnected", tenantId: null });
+
+    const req = { tenantId: TENANT_ID, query: {} };
+    const res = mockRes();
+
+    await listSessions(req, res);
+
+    expect(sessionService.listarSessoes).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ data: [], total: 0, conectado: false });
   });
 
   it("repassa parametros de paginacao, filtro e ordem", async () => {
