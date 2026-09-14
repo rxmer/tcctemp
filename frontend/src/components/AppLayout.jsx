@@ -105,6 +105,7 @@ export function AppLayout() {
   const navRef = useRef(null);
   const userRef = useRef(null);
   const hoverCloseTimer = useRef(null);
+  const userHoverCloseTimer = useRef(null);
 
   function abrirNoHover(label) {
     if (hoverCloseTimer.current) {
@@ -119,8 +120,22 @@ export function AppLayout() {
     hoverCloseTimer.current = setTimeout(() => setOpenMenu(null), 150);
   }
 
+  function abrirUserMenu() {
+    if (userHoverCloseTimer.current) {
+      clearTimeout(userHoverCloseTimer.current);
+      userHoverCloseTimer.current = null;
+    }
+    setUserMenuOpen(true);
+  }
+
+  function fecharUserMenuComAtraso() {
+    if (userHoverCloseTimer.current) clearTimeout(userHoverCloseTimer.current);
+    userHoverCloseTimer.current = setTimeout(() => setUserMenuOpen(false), 150);
+  }
+
   useEffect(() => () => {
     if (hoverCloseTimer.current) clearTimeout(hoverCloseTimer.current);
+    if (userHoverCloseTimer.current) clearTimeout(userHoverCloseTimer.current);
   }, []);
 
   useEffect(() => {
@@ -242,7 +257,10 @@ export function AppLayout() {
           <button className={styles.iconBtn} onClick={toggleTheme} title={theme === "dark" ? "Modo claro" : "Modo escuro"}>
             {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
-          <div className={styles.navGroupWrap} ref={userRef}>
+          <div className={styles.navGroupWrap} ref={userRef}
+            onMouseEnter={abrirUserMenu}
+            onMouseLeave={fecharUserMenuComAtraso}
+          >
             <button
               className={`${styles.userBtn} ${userMenuOpen ? styles.navLinkActive : ""}`}
               onClick={() => setUserMenuOpen(!userMenuOpen)}
