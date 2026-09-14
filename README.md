@@ -49,7 +49,8 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Expediente** — horários por dia da semana (admin)
 - **Feriados** — bloqueio de datas especiais (admin)
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
-- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 5 min de inatividade
+- **Comunicados** — envio de mensagens em massa via WhatsApp com filtros de destinatários. Histórico de disparos limitado ao número do WhatsApp conectado e tela bloqueada quando não há conexão (mostra orientação de conexão no lugar)
+- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Datas bloqueadas (feriados/recesso) são removidas das opções de data e o bot orienta o cliente ao escolhê-las. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 5 min de inatividade
 - **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente e polling a cada 5s
 - **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas). Sino com ações rápidas para agendamentos passados (marcar falta) e conversas WhatsApp
@@ -127,11 +128,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 319 testes (23 arquivos)
-cd frontend && npm test   # 277 testes (41 arquivos)
+cd backend && npm test    # 330 testes (23 arquivos)
+cd frontend && npm test   # 292 testes (43 arquivos)
 ```
 
-> **596 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **622 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
