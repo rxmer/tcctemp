@@ -6,6 +6,7 @@ import { PageHeader, Button, Alert } from "../components/ui";
 import { QRCodeCanvas } from "qrcode.react";
 import styles from "../styles/pages/whatsapp.module.css";
 import { CheckCircle2, Loader2, Smartphone } from "lucide-react";
+import { formatPhone } from "../utils/formatPhone";
 
 const STATUS_LABELS = {
   disconnected: { label: "Desconectado", cls: styles.disconnected },
@@ -14,19 +15,6 @@ const STATUS_LABELS = {
   reconnecting: { label: "Reconectando...", cls: styles.reconnecting },
   connecting: { label: "Conectando...", cls: styles.reconnecting },
 };
-
-function formatarNumero(num) {
-  const d = String(num).replace(/\D/g, "");
-  if (d.startsWith("55") && d.length >= 12 && d.length <= 13) {
-    const rest = d.slice(2);
-    const ddd = rest.slice(0, 2);
-    const tel = rest.slice(2);
-    return tel.length >= 9
-      ? `+55 (${ddd}) ${tel.slice(0, 5)}-${tel.slice(5)}`
-      : `+55 (${ddd}) ${tel.slice(0, 4)}-${tel.slice(4)}`;
-  }
-  return `+${d}`;
-}
 
 export function WhatsApp() {
   const [state, setState] = useState({ status: "disconnected" });
@@ -179,7 +167,7 @@ export function WhatsApp() {
               <span className={styles.infoLabel}>Número conectado</span>
               <span className={styles.infoValue}>
                 {state.phoneNumber
-                  ? formatarNumero(state.phoneNumber)
+                  ? formatPhone(state.phoneNumber)
                   : "—"}
               </span>
             </div>

@@ -3,9 +3,10 @@ import { useLocation } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
 import { usePolling } from "../hooks/usePolling";
 import { comunicadosService } from "../services/comunicados.service";
+import { whatsappService } from "../services/whatsapp.service";
 import { Button, PageHeader, Alert } from "../components/ui";
 import { Card, CardHeader, styles as crud } from "../components/crud";
-import { Megaphone, CheckCircle2, XCircle, Loader2, Clock } from "lucide-react";
+import { Megaphone, CheckCircle2, XCircle, Loader2, Clock, Smartphone } from "lucide-react";
 
 const FILTROS = [
   { value: "todos", label: "Todos os clientes com telefone" },
@@ -28,6 +29,7 @@ export function Comunicados() {
   const [enviando, setEnviando] = useState(false);
   const [comunicados, setComunicados] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [conectado, setConectado] = useState(false);
   const mounted = useRef(true);
   const inFlight = useRef(false);
 
@@ -47,7 +49,17 @@ export function Comunicados() {
 
   useEffect(() => {
     mounted.current = true;
-    carregarLista();
+    whatsappService
+      .getStatus()
+      .then((st) => {
+        if (!mounted.current) return;
+        const online = st?.status === "connected";
+        setConectado(online);
+        if (online) carregarLista();
+      })
+      .catch(() => {
+        if (mounted.current) setConectado(false);
+      });
     return () => {
       mounted.current = false;
     };
@@ -105,6 +117,22 @@ export function Comunicados() {
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
+      {!conectado ? (
+        <div className={crud.pageGrid}>
+          <Card>
+            <CardHeader
+              title="Comunicados"
+              subtitle="É necessário conectar o WhatsApp para enviar comunicados e visualizar o histórico de disparos"
+            />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "32px 16px", color: "var(--text-secondary)", textAlign: "center" }}>
+              <Smartphone size={40} style={{ opacity: 0.5 }} />
+              <p style={{ margin: 0, fontSize: 14 }}>
+                Nenhum comunicado disponível. Conecte o WhatsApp para enviar comunicados e ver o histórico de disparos.
+              </p>
+            </div>
+          </Card>
+        </div>
+      ) : (
       <div className={crud.pageGrid + " responsiveGrid"} style={{ gridTemplateColumns: "1fr 1.5fr" }}>
         <Card>
           <CardHeader title="Novo comunicado" subtitle="A mensagem é enviada com o nome da empresa no topo" />
@@ -177,6 +205,7 @@ export function Comunicados() {
           )}
         </Card>
       </div>
+      )}
     </>
   );
 }

@@ -1294,6 +1294,78 @@ describe("chatbot.service", () => {
     });
   });
 
+  describe("processMessage - data bloqueada na confirmacao", () => {
+    it("deve informar feriado quando criarAgendamento rejeita por data bloqueada", async () => {
+      const dataFuturaConfirm = dataFutura(5);
+      const session = buildSession({
+        state: "CONFIRMANDO_AGENDAMENTO",
+        cliente_id: 1,
+        state_data: { servico_id: 1, veiculo_id: 1, data_agendamento: dataFuturaConfirm, hora_agendamento: "10:00", servicoInfo: { nome_servico: "Lavagem", preco_base: 50 }, veiculoInfo: { marca: "Fiat", modelo: "Uno", placa: "ABC-1234" } },
+      });
+
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({ maybeSingle: vi.fn().mockResolvedValue({ data: session, error: null }) });
+        }
+        if (table === "clientes") {
+          return mockQuery({ maybeSingle: vi.fn().mockResolvedValue({ data: { cliente_id: 1 }, error: null }) });
+        }
+        if (table === "veiculos") {
+          return mockQuery({ maybeSingle: vi.fn().mockResolvedValue({ data: { veiculo_id: 1 }, error: null }) });
+        }
+        if (table === "usuarios") {
+          return mockQuery({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: "admin-1" }, error: null }) });
+        }
+        if (table === "datas_bloqueadas") {
+          return mockQuery({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null }) });
+        }
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "confirmar", "João");
+
+      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("bloqueado (feriado/recesso)")
+      );
+    });
+  });
+
+  describe("processMessage - data bloqueada na lista de datas", () => {
+    it("deve remover datas bloqueadas dos botoes de escolha de data", async () => {
+      const bloqueada = dataFutura(3);
+
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession({
+              state: "ESCOLHENDO_VEICULO",
+              state_data: { servico_id: 1, veiculos: [{ veiculo_id: 1, marca: "Fiat", modelo: "Uno", placa: "ABC-1234" }] },
+            }), error: null }),
+          });
+        }
+        if (table === "configuracao_expediente") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { abertura: "08:00", fechamento: "18:00" }, error: null }),
+          });
+        }
+        if (table === "datas_bloqueadas") {
+          return mockQuery({ then: (resolve) => resolve({ data: [{ data: bloqueada }], error: null }) });
+        }
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "1", "João");
+
+      expect(baileys.sendButtons).toHaveBeenCalled();
+      const chamadas = baileys.sendButtons.mock.calls.filter((c) => Array.isArray(c[2]));
+      expect(chamadas.length).toBeGreaterThan(0);
+      const botoesData = chamadas.flatMap(([, , buttons]) => buttons).filter((b) => b.id.startsWith("data_"));
+      expect(botoesData.some((b) => b.id === `data_${bloqueada}`)).toBe(false);
+      expect(botoesData.length).toBe(13);
+    });
+  });
+
   describe("processMessage - erro do Supabase", () => {
     it("deve capturar erro inesperado e informar usuario", async () => {
       supabaseAdmin.from.mockImplementation(() => {

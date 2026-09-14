@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   criarComunicado,
   processarDisparo,
+  listarComunicados,
 } from "../services/comunicados.service.js";
 import { supabaseAdmin } from "../config/supabase.js";
 import { getConnectionState, sendWhatsAppMessage } from "../chatbot/baileys.client.js";
@@ -35,7 +36,7 @@ function q(result = { data: [], error: null }) {
   return chain;
 }
 
-const CONECTADO = { status: "connected", tenantId: "t1" };
+const CONECTADO = { status: "connected", tenantId: "t1", phoneNumber: "18999999999" };
 
 describe("comunicadosService", () => {
   beforeEach(() => {
@@ -74,6 +75,7 @@ describe("comunicadosService", () => {
   it("cria disparo e monta JID com codigo do pais", async () => {
     const comunicado = { comunicado_id: 5, mensagem: "Fecharemos", total_destinatarios: 1 };
     const inserts = [];
+    const insertsComunicado = [];
     supabaseAdmin.from.mockImplementation((table, ) => {
       if (table === "clientes") {
         return q({
@@ -84,6 +86,10 @@ describe("comunicadosService", () => {
       if (table === "comunicados") {
         const c = q({ data: comunicado, error: null });
         c.maybeSingle.mockResolvedValue({ data: null, error: null });
+        c.insert.mockImplementation((row) => {
+          insertsComunicado.push(row);
+          return c;
+        });
         return c;
       }
       const chain = q({ data: [], error: null });
@@ -103,6 +109,7 @@ describe("comunicadosService", () => {
 
     expect(result.total_destinatarios).toBe(1);
     expect(inserts[0][0].jid).toBe("5511987654321@s.whatsapp.net");
+    expect(insertsComunicado[0].numero_origem).toBe("18999999999");
     expect(result.mensagem_montada).toContain("Esteticar");
   });
 
@@ -160,5 +167,25 @@ describe("comunicadosService", () => {
     expect(criarNotificacao).toHaveBeenCalledWith(
       expect.objectContaining({ tipo: "comunicado" })
     );
+  });
+
+  it("listarComunicados retorna vazio quando WhatsApp desconectado", async () => {
+    getConnectionState.mockReturnValue({ status: "disconnected", tenantId: null, phoneNumber: null });
+    const result = await listarComunicados("t1");
+    expect(result).toEqual([]);
+    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+  });
+
+  it("listarComunicados filtra pelo numero conectado", async () => {
+    const eqs = [];
+    const chain = q({ data: [{ comunicado_id: 1 }], error: null });
+    chain.eq = vi.fn((col, val) => {
+      eqs.push([col, val]);
+      return chain;
+    });
+    supabaseAdmin.from.mockReturnValue(chain);
+    await listarComunicados("t1");
+    expect(eqs).toContainEqual(["tenant_id", "t1"]);
+    expect(eqs).toContainEqual(["numero_origem", "18999999999"]);
   });
 });

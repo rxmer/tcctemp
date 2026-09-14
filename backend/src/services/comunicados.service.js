@@ -168,6 +168,7 @@ export async function criarComunicado({ tenantId, nomeEmpresa, mensagem, filtro 
     .from("comunicados")
     .insert({
       tenant_id: tenantId,
+      numero_origem: connState.phoneNumber,
       mensagem: mensagem.trim(),
       filtro,
       total_destinatarios: destinatarios.length,
@@ -201,10 +202,16 @@ export async function criarComunicado({ tenantId, nomeEmpresa, mensagem, filtro 
 }
 
 export async function listarComunicados(tenantId) {
+  const { status, tenantId: connTenantId, phoneNumber } = getConnectionState();
+  if (status !== "connected" || connTenantId !== tenantId || !phoneNumber) {
+    return [];
+  }
+
   const { data, error } = await supabaseAdmin
     .from("comunicados")
     .select("*")
     .eq("tenant_id", tenantId)
+    .eq("numero_origem", phoneNumber)
     .order("criado_em", { ascending: false })
     .limit(20);
 

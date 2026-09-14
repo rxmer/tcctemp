@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS comunicados (
   comunicado_id BIGSERIAL PRIMARY KEY,
   tenant_id UUID NOT NULL,
+  numero_origem TEXT,
   mensagem TEXT NOT NULL,
   filtro TEXT NOT NULL DEFAULT 'todos',
   total_destinatarios INT NOT NULL DEFAULT 0,

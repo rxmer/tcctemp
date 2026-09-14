@@ -4,6 +4,7 @@ import { criarSessao, buscarSessao, atualizarSessao, registrarMensagem, SESSION_
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
 import { criarAgendamento, atualizarAgendamento, verificarDisponibilidade, buscarDuracaoServico } from "../services/agendamentos.service.js";
+import { verificarDataBloqueada } from "../services/datas-bloqueadas.service.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -270,6 +271,9 @@ function converterMinutosParaHora(min) {
 }
 
 async function gerarHorariosDisponiveis(tenantId, data, servicoId = null) {
+  const bloqueada = await verificarDataBloqueada(tenantId, data);
+  if (bloqueada) return [];
+
   const diaSemana = new Date(data + "T12:00:00").getDay();
   const expediente = await listarExpediente(tenantId, diaSemana);
 
@@ -306,16 +310,32 @@ async function gerarDatasDisponiveis(tenantId) {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
+  const inicio = dataLocalISO(hoje);
+  const fim = dataLocalISO(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 14));
+
+  let bloqueadas = new Set();
+  try {
+    const { data } = await supabaseAdmin
+      .from("datas_bloqueadas")
+      .select("data")
+      .eq("tenant_id", tenantId)
+      .gte("data", inicio)
+      .lte("data", fim);
+    bloqueadas = new Set((data ?? []).map((b) => b.data));
+  } catch {
+    logger.warn("Falha ao buscar datas bloqueadas para o chatbot");
+  }
+
   for (let i = 1; i <= 14; i++) {
     const data = new Date(hoje);
     data.setDate(data.getDate() + i);
     const diaSemana = data.getDay();
     const expediente = await listarExpediente(tenantId, diaSemana);
     if (expediente) {
-      const y = data.getFullYear();
-      const m = String(data.getMonth() + 1).padStart(2, "0");
-      const d = String(data.getDate()).padStart(2, "0");
-      datas.push(`${y}-${m}-${d}`);
+      const iso = dataLocalISO(data);
+      if (!bloqueadas.has(iso)) {
+        datas.push(iso);
+      }
     }
   }
 
@@ -401,6 +421,9 @@ async function criarAgendamentoViaChat(session, stateData) {
   } catch (err) {
     if (err.message && err.message.includes("conflita")) {
       return { conflito: true };
+    }
+    if (err.message && err.message.includes("bloqueada")) {
+      return { bloqueada: true };
     }
     return null;
   }
@@ -990,6 +1013,17 @@ async function handleEscolhendoData(action, jid, session) {
     return;
   }
 
+  const bloqueada = await verificarDataBloqueada(session.tenant_id, dataFormatada);
+  if (bloqueada) {
+    await sendWhatsAppMessage(jid, "📅 Este dia está bloqueado (feriado/recesso). Escolha outra data.");
+    if (datas.length > 0) {
+      await sendButtons(jid, "*📅 Datas disponíveis:*", gerarButtonsDatas(datas), session.empresaNome);
+    } else {
+      await sendMenu(jid, session);
+    }
+    return;
+  }
+
   const horarios = await gerarHorariosDisponiveis(session.tenant_id, dataFormatada, stateData.servico_id);
   if (!horarios.length) {
     await sendWhatsAppMessage(jid, "Não há horários disponíveis nesta data. Escolha outra data.");
@@ -1116,7 +1150,19 @@ async function handleConfirmandoAgendamento(action, jid, session) {
 
   const result = await criarAgendamentoViaChat(session, stateData);
 
-  if (!result || result.conflito) {
+  if (!result) {
+    await sendWhatsAppMessage(jid, "❌ Erro ao criar agendamento. Tente novamente.");
+    await sendMenu(jid, session);
+    return;
+  }
+
+  if (result.bloqueada) {
+    await sendWhatsAppMessage(jid, "📅 Este dia está bloqueado (feriado/recesso). Escolha outra data.");
+    await sendMenu(jid, session);
+    return;
+  }
+
+  if (result.conflito) {
     await sendWhatsAppMessage(jid, "❌ Erro ao criar agendamento. Tente novamente.");
     await sendMenu(jid, session);
     return;

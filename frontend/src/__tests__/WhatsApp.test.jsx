@@ -57,7 +57,7 @@ describe("WhatsApp page", () => {
     whatsappService.getStatus.mockResolvedValue({ status: "connected", phoneNumber: "5511988887777" });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText("+55 (11) 98888-7777")).toBeInTheDocument();
+      expect(screen.getByText("(11) 98888-7777")).toBeInTheDocument();
     });
   });
 
