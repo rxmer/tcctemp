@@ -404,7 +404,8 @@ describe("chatbot.session", () => {
 
       await sessionService.limparSessoesExpiradas();
 
-      expect(selectQuery.not).toHaveBeenCalledWith("state", "in", ["MENU_PRINCIPAL", "FALANDO_COM_ATENDENTE"]);
+      expect(selectQuery.neq).toHaveBeenNthCalledWith(1, "state", "MENU_PRINCIPAL");
+      expect(selectQuery.neq).toHaveBeenNthCalledWith(2, "state", "FALANDO_COM_ATENDENTE");
       expect(updateQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({ state: "MENU_PRINCIPAL", state_data: {} })
       );

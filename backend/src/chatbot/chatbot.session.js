@@ -272,7 +272,8 @@ export async function limparSessoesExpiradas() {
     .eq("tenant_id", tenantId)
     .eq("ativo", true)
     .lt("ultima_atividade", limite)
-    .not("state", "in", ["MENU_PRINCIPAL", "FALANDO_COM_ATENDENTE"]);
+    .neq("state", "MENU_PRINCIPAL")
+    .neq("state", "FALANDO_COM_ATENDENTE");
 
   if (queryError) {
     logger.warn({ err: queryError }, "Erro ao buscar sessões expiradas");
