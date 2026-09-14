@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { Comunicados } from "../pages/comunicados";
 
 vi.mock("../hooks/useFeedback", () => ({
@@ -116,5 +116,32 @@ describe("Comunicados page", () => {
       expect(whatsappService.getStatus).toHaveBeenCalled();
     });
     expect(comunicadosService.listar).toHaveBeenCalled();
+  });
+
+  it("mostra botao Conectar WhatsApp quando desconectado", async () => {
+    whatsappService.getStatus.mockResolvedValue({ status: "disconnected" });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /conectar whatsapp/i })).toBeInTheDocument();
+    });
+  });
+
+  it("navega para /whatsapp ao clicar em Conectar WhatsApp", async () => {
+    whatsappService.getStatus.mockResolvedValue({ status: "disconnected" });
+    render(
+      <MemoryRouter initialEntries={["/comunicados"]}>
+        <Routes>
+          <Route path="/comunicados" element={<Comunicados />} />
+          <Route path="/whatsapp" element={<div>PAGINA WHATSAPP</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /conectar whatsapp/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /conectar whatsapp/i }));
+    await waitFor(() => {
+      expect(screen.getByText("PAGINA WHATSAPP")).toBeInTheDocument();
+    });
   });
 });

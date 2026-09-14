@@ -302,6 +302,7 @@
   display: grid;
   grid-template-columns: 1fr 1.8fr;
   gap: 18px;
+  align-items: start;
 }
 
 /* card empilhado acima do grid (ex: criar OS) */

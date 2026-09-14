@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
-import { PageHeader, SkeletonCard, Alert, Select, Pagination } from "../components/ui";
+import { PageHeader, SkeletonCard, Alert, Select, Pagination, Button } from "../components/ui";
 import styles from "../styles/pages/whatsapp.module.css";
 import { formatPhone } from "../utils/formatPhone";
 
@@ -48,6 +48,7 @@ export function WhatsAppConversas() {
   const [busca, setBusca] = useState("");
   const [buscaInput, setBuscaInput] = useState("");
   const [conectado, setConectado] = useState(true);
+  const [statusCheckado, setStatusCheckado] = useState(false);
   const { feedback, showFeedback } = useFeedback();
   const navigate = useNavigate();
   useDebouncedEffect(() => {
@@ -61,12 +62,18 @@ export function WhatsAppConversas() {
       .getStatus()
       .then((st) => { if (ativo) setConectado(st?.status === "connected"); })
       .catch(() => { if (ativo) setConectado(false); })
-      .finally(() => { if (ativo) setLoading(false); });
+      .finally(() => {
+        if (ativo) {
+          setStatusCheckado(true);
+          setLoading(false);
+        }
+      });
 
     return () => { ativo = false; };
   }, []);
 
   useEffect(() => {
+    if (!statusCheckado) return;
     if (!conectado) {
       setSessions([]);
       setTotal(0);
@@ -99,7 +106,7 @@ export function WhatsAppConversas() {
 
     carregar();
     return () => { ativo = false; };
-  }, [conectado, page, ordem, estado, busca]);
+  }, [conectado, statusCheckado, page, ordem, estado, busca]);
 
   function handleOrdem(e) {
     setPage(1);
@@ -126,38 +133,50 @@ export function WhatsAppConversas() {
           <p>{total} conversa(s) encontrada(s)</p>
         </div>
 
-        <div className={styles.toolbar}>
-          <input
-            type="search"
-            className={styles.toolbarSearch}
-            placeholder="Buscar por nome ou telefone..."
-            value={buscaInput}
-            onChange={(e) => setBuscaInput(e.target.value)}
-            aria-label="Buscar conversas"
-          />
-          <Select
-            name="ordem"
-            aria-label="Ordenar conversas"
-            value={ordem}
-            onChange={handleOrdem}
-            options={ORDEM_OPCOES}
-            placeholder={null}
-            wrapperClassName={styles.toolbarField}
-            className={`input-field ${styles.toolbarSelect}`}
-          />
-          <Select
-            name="estado"
-            aria-label="Filtrar por situação"
-            value={estado}
-            onChange={handleEstado}
-            options={ESTADO_OPCOES}
-            placeholder="Todas as situações"
-            wrapperClassName={styles.toolbarField}
-            className={`input-field ${styles.toolbarSelect}`}
-          />
-        </div>
+        {conectado && (
+          <div className={styles.toolbar}>
+            <input
+              type="search"
+              className={styles.toolbarSearch}
+              placeholder="Buscar por nome ou telefone..."
+              value={buscaInput}
+              onChange={(e) => setBuscaInput(e.target.value)}
+              aria-label="Buscar conversas"
+            />
+            <Select
+              name="ordem"
+              aria-label="Ordenar conversas"
+              value={ordem}
+              onChange={handleOrdem}
+              options={ORDEM_OPCOES}
+              placeholder={null}
+              wrapperClassName={styles.toolbarField}
+              className={`input-field ${styles.toolbarSelect}`}
+            />
+            <Select
+              name="estado"
+              aria-label="Filtrar por situação"
+              value={estado}
+              onChange={handleEstado}
+              options={ESTADO_OPCOES}
+              placeholder="Todas as situações"
+              wrapperClassName={styles.toolbarField}
+              className={`input-field ${styles.toolbarSelect}`}
+            />
+          </div>
+        )}
 
-        {loading ? (
+        {!conectado ? (
+          <div className={styles.emptyState}>
+            <p>WhatsApp não conectado.</p>
+            <p style={{ marginTop: 4 }}>Conecte para visualizar e responder as conversas do chatbot.</p>
+            <div style={{ marginTop: 16 }}>
+              <Button className="btn-whatsapp" onClick={() => navigate("/whatsapp")}>
+                Conectar WhatsApp
+              </Button>
+            </div>
+          </div>
+        ) : loading ? (
           <div style={{ padding: 16 }}><SkeletonCard lines={4} /></div>
         ) : sessions.length === 0 ? (
           <div className={styles.emptyState}>

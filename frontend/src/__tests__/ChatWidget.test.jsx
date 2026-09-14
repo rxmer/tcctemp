@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ChatWidget } from "../components/ChatWidget";
 
 vi.mock("../services/whatsapp.service", () => ({
@@ -139,5 +139,26 @@ describe("ChatWidget", () => {
     fireEvent.click(screen.getByTitle("Conversas WhatsApp"));
 
     expect(await screen.findByText(/Nenhuma conversa ativa/)).toBeInTheDocument();
+  });
+
+  it("fecha o painel e navega para /whatsapp ao clicar em Conectar WhatsApp", async () => {
+    whatsappService.getStatus.mockResolvedValue(DESCONECTADO);
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<ChatWidget />} />
+          <Route path="/whatsapp" element={<div>PAGINA WHATSAPP</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTitle("Conversas WhatsApp"));
+    await screen.findByText("Conectar WhatsApp");
+
+    fireEvent.click(screen.getByText("Conectar WhatsApp"));
+
+    expect(await screen.findByText("PAGINA WHATSAPP")).toBeInTheDocument();
+    expect(screen.queryByText("Conversas WhatsApp")).not.toBeInTheDocument();
   });
 });

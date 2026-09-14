@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
 import { usePolling } from "../hooks/usePolling";
 import { comunicadosService } from "../services/comunicados.service";
@@ -24,6 +24,7 @@ const STATUS_LABEL = {
 export function Comunicados() {
   const { feedback, showFeedback } = useFeedback();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mensagem, setMensagem] = useState(location.state?.mensagem ?? "");
   const [filtro, setFiltro] = useState("todos");
   const [enviando, setEnviando] = useState(false);
@@ -129,6 +130,9 @@ export function Comunicados() {
               <p style={{ margin: 0, fontSize: 14 }}>
                 Nenhum comunicado disponível. Conecte o WhatsApp para enviar comunicados e ver o histórico de disparos.
               </p>
+              <Button className="btn-whatsapp" onClick={() => navigate("/whatsapp")}>
+                Conectar WhatsApp
+              </Button>
             </div>
           </Card>
         </div>

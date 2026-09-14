@@ -158,6 +158,11 @@ export function ChatWidget() {
     }
   }
 
+  function irConectar() {
+    setOpen(false);
+    navigate("/whatsapp");
+  }
+
   return (
     <>
       {open && <div className={styles.overlay} onClick={handleToggle} />}
@@ -240,7 +245,7 @@ export function ChatWidget() {
                       <p>Conecte o WhatsApp para visualizar e responder as conversas.</p>
                       <button
                         className={styles.connectBtn}
-                        onClick={() => navigate("/whatsapp")}
+                        onClick={irConectar}
                       >
                         Conectar WhatsApp
                       </button>

@@ -335,6 +335,19 @@ select.input-field option {
   background: var(--accent-dim);
 }
 
+.btn-whatsapp {
+  background: #25d366;
+  color: #fff;
+}
+.btn-whatsapp:not(:disabled):hover {
+  background: #1ebe5b;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.35);
+}
+.btn-whatsapp:not(:disabled):active {
+  transform: translateY(0);
+}
+
 .btn-full {
   width: 100%;
 }
