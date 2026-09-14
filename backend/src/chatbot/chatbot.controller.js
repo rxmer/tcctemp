@@ -96,6 +96,10 @@ export async function listSessions(req, res) {
 }
 
 export async function getUnreadCount(req, res) {
+  const state = baileysClient.getConnectionState();
+  if (state.status !== "connected" || state.tenantId !== req.tenantId) {
+    return res.json({ total: 0, sessoes: [] });
+  }
   const result = await sessionService.contarNaoLidas(req.tenantId);
   res.json(result);
 }

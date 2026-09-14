@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePolling } from "../hooks/usePolling";
 import { whatsappService } from "../services/whatsapp.service";
 import styles from "./ChatWidget.module.css";
@@ -21,16 +22,10 @@ function estadoLabel(estado) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function formatPhone(phone) {
-  if (!phone) return "";
-  const d = phone.replace(/\D/g, "");
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return phone;
-}
-
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [conectado, setConectado] = useState(false);
+  const conectadoRef = useRef(false);
   const [unread, setUnread] = useState({ total: 0, sessoes: [] });
   const [sessoes, setSessoes] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
@@ -38,15 +33,43 @@ export function ChatWidget() {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const bubblesRef = useRef(null);
+  const navigate = useNavigate();
 
   const carregarUnread = useCallback(async () => {
+    if (!conectadoRef.current) {
+      setUnread({ total: 0, sessoes: [] });
+      return;
+    }
     try {
       const data = await whatsappService.getUnreadCount();
       setUnread(data);
     } catch { /* silencioso */ }
   }, []);
 
+  const carregarStatus = useCallback(async () => {
+    try {
+      const st = await whatsappService.getStatus();
+      const online = st?.status === "connected";
+      conectadoRef.current = online;
+      setConectado(online);
+      if (online) {
+        await carregarUnread();
+      } else {
+        setUnread({ total: 0, sessoes: [] });
+        setSessoes([]);
+        setActiveSession(null);
+      }
+    } catch {
+      conectadoRef.current = false;
+      setConectado(false);
+    }
+  }, [carregarUnread]);
+
   const carregarSessoes = useCallback(async () => {
+    if (!conectadoRef.current) {
+      setSessoes([]);
+      return;
+    }
     try {
       const data = await whatsappService.listSessions();
       setSessoes(Array.isArray(data) ? data : (data?.data ?? []));
@@ -62,19 +85,22 @@ export function ChatWidget() {
   }, [activeSession]);
 
   useEffect(() => {
-    carregarUnread();
-  }, [carregarUnread]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    carregarStatus();
+  }, [carregarStatus]);
 
-  usePolling(carregarUnread, 30000);
+  usePolling(carregarStatus, 30000);
 
   useEffect(() => {
     if (open && !activeSession) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       carregarSessoes();
     }
-  }, [open, activeSession, carregarSessoes]);
+  }, [open, activeSession, conectado, carregarSessoes]);
 
   useEffect(() => {
     if (activeSession) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       carregarMensagens();
     }
   }, [activeSession, carregarMensagens]);
@@ -123,8 +149,10 @@ export function ChatWidget() {
   }
 
   function handleToggle() {
-    setOpen((v) => !v);
-    if (!open) {
+    const proximo = !open;
+    setOpen(proximo);
+    if (proximo) {
+      carregarStatus();
       setActiveSession(null);
       setMensagens([]);
     }
@@ -201,7 +229,23 @@ export function ChatWidget() {
               </div>
               <div className={styles.sessionList}>
                 {sessoes.length === 0 ? (
-                  <div className={styles.emptyState}>Nenhuma conversa ativa.</div>
+                  conectado ? (
+                    <div className={styles.emptyState}>
+                      Nenhuma conversa ativa.
+                      <br />
+                      As conversas associadas a este número aparecerão aqui.
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Conecte o WhatsApp para visualizar e responder as conversas.</p>
+                      <button
+                        className={styles.connectBtn}
+                        onClick={() => navigate("/whatsapp")}
+                      >
+                        Conectar WhatsApp
+                      </button>
+                    </div>
+                  )
                 ) : (
                   sessoes.map((s) => {
                     const naoLidas = unread.sessoes?.find((u) => u.session_id === s.id)?.nao_lidas ?? 0;
@@ -229,7 +273,7 @@ export function ChatWidget() {
 
       <button className={styles.widgetBtn} onClick={handleToggle} title="Conversas WhatsApp">
         <MessageCircle size={26} />
-        {unread.total > 0 && <span className={styles.badge}>{unread.total > 99 ? "99+" : unread.total}</span>}
+        {conectado && unread.total > 0 && <span className={styles.badge}>{unread.total > 99 ? "99+" : unread.total}</span>}
       </button>
     </>
   );

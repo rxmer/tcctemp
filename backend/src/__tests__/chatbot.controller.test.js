@@ -3,7 +3,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import * as baileysClient from "../chatbot/baileys.client.js";
 import * as chatbotService from "../chatbot/chatbot.service.js";
 import * as sessionService from "../chatbot/chatbot.session.js";
-import { resetSession, listSessions } from "../chatbot/chatbot.controller.js";
+import { resetSession, listSessions, getUnreadCount } from "../chatbot/chatbot.controller.js";
 
 const TENANT_ID = "tenant-1";
 const REMOTE_JID = "5511999999999@s.whatsapp.net";
@@ -156,5 +156,49 @@ describe("chatbot.controller - listSessions", () => {
       estado: null,
       busca: "",
     });
+  });
+});
+
+describe("chatbot.controller - getUnreadCount", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("retorna zero sem consultar quando WhatsApp desconectado", async () => {
+    baileysClient.getConnectionState.mockReturnValue({ status: "disconnected", tenantId: null });
+
+    const req = { tenantId: TENANT_ID };
+    const res = mockRes();
+
+    await getUnreadCount(req, res);
+
+    expect(sessionService.contarNaoLidas).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ total: 0, sessoes: [] });
+  });
+
+  it("retorna zero quando outro numero/tenant esta conectado", async () => {
+    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: "tenant-outro" });
+
+    const req = { tenantId: TENANT_ID };
+    const res = mockRes();
+
+    await getUnreadCount(req, res);
+
+    expect(sessionService.contarNaoLidas).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ total: 0, sessoes: [] });
+  });
+
+  it("retorna a contagem quando o numero do tenant esta conectado", async () => {
+    const resultado = { total: 3, sessoes: [{ session_id: "sess-1", nao_lidas: 3 }] };
+    sessionService.contarNaoLidas.mockResolvedValue(resultado);
+    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID });
+
+    const req = { tenantId: TENANT_ID };
+    const res = mockRes();
+
+    await getUnreadCount(req, res);
+
+    expect(sessionService.contarNaoLidas).toHaveBeenCalledWith(TENANT_ID);
+    expect(res.json).toHaveBeenCalledWith(resultado);
   });
 });
