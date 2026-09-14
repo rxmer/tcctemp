@@ -49,9 +49,11 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Expediente** — horários por dia da semana (admin)
 - **Feriados** — bloqueio de datas especiais (admin)
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
-- **Comunicados** — envio de mensagens em massa via WhatsApp com filtros de destinatários. Histórico de disparos limitado ao número do WhatsApp conectado e tela bloqueada quando não há conexão (mostra orientação de conexão no lugar)
+- **Comunicados** — envio de mensagens em massa via WhatsApp com filtros de destinatários. Histórico de disparos limitado ao número do WhatsApp conectado e tela bloqueada quando não há conexão (mostra orientação com botão para ir à tela de conexão)
+- **WhatsApp** — tela de conexão com QR Code de 60s, rotação automática limitada a 3 (~3 min) e recarga manual quando expirado; as conversas, comunicados e o widget dependem do número conectado
 - **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Datas bloqueadas (feriados/recesso) são removidas das opções de data e o bot orienta o cliente ao escolhê-las. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 5 min de inatividade
-- **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente e polling a cada 5s
+- **Conversas WhatsApp** — histórico de conversas com busca, filtros por situação, ordenação e paginação, além da página de detalhe com o histórico de mensagens do chatbot
+- **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente, polling a cada 5s e CTA "Conectar WhatsApp" quando não há número conectado (direciona à tela de conexão e fecha o painel)
 - **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas). Sino com ações rápidas para agendamentos passados (marcar falta) e conversas WhatsApp
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
@@ -121,6 +123,8 @@ npm run dev
 3. O chatbot estará ativo para os clientes
 4. Widget de conversas aparece no canto inferior direito para acompanhar e responder mensagens
 
+O QR Code tem validade de 60s com rotação automática limitada a 3 (~3 min); ao expirar, a tela oferece a opção de recarregar para gerar um novo.
+
 ### 6. Banco de Dados
 
 O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, execute o conteúdo no SQL Editor do Supabase.
@@ -128,11 +132,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 330 testes (23 arquivos)
-cd frontend && npm test   # 292 testes (43 arquivos)
+cd backend && npm test    # 341 testes (23 arquivos)
+cd frontend && npm test   # 302 testes (44 arquivos)
 ```
 
-> **622 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **643 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
