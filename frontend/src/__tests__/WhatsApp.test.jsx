@@ -3,9 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { WhatsApp } from "../pages/whatsapp";
 
 vi.mock("../services/whatsapp.service", () => ({
-  whatsappService: { getStatus: vi.fn(), connect: vi.fn(), disconnect: vi.fn() },
+  whatsappService: { getStatus: vi.fn(), connect: vi.fn(), disconnect: vi.fn().mockResolvedValue({}) },
 }));
 vi.mock("../hooks/useFeedback", () => ({ useFeedback: vi.fn() }));
+vi.mock("../hooks/useConfirm", () => ({ useConfirm: vi.fn() }));
 vi.mock("../styles/pages/whatsapp.module.css", () => ({
   default: {
     waGrid: "waGrid", statusCard: "statusCard", statusLabel: "statusLabel",
@@ -18,6 +19,7 @@ vi.mock("../styles/pages/whatsapp.module.css", () => ({
 
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
+import { useConfirm } from "../hooks/useConfirm";
 
 function renderPage() {
   return render(<WhatsApp />);
@@ -27,6 +29,7 @@ describe("WhatsApp page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useFeedback.mockReturnValue({ feedback: null, showFeedback: vi.fn() });
+    useConfirm.mockReturnValue({ confirm: vi.fn().mockResolvedValue(true), ConfirmModal: () => null });
     whatsappService.getStatus.mockResolvedValue({ status: "disconnected" });
   });
 
@@ -92,5 +95,44 @@ describe("WhatsApp page", () => {
     whatsappService.getStatus.mockRejectedValue(new Error("Erro"));
     renderPage();
     await waitFor(() => { expect(showFeedback).toHaveBeenCalled(); });
+  });
+
+  it("exibe botao de desconectar ao conectar e chama disconnect", async () => {
+    whatsappService.getStatus.mockResolvedValue({ status: "connected" });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /desconectar e limpar sess/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Desconectar" }));
+    await waitFor(() => { expect(whatsappService.disconnect).toHaveBeenCalled(); });
+  });
+
+  it("limpar sessao confirma e chama disconnect com limpar=true", async () => {
+    const confirm = vi.fn().mockResolvedValue(true);
+    const showFeedback = vi.fn();
+    useConfirm.mockReturnValue({ confirm, ConfirmModal: () => null });
+    useFeedback.mockReturnValue({ feedback: null, showFeedback });
+    whatsappService.getStatus.mockResolvedValue({ status: "connected" });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /desconectar e limpar sess/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /desconectar e limpar sess/i }));
+    await waitFor(() => { expect(confirm).toHaveBeenCalled(); });
+    expect(whatsappService.disconnect).toHaveBeenCalledWith(true);
+    await waitFor(() => { expect(showFeedback).toHaveBeenCalledWith("success", "Desconectado e sessão limpa"); });
+  });
+
+  it("cancela dialogo de limpar sessao e nao desconecta", async () => {
+    const confirm = vi.fn().mockResolvedValue(false);
+    useConfirm.mockReturnValue({ confirm, ConfirmModal: () => null });
+    whatsappService.getStatus.mockResolvedValue({ status: "connected" });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /desconectar e limpar sess/i })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /desconectar e limpar sess/i }));
+    await waitFor(() => { expect(confirm).toHaveBeenCalled(); });
+    expect(whatsappService.disconnect).not.toHaveBeenCalled();
   });
 });

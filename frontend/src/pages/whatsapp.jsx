@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePolling } from "../hooks/usePolling";
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
+import { useConfirm } from "../hooks/useConfirm";
 import { PageHeader, Button, Alert } from "../components/ui";
 import { QRCodeCanvas } from "qrcode.react";
 import styles from "../styles/pages/whatsapp.module.css";
@@ -21,6 +22,7 @@ export function WhatsApp() {
   const [state, setState] = useState({ status: "disconnected" });
   const [loading, setLoading] = useState(false);
   const { feedback, showFeedback } = useFeedback();
+  const { confirm, ConfirmModal } = useConfirm();
   const mounted = useRef(true);
   const inFlight = useRef(false);
   const lastErrorShown = useRef(0);
@@ -69,11 +71,15 @@ export function WhatsApp() {
     }
   }
 
-  async function handleDisconnect() {
+  async function handleDisconnect(limpar = false) {
+    const ok = limpar
+      ? await confirm("Desconectar e apagar a sessão salva? Você precisará escanear o QR Code novamente para reconectar.")
+      : true;
+    if (!ok) return;
     try {
       setLoading(true);
-      await whatsappService.disconnect();
-      showFeedback("success", "Desconectado");
+      await whatsappService.disconnect(limpar);
+      showFeedback("success", limpar ? "Desconectado e sessão limpa" : "Desconectado");
       await carregarStatus();
     } catch (err) {
       showFeedback("error", err.message);
@@ -92,6 +98,7 @@ export function WhatsApp() {
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
+      <ConfirmModal />
 
       <div className={styles.grid}>
         <div className={styles.card}>
@@ -148,9 +155,14 @@ export function WhatsApp() {
               </Button>
             )}
             {state.status === "connected" && (
-              <Button variant="ghost" onClick={handleDisconnect} loading={loading} fullWidth>
-                Desconectar
-              </Button>
+              <>
+                <Button variant="ghost" onClick={() => handleDisconnect(false)} loading={loading} fullWidth>
+                  Desconectar
+                </Button>
+                <Button variant="ghost" onClick={() => handleDisconnect(true)} loading={loading} fullWidth>
+                  Desconectar e limpar sessão
+                </Button>
+              </>
             )}
           </div>
         </div>
