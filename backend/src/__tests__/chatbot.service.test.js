@@ -9,6 +9,7 @@ vi.mock("../chatbot/baileys.client.js", () => ({
   sendWhatsAppMessage: vi.fn(),
   sendButtons: vi.fn(),
   sendList: vi.fn(),
+  getConnectionState: vi.fn().mockReturnValue({ status: "connected", tenantId: "tenant-1", phoneNumber: "18999999999" }),
 }));
 
 vi.mock("../services/notificacoes.service.js", () => ({
@@ -377,11 +378,10 @@ describe("chatbot.service", () => {
   });
 
   describe("processMessage - detectar intent natural", () => {
-    it("deve detectar servico pelo nome no MENU_PRINCIPAL", async () => {
+    it("deve pedir confirmacao ao detectar nome exato do servico", async () => {
       const servicos = [
-        { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
+        { servico_id: 1, nome_servico: "Lavagem Completa", preco_base: 80, duracao_min: 60 },
       ];
-      const novoCliente = { cliente_id: 99, nome: "João", telefone: "11999999999" };
 
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
@@ -394,15 +394,42 @@ describe("chatbot.service", () => {
             then: (resolve) => resolve({ data: servicos, error: null }),
           });
         }
-        if (table === "clientes") {
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "quero lavagem completa", "João");
+
+      expect(baileys.sendButtons).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Lavagem Completa"),
+        expect.arrayContaining([
+          expect.objectContaining({ id: "confirmar_servico" }),
+          expect.objectContaining({ id: "trocar_servico" }),
+        ]),
+        "Esteticar"
+      );
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("marca")
+      );
+    });
+
+    it("deve mostrar lista de servicos ao detectar palavra-chave generica", async () => {
+      const servicos = [
+        { servico_id: 1, nome_servico: "Lavagem Simples", preco_base: 40, duracao_min: 30 },
+        { servico_id: 2, nome_servico: "Lavagem Completa", preco_base: 80, duracao_min: 60 },
+        { servico_id: 3, nome_servico: "Lavagem Premium", preco_base: 120, duracao_min: 90 },
+      ];
+
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
           return mockQuery({
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            single: vi.fn().mockResolvedValue({ data: novoCliente, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
           });
         }
-        if (table === "veiculos") {
+        if (table === "servico") {
           return mockQuery({
-            then: (resolve) => resolve({ data: [], error: null }),
+            then: (resolve) => resolve({ data: servicos, error: null }),
           });
         }
         return mockQuery();
@@ -410,27 +437,34 @@ describe("chatbot.service", () => {
 
       await processMessage(TENANT_ID, REMOTE_JID, "quero lavar meu carro", "João");
 
-      expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
+      expect(baileys.sendList).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Serviços disponíveis"),
+        expect.any(String),
+        expect.any(Array),
+        "Esteticar"
+      );
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
         REMOTE_JID,
         expect.stringContaining("Identifiquei")
       );
     });
 
-    it("deve detectar servico por palavra-chave (lavar)", async () => {
-      const servicos = [
-        { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
-      ];
+    it("deve ir para selecao de marca apos confirmar o servico exato", async () => {
+      const session = buildSession({
+        state: "MENU_PRINCIPAL",
+        state_data: {
+          aguardando_confirmacao_servico: true,
+          servico_detectado: { servico_id: 1, nome_servico: "Lavagem Completa", preco_base: 80, duracao_min: 60 },
+        },
+      });
       const novoCliente = { cliente_id: 99, nome: "João", telefone: "11999999999" };
+      const insertMensagem = vi.fn().mockReturnValue(mockQuery());
 
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
           return mockQuery({
-            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
-          });
-        }
-        if (table === "servico") {
-          return mockQuery({
-            then: (resolve) => resolve({ data: servicos, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: session, error: null }),
           });
         }
         if (table === "clientes") {
@@ -444,49 +478,24 @@ describe("chatbot.service", () => {
             then: (resolve) => resolve({ data: [], error: null }),
           });
         }
+        if (table === "chatbot_mensagem") {
+          return mockQuery({ insert: insertMensagem });
+        }
         return mockQuery();
       });
 
-      await processMessage(TENANT_ID, REMOTE_JID, "preciso lavar", "João");
+      await processMessage(TENANT_ID, REMOTE_JID, "confirmar_servico", "João");
 
+      expect(insertMensagem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          remetente: "cliente",
+          texto: "Resposta: Sim, este (Lavagem Completa)",
+        })
+      );
       expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
         REMOTE_JID,
-        expect.stringContaining("Identifiquei")
+        expect.stringContaining("Lavagem Completa")
       );
-    });
-
-    it("deve ir para veiculo_novo se cliente existe mas nao tem veiculos", async () => {
-      const servicos = [
-        { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
-      ];
-      const clienteExistente = { cliente_id: 1, nome: "João", telefone: "11999999999" };
-
-      supabaseAdmin.from.mockImplementation((table) => {
-        if (table === "chatbot_session") {
-          return mockQuery({
-            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
-          });
-        }
-        if (table === "servico") {
-          return mockQuery({
-            then: (resolve) => resolve({ data: servicos, error: null }),
-          });
-        }
-        if (table === "clientes") {
-          return mockQuery({
-            maybeSingle: vi.fn().mockResolvedValue({ data: clienteExistente, error: null }),
-          });
-        }
-        if (table === "veiculos") {
-          return mockQuery({
-            then: (resolve) => resolve({ data: [], error: null }),
-          });
-        }
-        return mockQuery();
-      });
-
-      await processMessage(TENANT_ID, REMOTE_JID, "quero lavar", "João");
-
       expect(baileys.sendList).toHaveBeenCalledWith(
         REMOTE_JID,
         expect.stringContaining("*marca* do veículo"),
@@ -496,10 +505,14 @@ describe("chatbot.service", () => {
       );
     });
 
-    it("deve mostrar lista de veiculos se cliente existe e tem veiculos", async () => {
-      const servicos = [
-        { servico_id: 1, nome_servico: "Lavagem", preco_base: 50, duracao_min: 30 },
-      ];
+    it("deve mostrar lista de veiculos apos confirmar servico quando cliente tem veiculos", async () => {
+      const session = buildSession({
+        state: "MENU_PRINCIPAL",
+        state_data: {
+          aguardando_confirmacao_servico: true,
+          servico_detectado: { servico_id: 1, nome_servico: "Lavagem Completa", preco_base: 80, duracao_min: 60 },
+        },
+      });
       const clienteExistente = { cliente_id: 1, nome: "João", telefone: "11999999999" };
       const veiculos = [
         { veiculo_id: 10, placa: "ABC1234", marca: "Fiat", modelo: "Uno" },
@@ -508,12 +521,7 @@ describe("chatbot.service", () => {
       supabaseAdmin.from.mockImplementation((table) => {
         if (table === "chatbot_session") {
           return mockQuery({
-            maybeSingle: vi.fn().mockResolvedValue({ data: buildSession(), error: null }),
-          });
-        }
-        if (table === "servico") {
-          return mockQuery({
-            then: (resolve) => resolve({ data: servicos, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: session, error: null }),
           });
         }
         if (table === "clientes") {
@@ -529,7 +537,7 @@ describe("chatbot.service", () => {
         return mockQuery();
       });
 
-      await processMessage(TENANT_ID, REMOTE_JID, "quero lavar", "João");
+      await processMessage(TENANT_ID, REMOTE_JID, "1", "João");
 
       expect(baileys.sendList).toHaveBeenCalledWith(
         REMOTE_JID,
@@ -537,6 +545,47 @@ describe("chatbot.service", () => {
         expect.any(String),
         expect.any(Array),
         "Esteticar"
+      );
+    });
+
+    it("deve mostrar lista de servicos quando cliente escolhe trocar", async () => {
+      const session = buildSession({
+        state: "MENU_PRINCIPAL",
+        state_data: {
+          aguardando_confirmacao_servico: true,
+          servico_detectado: { servico_id: 1, nome_servico: "Lavagem Completa", preco_base: 80, duracao_min: 60 },
+        },
+      });
+      const servicos = [
+        { servico_id: 1, nome_servico: "Lavagem Completa", preco_base: 80, duracao_min: 60 },
+      ];
+
+      supabaseAdmin.from.mockImplementation((table) => {
+        if (table === "chatbot_session") {
+          return mockQuery({
+            maybeSingle: vi.fn().mockResolvedValue({ data: session, error: null }),
+          });
+        }
+        if (table === "servico") {
+          return mockQuery({
+            then: (resolve) => resolve({ data: servicos, error: null }),
+          });
+        }
+        return mockQuery();
+      });
+
+      await processMessage(TENANT_ID, REMOTE_JID, "trocar_servico", "João");
+
+      expect(baileys.sendList).toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Serviços disponíveis"),
+        expect.any(String),
+        expect.any(Array),
+        "Esteticar"
+      );
+      expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalledWith(
+        REMOTE_JID,
+        expect.stringContaining("Vamos agendar")
       );
     });
   });

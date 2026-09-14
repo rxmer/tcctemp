@@ -28,6 +28,8 @@ export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName
     if (error) logger.warn({ err: error }, "Erro ao desativar sessão anterior");
   }
 
+  const numeroOrigem = getConnectionState().phoneNumber || null;
+
   const { data, error } = await supabaseAdmin
     .from("chatbot_session")
     .insert({
@@ -35,6 +37,7 @@ export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName
       remote_jid: remoteJid,
       client_phone: clientPhone,
       client_name: clientName,
+      numero_origem: numeroOrigem,
       state: "MENU_PRINCIPAL",
       state_data: {},
     })
@@ -46,13 +49,18 @@ export async function criarSessao({ tenantId, remoteJid, clientPhone, clientName
 }
 
 export async function buscarSessao(tenantId, remoteJid) {
-  const { data, error } = await supabaseAdmin
+  const numeroOrigem = getConnectionState().phoneNumber || null;
+
+  let query = supabaseAdmin
     .from("chatbot_session")
     .select("*")
     .eq("tenant_id", tenantId)
     .eq("remote_jid", remoteJid)
-    .eq("ativo", true)
-    .maybeSingle();
+    .eq("ativo", true);
+
+  if (numeroOrigem) query = query.eq("numero_origem", numeroOrigem);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) throw new AppError(`Erro ao buscar sessão: ${error.message}`);
   return data;
@@ -91,8 +99,10 @@ const GRUPOS_ESTADO = {
   },
 };
 
-function aplicarFiltrosSessao(query, tenantId, estado, busca) {
+function aplicarFiltrosSessao(query, tenantId, estado, busca, numeroOrigem) {
   let q = query.eq("tenant_id", tenantId);
+
+  if (numeroOrigem) q = q.eq("numero_origem", numeroOrigem);
 
   if (estado) {
     const grupo = GRUPOS_ESTADO[estado];
@@ -109,7 +119,7 @@ function aplicarFiltrosSessao(query, tenantId, estado, busca) {
 
 export async function listarSessoes(
   tenantId,
-  { page = 1, limit = 20, ordem = "recentes", estado = null, busca = "" } = {}
+  { page = 1, limit = 20, ordem = "recentes", estado = null, busca = "", numeroOrigem = null } = {}
 ) {
   const pagina = Math.max(1, Number(page) || 1);
   const tamanho = Math.min(100, Math.max(1, Number(limit) || 20));
@@ -121,7 +131,8 @@ export async function listarSessoes(
       .select("id", { count: "exact", head: true }),
     tenantId,
     estado,
-    busca
+    busca,
+    numeroOrigem
   );
 
   if (countError) throw new AppError(`Erro ao listar sessões: ${countError.message}`);
@@ -130,7 +141,8 @@ export async function listarSessoes(
     supabaseAdmin.from("chatbot_session").select("*"),
     tenantId,
     estado,
-    busca
+    busca,
+    numeroOrigem
   );
 
   if (ordem === "nome") {
@@ -147,10 +159,11 @@ export async function listarSessoes(
   return { data: data ?? [], total: count ?? 0 };
 }
 
-export async function contarNaoLidas(tenantId) {
+export async function contarNaoLidas(tenantId, numeroOrigem) {
   try {
     const { data, error } = await supabaseAdmin.rpc("contar_nao_lidas", {
       p_tenant: tenantId,
+      p_numero: numeroOrigem ?? null,
     });
 
     if (!error) {
@@ -167,11 +180,15 @@ export async function contarNaoLidas(tenantId) {
     logger.warn({ err }, "Falha na RPC contar_nao_lidas, usando fallback");
   }
 
-  const { data: sessoes } = await supabaseAdmin
+  let sessoesQuery = supabaseAdmin
     .from("chatbot_session")
     .select("id")
     .eq("tenant_id", tenantId)
     .eq("ativo", true);
+
+  if (numeroOrigem) sessoesQuery = sessoesQuery.eq("numero_origem", numeroOrigem);
+
+  const { data: sessoes } = await sessoesQuery;
 
   if (!sessoes?.length) return { total: 0, sessoes: [] };
 
@@ -222,10 +239,16 @@ export async function registrarMensagem({ tenantId, sessionId, remetente, texto,
 }
 
 export async function registrarMensagemPorJid(remoteJid, texto, remetente = "bot") {
-  const { data } = await supabaseAdmin
+  const numeroOrigem = getConnectionState().phoneNumber || null;
+
+  let query = supabaseAdmin
     .from("chatbot_session")
     .select("id, tenant_id")
-    .eq("remote_jid", remoteJid)
+    .eq("remote_jid", remoteJid);
+
+  if (numeroOrigem) query = query.eq("numero_origem", numeroOrigem);
+
+  const { data } = await query
     .order("ultima_atividade", { ascending: false })
     .limit(1)
     .maybeSingle();

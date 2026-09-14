@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS chatbot_session (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
   remote_jid TEXT NOT NULL,
+  numero_origem TEXT,
   client_phone TEXT,
   client_name TEXT,
   cliente_id BIGINT REFERENCES clientes(cliente_id),
@@ -20,9 +21,11 @@ CREATE INDEX IF NOT EXISTS idx_chatbot_session_tenant ON chatbot_session(tenant_
 CREATE INDEX IF NOT EXISTS idx_chatbot_session_jid ON chatbot_session(remote_jid);
 CREATE INDEX IF NOT EXISTS idx_chatbot_session_ativo ON chatbot_session(ativo);
 CREATE INDEX IF NOT EXISTS idx_chatbot_session_ult_atv ON chatbot_session(ultima_atividade);
+CREATE INDEX IF NOT EXISTS idx_chatbot_session_numero_origem ON chatbot_session(tenant_id, numero_origem, ultima_atividade DESC);
 
--- Adiciona coluna em bancos onde a tabela já existia (idempotente)
+-- Adiciona colunas em bancos onde a tabela já existia (idempotente)
 ALTER TABLE chatbot_session ADD COLUMN IF NOT EXISTS atendente_engajado BOOLEAN DEFAULT FALSE;
+ALTER TABLE chatbot_session ADD COLUMN IF NOT EXISTS numero_origem TEXT;
 
 -- Atualizar sessões existentes que usam 'MENU' para 'MENU_PRINCIPAL'
 UPDATE chatbot_session SET state = 'MENU_PRINCIPAL' WHERE state = 'MENU';

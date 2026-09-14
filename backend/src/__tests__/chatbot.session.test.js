@@ -5,7 +5,7 @@ import { sendWhatsAppMessage } from "../chatbot/baileys.client.js";
 
 vi.mock("../chatbot/baileys.client.js", () => ({
   sendWhatsAppMessage: vi.fn().mockResolvedValue(true),
-  getConnectionState: vi.fn().mockReturnValue({ tenantId: "tenant-1", status: "connected" }),
+  getConnectionState: vi.fn().mockReturnValue({ tenantId: "tenant-1", status: "connected", phoneNumber: "18999999999" }),
 }));
 
 vi.mock("../chatbot/chatbot.media.js", () => ({
@@ -51,10 +51,11 @@ describe("chatbot.session", () => {
   describe("criarSessao", () => {
     it("deve criar nova sessao quando nao existe ativa", async () => {
       const expected = { id: SESSION_ID, state: "MENU_PRINCIPAL", state_data: {} };
-      supabaseAdmin.from.mockReturnValue(mockQuery({
+      const query = mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         single: vi.fn().mockResolvedValue({ data: expected, error: null }),
-      }));
+      });
+      supabaseAdmin.from.mockReturnValue(query);
 
       const result = await sessionService.criarSessao({
         tenantId: TENANT_ID,
@@ -64,6 +65,11 @@ describe("chatbot.session", () => {
       });
 
       expect(result).toEqual(expected);
+      expect(query.insert).toHaveBeenCalledWith(expect.objectContaining({
+        tenant_id: TENANT_ID,
+        remote_jid: REMOTE_JID,
+        numero_origem: "18999999999",
+      }));
     });
 
     it("deve desativar sessao anterior antes de criar nova", async () => {
@@ -110,12 +116,14 @@ describe("chatbot.session", () => {
   describe("buscarSessao", () => {
     it("deve retornar sessao ativa", async () => {
       const expected = { id: SESSION_ID, state: "MENU_PRINCIPAL", ativo: true };
-      supabaseAdmin.from.mockReturnValue(mockQuery({
+      const query = mockQuery({
         maybeSingle: vi.fn().mockResolvedValue({ data: expected, error: null }),
-      }));
+      });
+      supabaseAdmin.from.mockReturnValue(query);
 
       const result = await sessionService.buscarSessao(TENANT_ID, REMOTE_JID);
       expect(result).toEqual(expected);
+      expect(query.eq).toHaveBeenCalledWith("numero_origem", "18999999999");
     });
 
     it("deve retornar null quando nao existe", async () => {
@@ -191,6 +199,15 @@ describe("chatbot.session", () => {
       expect(countQuery.eq).toHaveBeenCalledWith("tenant_id", TENANT_ID);
       expect(dataQuery.order).toHaveBeenCalledWith("client_name", { ascending: true, nullsFirst: true });
       expect(dataQuery.range).toHaveBeenCalledWith(10, 19);
+    });
+
+    it("deve filtrar sessoes pelo numero conectado", async () => {
+      const { countQuery, dataQuery } = mockListar({ count: 1, data: [] });
+
+      await sessionService.listarSessoes(TENANT_ID, { numeroOrigem: "18999999999" });
+
+      expect(countQuery.eq).toHaveBeenCalledWith("numero_origem", "18999999999");
+      expect(dataQuery.eq).toHaveBeenCalledWith("numero_origem", "18999999999");
     });
 
     it("deve aplicar filtro por grupo de estado e busca", async () => {
@@ -319,6 +336,7 @@ describe("chatbot.session", () => {
 
       await sessionService.registrarMensagemPorJid(REMOTE_JID, "Texto", "atendente");
 
+      expect(query1.eq).toHaveBeenCalledWith("numero_origem", "18999999999");
       expect(query2.insert).toHaveBeenCalledWith({
         tenant_id: TENANT_ID,
         session_id: SESSION_ID,
@@ -391,10 +409,11 @@ describe("chatbot.session", () => {
         error: null,
       });
 
-      const result = await sessionService.contarNaoLidas(TENANT_ID);
+      const result = await sessionService.contarNaoLidas(TENANT_ID, "18999999999");
 
       expect(supabaseAdmin.rpc).toHaveBeenCalledWith("contar_nao_lidas", {
         p_tenant: TENANT_ID,
+        p_numero: "18999999999",
       });
       expect(result).toEqual({
         total: 3,
@@ -420,8 +439,9 @@ describe("chatbot.session", () => {
         .mockReturnValueOnce(queryUltimaMsg)
         .mockReturnValueOnce(queryCount);
 
-      const result = await sessionService.contarNaoLidas(TENANT_ID);
+      const result = await sessionService.contarNaoLidas(TENANT_ID, "18999999999");
 
+      expect(querySessoes.eq).toHaveBeenCalledWith("numero_origem", "18999999999");
       expect(result).toEqual({
         total: 2,
         sessoes: [{ session_id: SESSION_ID, nao_lidas: 2 }],

@@ -114,7 +114,7 @@ describe("chatbot.controller - resetSession", () => {
 describe("chatbot.controller - listSessions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID });
+    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID, phoneNumber: "18999999999" });
   });
 
   it("retorna lista vazia e nao consulta sessoes quando WhatsApp desconectado", async () => {
@@ -147,6 +147,7 @@ describe("chatbot.controller - listSessions", () => {
       ordem: "nome",
       estado: "atendente",
       busca: "João",
+      numeroOrigem: "18999999999",
     });
     expect(res.json).toHaveBeenCalledWith(resultado);
   });
@@ -165,6 +166,7 @@ describe("chatbot.controller - listSessions", () => {
       ordem: "recentes",
       estado: null,
       busca: "",
+      numeroOrigem: "18999999999",
     });
   });
 });
@@ -300,14 +302,14 @@ describe("chatbot.controller - getUnreadCount", () => {
   it("retorna a contagem quando o numero do tenant esta conectado", async () => {
     const resultado = { total: 3, sessoes: [{ session_id: "sess-1", nao_lidas: 3 }] };
     sessionService.contarNaoLidas.mockResolvedValue(resultado);
-    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID });
+    baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID, phoneNumber: "18999999999" });
 
     const req = { tenantId: TENANT_ID };
     const res = mockRes();
 
     await getUnreadCount(req, res);
 
-    expect(sessionService.contarNaoLidas).toHaveBeenCalledWith(TENANT_ID);
+    expect(sessionService.contarNaoLidas).toHaveBeenCalledWith(TENANT_ID, "18999999999");
     expect(res.json).toHaveBeenCalledWith(resultado);
   });
 });

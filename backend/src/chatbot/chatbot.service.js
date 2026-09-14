@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { logger } from "../config/logger.js";
 import { criarSessao, buscarSessao, atualizarSessao, registrarMensagem, SESSION_TIMEOUT_MINUTES } from "./chatbot.session.js";
+import { rotuloLegivelOpcao } from "./mensagem.label.js";
 import { sendWhatsAppMessage, sendButtons, sendList } from "./baileys.client.js";
 import { salvarAudio } from "./chatbot.media.js";
 import { criarNotificacao } from "../services/notificacoes.service.js";
@@ -582,7 +583,7 @@ async function detectServiceIntent(text, tenantId) {
 
   for (const s of servicos) {
     const nome = s.nome_servico.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (lower.includes(nome)) return s;
+    if (lower.includes(nome)) return { tipo: "exato", servico: s };
   }
 
   const keywords = {
@@ -593,12 +594,9 @@ async function detectServiceIntent(text, tenantId) {
     "enceramento": ["encerar", "enceramento", "cera"],
   };
 
-  for (const [key, words] of Object.entries(keywords)) {
+  for (const words of Object.values(keywords)) {
     if (words.some((w) => lower.includes(w))) {
-      const match = servicos.find((s) =>
-        s.nome_servico.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(key)
-      );
-      if (match) return match;
+      return { tipo: "generico" };
     }
   }
 
@@ -715,6 +713,76 @@ async function handleConsultandoAgendamentos(action, jid, session) {
    MENU PRINCIPAL
    =================================================================== */
 
+async function enviarListaServicos(jid, session) {
+  const servicos = await listarServicos(session.tenant_id);
+  if (!servicos.length) {
+    await sendWhatsAppMessage(jid, "Nenhum serviço disponível no momento.");
+    await sendMenu(jid, session);
+    return false;
+  }
+
+  const rows = servicos.map((s) => ({
+    title: s.nome_servico,
+    description: `${formatMoney(s.preco_base)} — ${s.duracao_min} min`,
+    rowId: `servico_${s.servico_id}`,
+  }));
+
+  await sendList(jid, "*✨ Serviços disponíveis:*\nToque em um serviço para agendar", "Ver Serviços", [{ title: "Serviços", rows }], session.empresaNome);
+  await atualizarSessao(session.id, { state: "ESCOLHENDO_SERVICO", state_data: { servicos } });
+  return true;
+}
+
+async function iniciarFluxoServico(jid, session, servico) {
+  const phone = extractPhone(session.remote_jid);
+  let cliente = null;
+
+  if (isValidPhone(phone)) {
+    cliente = await listarClientePorTelefone(session.tenant_id, phone);
+  }
+
+  if (!cliente) {
+    const nome = session.client_name || "Cliente";
+    cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
+  }
+
+  if (cliente) {
+    await atualizarSessao(session.id, { cliente_id: cliente.cliente_id });
+    const veiculos = await listarVeiculosCliente(session.tenant_id, cliente.cliente_id);
+
+    await sendWhatsAppMessage(jid, `Perfeito! Vamos agendar *${servico.nome_servico}*.`);
+
+    if (!veiculos.length) {
+      const sections = gerarSectionsMarcas();
+      await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
+      await atualizarSessao(session.id, {
+        state: "DIGITANDO_VEICULO_MARCA",
+        state_data: { servico_id: servico.servico_id },
+      });
+      return;
+    }
+
+    const rows = veiculos.map((v) => ({
+      title: `${v.marca} ${v.modelo}`,
+      description: v.placa,
+      rowId: `veiculo_${v.veiculo_id}`,
+    }));
+    rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
+
+    await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
+    await atualizarSessao(session.id, {
+      state: "ESCOLHENDO_VEICULO",
+      state_data: { servico_id: servico.servico_id, veiculos },
+    });
+    return;
+  }
+
+  await sendWhatsAppMessage(jid, `Para agendar *${servico.nome_servico}*, preciso do seu nome completo:`);
+  await atualizarSessao(session.id, {
+    state: "DIGITANDO_NOME",
+    state_data: { servico_id: servico.servico_id },
+  });
+}
+
 async function handleMenuPrincipal(action, jid, session) {
   const num = action.trim();
   if (num >= "1" && num <= "5") {
@@ -764,20 +832,7 @@ async function handleMenuPrincipal(action, jid, session) {
     }
 
     case "menu_servicos": {
-      const servicos = await listarServicos(session.tenant_id);
-      if (!servicos.length) {
-        await sendWhatsAppMessage(jid, "Nenhum serviço disponível no momento.");
-      } else {
-        const rows = servicos.map((s) => ({
-          title: s.nome_servico,
-          description: `${formatMoney(s.preco_base)} — ${s.duracao_min} min`,
-          rowId: `servico_${s.servico_id}`,
-        }));
-        await sendList(jid, "*✨ Serviços disponíveis:*\nToque em um serviço para agendar", "Ver Serviços", [{ title: "Serviços", rows }], session.empresaNome);
-        await atualizarSessao(session.id, { state: "ESCOLHENDO_SERVICO", state_data: { servicos } });
-        return;
-      }
-      await sendMenu(jid, session);
+      await enviarListaServicos(jid, session);
       return;
     }
 
@@ -1694,6 +1749,20 @@ async function handleEstado(state, action, session) {
     return;
   }
 
+  if (stateData.aguardando_confirmacao_servico) {
+    if (["CONFIRMAR_SERVICO", "SIM", "S", "1"].includes(upper) || action === "confirmar_servico") {
+      const servico = stateData.servico_detectado;
+      await atualizarSessao(session.id, { state_data: { ...stateData, aguardando_confirmacao_servico: false } });
+      if (servico) {
+        await iniciarFluxoServico(jid, session, servico);
+        return;
+      }
+    }
+    await atualizarSessao(session.id, { state_data: { ...stateData, aguardando_confirmacao_servico: false } });
+    await enviarListaServicos(jid, session);
+    return;
+  }
+
   const handler = STATE_HANDLERS[state];
   if (handler) {
     const handled = await handler(action, jid, session);
@@ -1873,7 +1942,12 @@ async function processMessageInterno(tenantId, remoteJid, text, pushName) {
       await atualizarSessao(session.id, { ultima_mensagem: text });
     }
 
-    await registrarMensagem({ tenantId, sessionId: session.id, remetente: "cliente", texto: text });
+    await registrarMensagem({
+      tenantId,
+      sessionId: session.id,
+      remetente: "cliente",
+      texto: rotuloLegivelOpcao(text, session),
+    });
 
     if (session.state === "FALANDO_COM_ATENDENTE") {
       await handleEstado(session.state, text, session);
@@ -1936,56 +2010,28 @@ async function processMessageInterno(tenantId, remoteJid, text, pushName) {
     }
 
     if (session.state === "MENU_PRINCIPAL" && !intent) {
-      const servicoDetectado = await detectServiceIntent(text, session.tenant_id);
-      if (servicoDetectado) {
-        const phone = extractPhone(session.remote_jid);
-        let cliente = null;
+      const resultadoIntent = await detectServiceIntent(text, session.tenant_id);
 
-        if (isValidPhone(phone)) {
-          cliente = await listarClientePorTelefone(session.tenant_id, phone);
-        }
+      if (resultadoIntent?.tipo === "generico") {
+        await enviarListaServicos(jid, session);
+        return;
+      }
 
-        if (!cliente) {
-          const nome = session.client_name || "Cliente";
-          cliente = await criarClienteViaChatbot(session.tenant_id, nome, phone);
-        }
+      if (resultadoIntent?.tipo === "exato") {
+        const servico = resultadoIntent.servico;
 
-        if (cliente) {
-          await atualizarSessao(session.id, { cliente_id: cliente.cliente_id });
-          const veiculos = await listarVeiculosCliente(session.tenant_id, cliente.cliente_id);
-
-          await sendWhatsAppMessage(jid, `Identifiquei que você quer *${servicoDetectado.nome_servico}*!`);
-
-          if (!veiculos.length) {
-            const sections = gerarSectionsMarcas();
-            await sendList(jid, "Selecione a *marca* do veículo:", "Ver Marcas", sections, session.empresaNome);
-            await atualizarSessao(session.id, {
-              state: "DIGITANDO_VEICULO_MARCA",
-              state_data: { servico_id: servicoDetectado.servico_id },
-            });
-            return;
-          }
-
-          const rows = veiculos.map((v) => ({
-            title: `${v.marca} ${v.modelo}`,
-            description: v.placa,
-            rowId: `veiculo_${v.veiculo_id}`,
-          }));
-          rows.push({ title: "Cadastrar novo veículo", description: "Informar dados de outro veículo", rowId: "veiculo_novo" });
-
-          await sendList(jid, "*Selecione o veículo:*", "Ver Veículos", [{ title: "Veículos", rows }], session.empresaNome);
-          await atualizarSessao(session.id, {
-            state: "ESCOLHENDO_VEICULO",
-            state_data: { servico_id: servicoDetectado.servico_id, veiculos },
-          });
-          return;
-        }
-
-        await sendWhatsAppMessage(jid, `Identifiquei que você quer *${servicoDetectado.nome_servico}*! Para agendar, preciso do seu nome completo:`);
         await atualizarSessao(session.id, {
-          state: "DIGITANDO_NOME",
-          state_data: { servico_id: servicoDetectado.servico_id },
+          state_data: { servico_detectado: { ...servico }, aguardando_confirmacao_servico: true },
         });
+
+        await sendButtons(jid,
+          `Identifiquei que você quer *${servico.nome_servico}*.\n\nConfirma que é este serviço?`,
+          [
+            { id: "confirmar_servico", text: "✅ Sim, este" },
+            { id: "trocar_servico", text: "❌ Não, escolher outro" },
+          ],
+          session.empresaNome
+        );
         return;
       }
     }

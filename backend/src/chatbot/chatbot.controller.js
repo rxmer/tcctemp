@@ -87,7 +87,7 @@ export async function disconnect(req, res) {
 export async function listSessions(req, res) {
   const { page, limit, ordem = "recentes", estado, busca } = req.query;
 
-  const { status } = baileysClient.getConnectionState();
+  const { status, phoneNumber } = baileysClient.getConnectionState();
   if (status !== "connected") {
     return res.json({ data: [], total: 0, conectado: false });
   }
@@ -98,6 +98,7 @@ export async function listSessions(req, res) {
     ordem,
     estado: estado || null,
     busca: busca?.trim() || "",
+    numeroOrigem: phoneNumber || null,
   });
 
   res.json(sessions);
@@ -108,7 +109,7 @@ export async function getUnreadCount(req, res) {
   if (state.status !== "connected" || state.tenantId !== req.tenantId) {
     return res.json({ total: 0, sessoes: [] });
   }
-  const result = await sessionService.contarNaoLidas(req.tenantId);
+  const result = await sessionService.contarNaoLidas(req.tenantId, state.phoneNumber);
   res.json(result);
 }
 
