@@ -306,4 +306,46 @@ describe("E2E Sobreposicao de agendamento", () => {
     },
     30000
   );
+
+  it(
+    "cancelar/excluir o agendamento libera o slot para novo POST no mesmo horario",
+    async () => {
+      if (offline()) return;
+      const slot = await acharSlot();
+      if (!slot) { expect.fail("nenhum dia livre encontrado"); return; }
+
+      const b = dados.dadosB;
+      const corpo = {
+        cliente_id: b.veiculos[0].cliente_id,
+        veiculo_id: b.veiculos[0].veiculo_id,
+        servico_id: menorServico(b.servicos).servico_id,
+        data_agendamento: slot.data,
+        hora_agendamento: "14:00",
+      };
+
+      const primeiro = await pedir(tokenB, "/api/agendamentos", "POST", corpo);
+      expect(primeiro.status).toBe(201);
+      criados.push({ token: tokenB, id: primeiro.body.agendamento_id });
+
+      const bloqueado = await pedir(tokenB, "/api/agendamentos", "POST", corpo);
+      expect(bloqueado.status).toBe(409);
+
+      const removido = await pedir(tokenB, `/api/agendamentos/${primeiro.body.agendamento_id}`, "DELETE");
+      expect(removido.status).toBe(200);
+
+      const recriado = await pedir(tokenB, "/api/agendamentos", "POST", corpo);
+      expect(recriado.status).toBe(201);
+      const recriadoId = recriado.body.agendamento_id;
+      criados.push({ token: tokenB, id: recriadoId });
+      expect(recriadoId).not.toBe(primeiro.body.agendamento_id);
+
+      const lista = await pedir(tokenB, `/api/agendamentos?data_inicio=${slot.data}&data_fim=${slot.data}&limit=100`);
+      const ativos = (lista.body.data ?? []).filter(
+        (a) => a.hora_agendamento.slice(0, 5) === "14:00" && ["pendente", "confirmado", "em_andamento"].includes(a.status)
+      );
+      expect(ativos.length).toBe(1);
+      expect(ativos[0].agendamento_id).toBe(recriadoId);
+    },
+    30000
+  );
 });
