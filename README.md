@@ -53,7 +53,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Configuração da Empresa** — personalização com logo, nome, CNPJ, endereço, telefone (admin)
 - **Comunicados** — envio de mensagens em massa via WhatsApp com filtros de destinatários. Histórico de disparos limitado ao número do WhatsApp conectado e tela bloqueada quando não há conexão (mostra orientação com botão para ir à tela de conexão)
 - **WhatsApp** — tela de conexão com QR Code de 60s, rotação automática limitada a 3 (~3 min) e recarga manual quando expirado; as conversas, comunicados e o widget dependem do número conectado
-- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Datas bloqueadas (feriados/recesso) são removidas das opções de data e o bot orienta o cliente ao escolhê-las. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 5 min de inatividade
+- **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Datas bloqueadas (feriados/recesso) são removidas das opções de data e o bot orienta o cliente ao escolhê-las. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 10 min de inatividade (se o atendente não tiver respondido; com resposta do atendente, a conversa continua)
 - **Conversas WhatsApp** — lista em estilo inbox com avatar, prévia da última mensagem (cliente, "Você:" ou "Bot:", incluindo 🎤 áudio), contador de não lidas por conversa e tempo relativo. Abas de filtro (Todas, Não lidas, Com atendente, No menu, Agendando), busca, ordenação ("Não lidas primeiro", "Mais recentes", "Nome A-Z") e paginação. Ao selecionar uma conversa, o histórico com resposta manual do atendente abre ao lado em formato mestre-detalhe
 - **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente, polling a cada 5s e CTA "Conectar WhatsApp" quando não há número conectado (direciona à tela de conexão e fecha o painel)
 - **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
@@ -77,7 +77,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - Cancelar OS → agenda volta para confirmado
 - Cliente/veículo/serviço não podem ser excluídos se vinculados a registros ativos
 - Conta paga e faturamento recebido não podem ser pagos novamente
-- Atendimento humano no chatbot: cliente pode voltar ao bot a qualquer momento via keywords ou botões; timeout de 5 min sem atividade retorna automaticamente ao menu
+- Atendimento humano no chatbot: cliente pode voltar ao bot a qualquer momento via keywords ou botões; timeout de 10 min sem resposta do atendente retorna automaticamente ao menu
 
 ## Arquitetura
 
