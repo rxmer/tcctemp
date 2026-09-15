@@ -85,23 +85,43 @@ export async function disconnect(req, res) {
 }
 
 export async function listSessions(req, res) {
-  const { page, limit, ordem = "recentes", estado, busca } = req.query;
+  const { page, limit, ordem = "recentes", estado, busca, naoLidas } = req.query;
 
   const { status, phoneNumber } = baileysClient.getConnectionState();
   if (status !== "connected") {
     return res.json({ data: [], total: 0, conectado: false });
   }
 
+  const naoLidasInfo = await sessionService.contarNaoLidas(req.tenantId, phoneNumber);
+  const mapaNaoLidas = new Map(
+    (naoLidasInfo?.sessoes ?? []).map((s) => [s.session_id, Number(s.nao_lidas) || 0])
+  );
+  const idsNaoLidas = [...mapaNaoLidas.keys()];
+
+  const soNaoLidas = naoLidas === "true";
+  if (soNaoLidas && idsNaoLidas.length === 0) {
+    return res.json({ data: [], total: 0, naoLidasTotal: 0 });
+  }
+
+  const priorizarNaoLidas = ordem === "naolidas" && idsNaoLidas.length > 0;
+
   const sessions = await sessionService.listarSessoes(req.tenantId, {
     page: page ? Number(page) : 1,
     limit: limit ? Number(limit) : 20,
-    ordem,
+    ordem: priorizarNaoLidas ? "recentes" : ordem,
     estado: estado || null,
     busca: busca?.trim() || "",
     numeroOrigem: phoneNumber || null,
+    naoLidasIds: soNaoLidas ? idsNaoLidas : null,
+    priorizarNaoLidas,
   });
 
-  res.json(sessions);
+  const data = (sessions.data ?? []).map((s) => ({
+    ...s,
+    nao_lidas: mapaNaoLidas.get(s.id) ?? 0,
+  }));
+
+  res.json({ ...sessions, data, naoLidasTotal: naoLidasInfo?.total ?? 0 });
 }
 
 export async function getUnreadCount(req, res) {

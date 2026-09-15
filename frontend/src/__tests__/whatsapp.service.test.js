@@ -44,6 +44,15 @@ describe("whatsappService", () => {
     expect(url).toMatch(/^\/api\/chatbot\/sessions\?_=\d+&page=1&limit=20&ordem=recentes$/);
     expect(url).not.toContain("estado=");
     expect(url).not.toContain("busca=");
+    expect(url).not.toContain("naoLidas=");
+  });
+
+  it("listSessions inclui naoLidas quando solicitado", () => {
+    whatsappService.listSessions({ naoLidas: true });
+    const url = apiFetch.mock.calls[0][0];
+    expect(url).toMatch(
+      /^\/api\/chatbot\/sessions\?_=\d+&page=1&limit=20&ordem=recentes&naoLidas=true$/
+    );
   });
 
   it("getSession chama apiFetch com id e timestamp", () => {

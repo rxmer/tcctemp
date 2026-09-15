@@ -10,7 +10,6 @@ import {
   verificarContasVencendo,
   cobrarFaturamentosPendentes,
   fecharAgendamentosPassados,
-  enviarResumoDiario,
 } from "../services/alertas.service.js";
 import { dataLocalISO } from "../utils/data.js";
 
@@ -415,91 +414,3 @@ it("nao duplica aviso de revisao", async () => {
   });
 });
 
-describe("alertas - enviarResumoDiario", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    baileys.getConnectionState.mockReturnValue({ status: "connected", tenantId: "tenant-1" });
-  });
-
-  const empresa = { tenant_id: "tenant-1", nome_fantasia: "EstetiCar", telefone: "11999990000" };
-
-  function mockResumo({ ags = [], contas = [], faturas = [], dedupeCount = 0 } = {}) {
-    supabaseAdmin.from.mockImplementation((table) => {
-      if (table === "configuracao_empresa") {
-        return q({ then: (resolve) => resolve({ data: [empresa], error: null }) });
-      }
-      if (table === "notificacoes") {
-        return q({ then: (resolve) => resolve({ count: dedupeCount, error: null }) });
-      }
-      if (table === "agendamentos") {
-        return q({
-          order: vi.fn().mockReturnValue({ then: (resolve) => resolve({ data: ags, error: null }) }),
-          then: (resolve) => resolve({ data: ags, error: null }),
-        });
-      }
-      if (table === "contas_pagar") {
-        return q({ then: (resolve) => resolve({ data: contas, error: null }) });
-      }
-      if (table === "faturamentos") {
-        return q({ then: (resolve) => resolve({ data: faturas, error: null }) });
-      }
-      return q();
-    });
-  }
-
-  it("envia resumo com agendamentos e pendencias para o dono", async () => {
-    mockResumo({
-      ags: [{ hora_agendamento: "09:00:00", cliente: { nome: "Ana" } }],
-      contas: [{ descricao: "Aluguel", valor: 1200, data_vencimento: "2026-08-25" }],
-      faturas: [{ valor_total: 300 }, { valor_total: 450 }],
-    });
-    baileys.sendWhatsAppMessage.mockResolvedValue();
-
-    const { enviados } = await enviarResumoDiario();
-
-    expect(enviados).toBe(1);
-    expect(baileys.sendWhatsAppMessage).toHaveBeenCalledWith(
-      "5511999990000@s.whatsapp.net",
-      expect.stringContaining("Resumo do dia")
-    );
-    const msg = baileys.sendWhatsAppMessage.mock.calls[0][1];
-    expect(msg).toContain("09:00 - Ana");
-    expect(msg).toContain("Contas a pagar em aberto");
-    expect(msg).toContain("Faturas pendentes");
-    expect(notificacoes.criarNotificacao).toHaveBeenCalledWith(
-      expect.objectContaining({ tipo: "resumo_diario" })
-    );
-  });
-
-  it("nao envia duas vezes no mesmo dia", async () => {
-    mockResumo({ dedupeCount: 1 });
-
-    const { enviados } = await enviarResumoDiario();
-
-    expect(enviados).toBe(0);
-    expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalled();
-  });
-
-  it("nao envia quando whatsapp desconectado", async () => {
-    baileys.getConnectionState.mockReturnValue({ status: "disconnected", tenantId: null });
-
-    const { enviados } = await enviarResumoDiario();
-
-    expect(enviados).toBe(0);
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
-  });
-
-  it("pula empresa sem telefone", async () => {
-    supabaseAdmin.from.mockImplementation((table) => {
-      if (table === "configuracao_empresa") {
-        return q({ then: (resolve) => resolve({ data: [{ tenant_id: "t1", nome_fantasia: "X", telefone: null }], error: null }) });
-      }
-      return q();
-    });
-
-    const { enviados } = await enviarResumoDiario();
-
-    expect(enviados).toBe(0);
-    expect(baileys.sendWhatsAppMessage).not.toHaveBeenCalled();
-  });
-});

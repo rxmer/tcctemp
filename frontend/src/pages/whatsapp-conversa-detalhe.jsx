@@ -9,12 +9,7 @@ import { AudioRecorder } from "../components/AudioRecorder";
 import styles from "../styles/pages/whatsapp.module.css";
 import { ArrowLeft, Send, RotateCcw } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
-
-function estadoLabel(estado) {
-  if (!estado) return "";
-  const t = estado.replace(/_/g, " ").toLowerCase();
-  return t.charAt(0).toUpperCase() + t.slice(1);
-}
+import { estadoLabel, estadoGrupo } from "../utils/whatsappEstados";
 
 function autorLabel(m, session) {
   if (m.remetente === "cliente") return session?.client_name || "Cliente";
@@ -27,8 +22,16 @@ function horaLabel(iso) {
   return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function ConversaDetalhe() {
-  const { id } = useParams();
+function badgeClasse(state) {
+  const grupo = estadoGrupo(state);
+  if (grupo === "atendente") return styles.estadoBadgeAtendente;
+  if (grupo === "menu") return styles.estadoBadgeMenu;
+  return styles.estadoBadgeAgendando;
+}
+
+export function ConversaDetalhe({ id: idProp, embedded = false, onBack }) {
+  const { id: idRota } = useParams();
+  const id = idProp ?? idRota;
   const navigate = useNavigate();
   const { showFeedback } = useFeedback();
   const { confirm, ConfirmModal } = useConfirm();
@@ -115,30 +118,70 @@ export function ConversaDetalhe() {
     }
   }
 
+  function voltar() {
+    if (onBack) onBack();
+    else navigate("/whatsapp/conversas");
+  }
+
   return (
     <>
-      <PageHeader
-        title={session?.client_name || "Conversa"}
-        subtitle={formatPhone(session?.client_phone) || ""}
-        action={
-          <div className={styles.convAcoes}>
-            <Button variant="ghost" onClick={() => navigate("/whatsapp/conversas")}>
-              <ArrowLeft size={14} /> Voltar
-            </Button>
-            <Button variant="ghost" onClick={handleReset}>
-              <RotateCcw size={14} /> Reiniciar bot
-            </Button>
+      {embedded ? (
+        <header className={styles.detailTop}>
+          <button
+            type="button"
+            className={styles.detailVoltar}
+            onClick={voltar}
+            aria-label="Voltar para a lista de conversas"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div className={styles.detailTitulo}>
+            <span className={styles.detailNome}>{session?.client_name || "Conversa"}</span>
+            <span className={styles.detailSub}>
+              {formatPhone(session?.client_phone) || "—"}
+              {session ? (
+                <>
+                  {formatPhone(session?.client_phone) ? <span aria-hidden="true">·</span> : null}
+                  <span className={`${styles.estadoBadge} ${badgeClasse(session.state)}`}>
+                    {estadoLabel(session.state)}
+                  </span>
+                </>
+              ) : null}
+            </span>
           </div>
-        }
-      />
+          <Button variant="ghost" onClick={handleReset}>
+            <RotateCcw size={14} /> Reiniciar
+          </Button>
+        </header>
+      ) : (
+        <>
+          <PageHeader
+            title={session?.client_name || "Conversa"}
+            subtitle={formatPhone(session?.client_phone) || ""}
+            action={
+              <div className={styles.convAcoes}>
+                <Button variant="ghost" onClick={() => navigate("/whatsapp/conversas")}>
+                  <ArrowLeft size={14} /> Voltar
+                </Button>
+                <Button variant="ghost" onClick={handleReset}>
+                  <RotateCcw size={14} /> Reiniciar bot
+                </Button>
+              </div>
+            }
+          />
 
-      {session && (
-        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: -8 }}>
-          Estado do bot: <span className={styles.estadoBadge}>{estadoLabel(session.state)}</span>
-        </p>
+          {session && (
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: -8 }}>
+              Estado do bot:{" "}
+              <span className={`${styles.estadoBadge} ${badgeClasse(session.state)}`}>
+                {estadoLabel(session.state)}
+              </span>
+            </p>
+          )}
+        </>
       )}
 
-      <div className={styles.card} style={{ marginTop: 16 }}>
+      <div className={styles.card} style={{ marginTop: embedded ? 0 : 16 }}>
         {loading ? (
           <div style={{ padding: 16 }}>
             <SkeletonCard lines={5} />

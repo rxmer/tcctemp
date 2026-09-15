@@ -13,10 +13,11 @@ export const whatsappService = {
       method: "POST",
     }),
 
-  listSessions: ({ page = 1, limit = 20, ordem = "recentes", estado = "", busca = "" } = {}) => {
+  listSessions: ({ page = 1, limit = 20, ordem = "recentes", estado = "", busca = "", naoLidas = false } = {}) => {
     const params = new URLSearchParams({ _: Date.now(), page, limit, ordem });
     if (estado) params.set("estado", estado);
     if (busca) params.set("busca", busca);
+    if (naoLidas) params.set("naoLidas", "true");
     return apiFetch(`/api/chatbot/sessions?${params}`);
   },
 

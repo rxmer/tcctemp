@@ -119,44 +119,117 @@ function aplicarFiltrosSessao(query, tenantId, estado, busca, numeroOrigem) {
 
 export async function listarSessoes(
   tenantId,
-  { page = 1, limit = 20, ordem = "recentes", estado = null, busca = "", numeroOrigem = null } = {}
+  {
+    page = 1,
+    limit = 20,
+    ordem = "recentes",
+    estado = null,
+    busca = "",
+    numeroOrigem = null,
+    naoLidasIds = null,
+    priorizarNaoLidas = false,
+  } = {}
 ) {
   const pagina = Math.max(1, Number(page) || 1);
   const tamanho = Math.min(100, Math.max(1, Number(limit) || 20));
   const inicio = (pagina - 1) * tamanho;
 
-  const { count, error: countError } = await aplicarFiltrosSessao(
-    supabaseAdmin
-      .from("chatbot_session")
-      .select("id", { count: "exact", head: true }),
-    tenantId,
-    estado,
-    busca,
-    numeroOrigem
-  );
+  const base = (colunas, opcoes) =>
+    aplicarFiltrosSessao(
+      supabaseAdmin.from("chatbot_session").select(colunas ?? "*", opcoes),
+      tenantId,
+      estado,
+      busca,
+      numeroOrigem
+    );
 
+  const ordenar = (q) =>
+    ordem === "nome"
+      ? q.order("client_name", { ascending: true, nullsFirst: true })
+      : q.order("ultima_atividade", { ascending: false });
+
+  const idsNaoLidas = naoLidasIds?.length ? naoLidasIds : null;
+
+  let countQuery = base("id", { count: "exact", head: true });
+  if (idsNaoLidas) countQuery = countQuery.in("id", idsNaoLidas);
+  const { count, error: countError } = await countQuery;
   if (countError) throw new AppError(`Erro ao listar sessões: ${countError.message}`);
 
-  let query = aplicarFiltrosSessao(
-    supabaseAdmin.from("chatbot_session").select("*"),
-    tenantId,
-    estado,
-    busca,
-    numeroOrigem
-  );
+  let data = [];
 
-  if (ordem === "nome") {
-    query = query.order("client_name", { ascending: true, nullsFirst: true });
+  if (priorizarNaoLidas && idsNaoLidas) {
+    const { count: volumeNaoLidas } = await base("id", {
+      count: "exact",
+      head: true,
+    }).in("id", idsNaoLidas);
+    const totalNaoLidas = volumeNaoLidas ?? 0;
+
+    if (inicio < totalNaoLidas) {
+      const fimNaoLidas = Math.min(totalNaoLidas, inicio + tamanho) - 1;
+      const { data: naoLidas, error: erroNao } = await ordenar(
+        base().in("id", idsNaoLidas)
+      ).range(inicio, Math.max(inicio, fimNaoLidas));
+      if (erroNao) throw new AppError(`Erro ao listar sessões: ${erroNao.message}`);
+
+      data = naoLidas ?? [];
+      const restante = tamanho - data.length;
+      if (restante > 0) {
+        const { data: lidas, error: erroLidas } = await ordenar(
+          base().not("id", "in", idsNaoLidas)
+        ).range(0, restante - 1);
+        if (erroLidas) throw new AppError(`Erro ao listar sessões: ${erroLidas.message}`);
+        data = [...data, ...(lidas ?? [])];
+      }
+    } else {
+      const inicioLidas = inicio - totalNaoLidas;
+      const { data: lidas, error: erroLidas } = await ordenar(
+        base().not("id", "in", idsNaoLidas)
+      ).range(inicioLidas, inicioLidas + tamanho - 1);
+      if (erroLidas) throw new AppError(`Erro ao listar sessões: ${erroLidas.message}`);
+      data = lidas ?? [];
+    }
   } else {
-    query = query.order("ultima_atividade", { ascending: false });
+    let query = base();
+    if (idsNaoLidas) query = query.in("id", idsNaoLidas);
+    const { data: rows, error } = await ordenar(query).range(inicio, inicio + tamanho - 1);
+    if (error) throw new AppError(`Erro ao listar sessões: ${error.message}`);
+    data = rows ?? [];
   }
 
-  query = query.range(inicio, inicio + tamanho - 1);
+  const enriquecidas = await anexarUltimaMensagem(data);
+  return { data: enriquecidas, total: count ?? 0 };
+}
 
-  const { data, error } = await query;
-  if (error) throw new AppError(`Erro ao listar sessões: ${error.message}`);
+async function anexarUltimaMensagem(sessoes) {
+  const ids = (sessoes ?? []).map((s) => s.id);
+  if (!ids.length) return sessoes ?? [];
 
-  return { data: data ?? [], total: count ?? 0 };
+  const { data: msgs, error } = await supabaseAdmin
+    .from("chatbot_mensagem")
+    .select("session_id, remetente, tipo_media, texto")
+    .in("session_id", ids)
+    .order("criado_em", { ascending: false })
+    .limit(1000);
+
+  if (error) {
+    logger.warn({ err: error }, "Erro ao anexar última mensagem das sessões");
+    return sessoes;
+  }
+
+  const ultimaPorSessao = new Map();
+  for (const m of msgs ?? []) {
+    if (!ultimaPorSessao.has(m.session_id)) ultimaPorSessao.set(m.session_id, m);
+  }
+
+  return sessoes.map((s) => {
+    const ultima = ultimaPorSessao.get(s.id);
+    return {
+      ...s,
+      ultima_mensagem_remetente: ultima?.remetente ?? null,
+      ultima_mensagem_tipo_media: ultima?.tipo_media ?? null,
+      ultima_mensagem_previa: ultima?.texto ?? s.ultima_mensagem ?? "",
+    };
+  });
 }
 
 export async function contarNaoLidas(tenantId, numeroOrigem) {

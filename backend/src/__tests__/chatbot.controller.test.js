@@ -115,6 +115,7 @@ describe("chatbot.controller - listSessions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     baileysClient.getConnectionState.mockReturnValue({ status: "connected", tenantId: TENANT_ID, phoneNumber: "18999999999" });
+    sessionService.contarNaoLidas.mockResolvedValue({ total: 0, sessoes: [] });
   });
 
   it("retorna lista vazia e nao consulta sessoes quando WhatsApp desconectado", async () => {
@@ -126,6 +127,7 @@ describe("chatbot.controller - listSessions", () => {
     await listSessions(req, res);
 
     expect(sessionService.listarSessoes).not.toHaveBeenCalled();
+    expect(sessionService.contarNaoLidas).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({ data: [], total: 0, conectado: false });
   });
 
@@ -148,8 +150,12 @@ describe("chatbot.controller - listSessions", () => {
       estado: "atendente",
       busca: "João",
       numeroOrigem: "18999999999",
+      naoLidasIds: null,
+      priorizarNaoLidas: false,
     });
-    expect(res.json).toHaveBeenCalledWith(resultado);
+    const resposta = res.json.mock.calls[0][0];
+    expect(resposta).toMatchObject({ total: 1, naoLidasTotal: 0 });
+    expect(resposta.data[0]).toMatchObject({ id: SESSION_ID, nao_lidas: 0 });
   });
 
   it("usa valores padrao quando parametros ausentes", async () => {
@@ -167,7 +173,67 @@ describe("chatbot.controller - listSessions", () => {
       estado: null,
       busca: "",
       numeroOrigem: "18999999999",
+      naoLidasIds: null,
+      priorizarNaoLidas: false,
     });
+  });
+
+  it("anexa a contagem de nao lidas de cada sessao", async () => {
+    sessionService.contarNaoLidas.mockResolvedValue({
+      total: 7,
+      sessoes: [{ session_id: SESSION_ID, nao_lidas: 7 }],
+    });
+    sessionService.listarSessoes.mockResolvedValue({ data: [buildSession()], total: 1 });
+
+    const req = { tenantId: TENANT_ID, query: {} };
+    const res = mockRes();
+    await listSessions(req, res);
+
+    const resposta = res.json.mock.calls[0][0];
+    expect(resposta).toMatchObject({ naoLidasTotal: 7 });
+    expect(resposta.data[0]).toMatchObject({ id: SESSION_ID, nao_lidas: 7 });
+  });
+
+  it("filtra apenas as nao lidas quando naoLidas=true", async () => {
+    sessionService.contarNaoLidas.mockResolvedValue({
+      total: 2,
+      sessoes: [{ session_id: "s1", nao_lidas: 2 }],
+    });
+    sessionService.listarSessoes.mockResolvedValue({ data: [], total: 1 });
+
+    const req = { tenantId: TENANT_ID, query: { naoLidas: "true" } };
+    const res = mockRes();
+    await listSessions(req, res);
+
+    expect(sessionService.listarSessoes).toHaveBeenCalledWith(
+      TENANT_ID,
+      expect.objectContaining({ naoLidasIds: ["s1"], priorizarNaoLidas: false })
+    );
+  });
+
+  it("retorna lista vazia quando naoLidas=true e nao ha nao lidas", async () => {
+    const req = { tenantId: TENANT_ID, query: { naoLidas: "true" } };
+    const res = mockRes();
+    await listSessions(req, res);
+
+    expect(sessionService.listarSessoes).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ data: [], total: 0, naoLidasTotal: 0 });
+  });
+
+  it("prioriza nao lidas quando ordem=naolidas", async () => {
+    sessionService.contarNaoLidas.mockResolvedValue({
+      total: 2,
+      sessoes: [{ session_id: "s1", nao_lidas: 2 }],
+    });
+
+    const req = { tenantId: TENANT_ID, query: { ordem: "naolidas" } };
+    const res = mockRes();
+    await listSessions(req, res);
+
+    expect(sessionService.listarSessoes).toHaveBeenCalledWith(
+      TENANT_ID,
+      expect.objectContaining({ ordem: "recentes", priorizarNaoLidas: true })
+    );
   });
 });
 

@@ -7,10 +7,17 @@ vi.mock("../services/whatsapp.service", () => ({
   whatsappService: {
     listSessions: vi.fn(),
     getStatus: vi.fn().mockResolvedValue({ status: "connected" }),
+    getSession: vi.fn(),
+    getMensagens: vi.fn(),
+    sendReply: vi.fn(),
+    sendAudio: vi.fn(),
+    resetSessao: vi.fn(),
   },
 }));
 
 vi.mock("../hooks/useFeedback", () => ({ useFeedback: vi.fn() }));
+
+vi.mock("../hooks/useConfirm", () => ({ useConfirm: vi.fn() }));
 
 vi.mock("../hooks/useDebouncedEffect", () => {
   const React = require("react");
@@ -25,28 +32,46 @@ vi.mock("../hooks/useDebouncedEffect", () => {
   };
 });
 
-vi.mock("../styles/pages/whatsapp.module.css", () => ({
-  default: {
-    card: "card",
-    cardHeader: "cardHeader",
-    emptyState: "emptyState",
-    sessionsGrid: "sessionsGrid",
-    sessionCard: "sessionCard",
-    convCard: "convCard",
-    sessionName: "sessionName",
-    sessionPhone: "sessionPhone",
-    sessionMeta: "sessionMeta",
-    estadoBadge: "estadoBadge",
-    sessionLastMsg: "sessionLastMsg",
-    toolbar: "toolbar",
-    toolbarSearch: "toolbarSearch",
-    toolbarField: "toolbarField",
-    toolbarSelect: "toolbarSelect",
-  },
-}));
+vi.mock("../styles/pages/whatsapp.module.css", () => {
+  const keys = [
+    "card",
+    "cardHeader",
+    "emptyState",
+    "toolbar",
+    "toolbarSearch",
+    "toolbarField",
+    "toolbarSelect",
+    "convLayout",
+    "convList",
+    "convListCheia",
+    "convListMobileOculta",
+    "convPainel",
+    "convTabs",
+    "convTab",
+    "convTabAtivo",
+    "convRows",
+    "convRow",
+    "convRowAtiva",
+    "convRowNaoLida",
+    "convAvatar",
+    "convRowCorpo",
+    "convRowTop",
+    "convRowNome",
+    "convRowTempo",
+    "convBadgeNao",
+    "convRowFundo",
+    "convRowMsg",
+    "estadoBadge",
+    "estadoBadgeAtendente",
+    "estadoBadgeMenu",
+    "estadoBadgeAgendando",
+  ];
+  return { default: Object.fromEntries(keys.map((k) => [k, k])) };
+});
 
 import { whatsappService } from "../services/whatsapp.service";
 import { useFeedback } from "../hooks/useFeedback";
+import { useConfirm } from "../hooks/useConfirm";
 
 const sessoesMock = [
   {
@@ -71,6 +96,7 @@ describe("WhatsAppConversas page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useFeedback.mockReturnValue({ feedback: null, showFeedback: vi.fn() });
+    useConfirm.mockReturnValue({ confirm: vi.fn(), ConfirmModal: () => null });
     whatsappService.listSessions.mockResolvedValue({ data: sessoesMock, total: 1 });
   });
 
@@ -84,6 +110,45 @@ describe("WhatsAppConversas page", () => {
     expect(whatsappService.listSessions).toHaveBeenCalledWith(
       expect.objectContaining({ page: 1, ordem: "recentes", estado: "", busca: "" })
     );
+  });
+
+  it("exibe badge e destaque quando ha mensagens nao lidas", async () => {
+    whatsappService.listSessions.mockResolvedValue({
+      data: [
+        {
+          ...sessoesMock[0],
+          nao_lidas: 4,
+          ultima_mensagem_remetente: "cliente",
+          ultima_mensagem_previa: "Oi, quero agendar",
+        },
+      ],
+      total: 1,
+      naoLidasTotal: 4,
+    });
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Maria Silva")).toBeInTheDocument();
+    });
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("Não lidas (4)")).toBeInTheDocument();
+  });
+
+  it("mostra o remetente na previa da ultima mensagem", async () => {
+    whatsappService.listSessions.mockResolvedValue({
+      data: [
+        {
+          ...sessoesMock[0],
+          ultima_mensagem_remetente: "atendente",
+          ultima_mensagem_previa: "Obrigado pelo agendamento!",
+        },
+      ],
+      total: 1,
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/Você: Obrigado pelo agendamento!/)).toBeInTheDocument();
+    });
   });
 
   it("exibe estado vazio quando nao ha conversas", async () => {
@@ -127,20 +192,34 @@ describe("WhatsAppConversas page", () => {
     });
   });
 
-  it("filtra por estado ao escolher uma situacao", async () => {
+  it("filtra por abas ao trocar a situacao", async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Filtrar por situação")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Com atendente" })).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText("Filtrar por situação"), {
-      target: { value: "atendente" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Com atendente" }));
 
     await waitFor(() => {
       expect(whatsappService.listSessions).toHaveBeenCalledWith(
         expect.objectContaining({ estado: "atendente", page: 1 })
+      );
+    });
+  });
+
+  it("filtra apenas nao lidas ao trocar para a aba correspondente", async () => {
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Não lidas" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Não lidas" }));
+
+    await waitFor(() => {
+      expect(whatsappService.listSessions).toHaveBeenCalledWith(
+        expect.objectContaining({ naoLidas: true, page: 1 })
       );
     });
   });
@@ -156,6 +235,23 @@ describe("WhatsAppConversas page", () => {
       expect(whatsappService.listSessions).toHaveBeenCalledWith(
         expect.objectContaining({ busca: "Maria", page: 1 })
       );
+    });
+  });
+
+  it("abre a conversa no painel ao clicar na linha", async () => {
+    whatsappService.getSession.mockResolvedValue({ ...sessoesMock[0] });
+    whatsappService.getMensagens.mockResolvedValue([]);
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Maria Silva")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Maria Silva/i }));
+
+    await waitFor(() => {
+      expect(whatsappService.getSession).toHaveBeenCalledWith("s1");
+      expect(screen.getByRole("button", { name: /voltar para a lista/i })).toBeInTheDocument();
     });
   });
 

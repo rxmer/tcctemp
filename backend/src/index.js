@@ -10,7 +10,6 @@ import {
   verificarContasVencendo,
   cobrarFaturamentosPendentes,
   fecharAgendamentosPassados,
-  enviarResumoDiario,
 } from "./services/alertas.service.js";
 
 process.on("unhandledRejection", (reason) => {
@@ -78,16 +77,4 @@ app.listen(env.port, async () => {
       logger.error({ err }, "Erro no fechamento de agendamentos passados (inicial)")
     );
   }, 25 * 1000);
-
-  setInterval(() => {
-    enviarResumoDiario().catch((err) =>
-      logger.error({ err }, "Erro no resumo diário")
-    );
-  }, 24 * 60 * 60 * 1000);
-
-  setTimeout(() => {
-    enviarResumoDiario().catch((err) =>
-      logger.error({ err }, "Erro no resumo diário (inicial)")
-    );
-  }, 35 * 1000);
 });

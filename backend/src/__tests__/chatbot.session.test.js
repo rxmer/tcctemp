@@ -169,7 +169,7 @@ describe("chatbot.session", () => {
   });
 
   describe("listarSessoes", () => {
-    function mockListar({ count, data }) {
+    function mockListar({ count, data, mensagens = [] }) {
       const countQuery = mockQuery({
         then: (resolve) => resolve({ data: null, count, error: null }),
       });
@@ -177,16 +177,27 @@ describe("chatbot.session", () => {
         then: (resolve) => resolve({ data, error: null }),
       });
       supabaseAdmin.from.mockReturnValueOnce(countQuery).mockReturnValueOnce(dataQuery);
+      if (Array.isArray(data) && data.length > 0) {
+        const msgsQuery = mockQuery({
+          then: (resolve) => resolve({ data: mensagens, error: null }),
+        });
+        supabaseAdmin.from.mockReturnValueOnce(msgsQuery);
+      }
       return { countQuery, dataQuery };
     }
 
     it("deve listar sessoes do tenant com total", async () => {
-      const expected = [{ id: SESSION_ID }];
-      const { dataQuery } = mockListar({ count: 3, data: expected });
+      const { dataQuery } = mockListar({ count: 3, data: [{ id: SESSION_ID }] });
 
       const result = await sessionService.listarSessoes(TENANT_ID);
 
-      expect(result).toEqual({ data: expected, total: 3 });
+      expect(result.total).toBe(3);
+      expect(result.data[0]).toMatchObject({
+        id: SESSION_ID,
+        ultima_mensagem_remetente: null,
+        ultima_mensagem_tipo_media: null,
+        ultima_mensagem_previa: "",
+      });
       expect(dataQuery.order).toHaveBeenCalledWith("ultima_atividade", { ascending: false });
       expect(dataQuery.range).toHaveBeenCalledWith(0, 19);
     });
@@ -220,6 +231,53 @@ describe("chatbot.session", () => {
       expect(dataQuery.eq).toHaveBeenCalledWith("state", "FALANDO_COM_ATENDENTE");
       expect(dataQuery.or).toHaveBeenCalledWith(expect.stringContaining("client_name.ilike.%João%"));
       expect(dataQuery.or).toHaveBeenCalledWith(expect.stringContaining("client_phone.ilike.%João%"));
+    });
+
+    it("deve filtrar apenas as sessoes nao lidas quando naoLidasIds informado", async () => {
+      const ids = ["s1"];
+      const { countQuery, dataQuery } = mockListar({ count: 1, data: [] });
+
+      await sessionService.listarSessoes(TENANT_ID, { naoLidasIds: ids });
+
+      expect(countQuery.in).toHaveBeenCalledWith("id", ids);
+      expect(dataQuery.in).toHaveBeenCalledWith("id", ids);
+    });
+
+    it("deve priorizar nao lidas quando priorizarNaoLidas", async () => {
+      const ids = ["s1", "s2"];
+
+      const result = await sessionService.listarSessoes(TENANT_ID, {
+        naoLidasIds: ids,
+        priorizarNaoLidas: true,
+      });
+
+      expect(result).toEqual({ data: [], total: 0 });
+      const queryObjects = supabaseAdmin.from.mock.results.map((r) => r.value);
+      const usouIn = queryObjects.some((q) =>
+        q.in.mock.calls.some(
+          (c) => c[0] === "id" && JSON.stringify(c[1]) === JSON.stringify(ids)
+        )
+      );
+      expect(usouIn).toBe(true);
+    });
+
+    it("deve anexar a ultima mensagem de cada sessao", async () => {
+      mockListar({
+        count: 1,
+        data: [{ id: SESSION_ID, ultima_mensagem: "texto antigo" }],
+        mensagens: [
+          { session_id: SESSION_ID, remetente: "atendente", tipo_media: null, texto: "Olá! Atendendo.", criado_em: "2026-09-01T10:00:00Z" },
+          { session_id: "outra-sessao", remetente: "cliente", tipo_media: null, texto: "ignorada", criado_em: "2026-09-01T09:00:00Z" },
+        ],
+      });
+
+      const result = await sessionService.listarSessoes(TENANT_ID);
+
+      expect(result.data[0]).toMatchObject({
+        ultima_mensagem_remetente: "atendente",
+        ultima_mensagem_tipo_media: null,
+        ultima_mensagem_previa: "Olá! Atendendo.",
+      });
     });
 
     it("deve lancar erro na falha", async () => {
