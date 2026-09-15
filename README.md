@@ -34,11 +34,13 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 │       ├── services/      # API client
 │       ├── hooks/         # Custom hooks
 │       ├── context/       # Auth, Theme
+│       ├── utils/         # Helpers de formatação e de estado (chatbot)
 │       └── styles/        # CSS Modules
 ```
 
 ## Funcionalidades
 
+- **Dashboard** — visão geral com indicadores do dia (agendamentos de hoje, serviços realizados, total de clientes, faturamento do mês) e lista dos próximos agendamentos
 - **Clientes** — cadastro, edição, exclusão (admin), validação de telefone único
 - **Veículos** — vinculados a clientes, placa única, impedir exclusão com agendamentos futuros
 - **Serviços** — catálogo com preço base e duração, ativar/desativar (admin)
@@ -52,9 +54,10 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Comunicados** — envio de mensagens em massa via WhatsApp com filtros de destinatários. Histórico de disparos limitado ao número do WhatsApp conectado e tela bloqueada quando não há conexão (mostra orientação com botão para ir à tela de conexão)
 - **WhatsApp** — tela de conexão com QR Code de 60s, rotação automática limitada a 3 (~3 min) e recarga manual quando expirado; as conversas, comunicados e o widget dependem do número conectado
 - **Chatbot WhatsApp** — menu contextual, agendar, consultar, cancelar, recuperação de sessão. Datas bloqueadas (feriados/recesso) são removidas das opções de data e o bot orienta o cliente ao escolhê-las. Quando o cliente solicita atendente, o bot encaminha a notificação e oferece botões "Voltar ao bot" / "Continuar com atendente". Keywords como "menu", "0", "voltar" permitem retorno imediato ao bot. Sessões em atendimento humano voltam ao menu automaticamente após 5 min de inatividade
-- **Conversas WhatsApp** — histórico de conversas com busca, filtros por situação, ordenação e paginação, além da página de detalhe com o histórico de mensagens do chatbot
+- **Conversas WhatsApp** — lista em estilo inbox com avatar, prévia da última mensagem (cliente, "Você:" ou "Bot:", incluindo 🎤 áudio), contador de não lidas por conversa e tempo relativo. Abas de filtro (Todas, Não lidas, Com atendente, No menu, Agendando), busca, ordenação ("Não lidas primeiro", "Mais recentes", "Nome A-Z") e paginação. Ao selecionar uma conversa, o histórico com resposta manual do atendente abre ao lado em formato mestre-detalhe
 - **Widget de Conversas** — botão flutuante fixo no canto inferior direito com contador de mensagens não lidas. Painel com lista de conversas, chat inline com resposta manual do atendente, polling a cada 5s e CTA "Conectar WhatsApp" quando não há número conectado (direciona à tela de conexão e fecha o painel)
 - **Recuperação de senha** — fluxo por e-mail com link mágico, validação de e-mail cadastrado antes do envio, página de redefinição com sincronização entre abas e redefinição manual de senhas pelo admin
+- **Perfil** — troca de senha do usuário logado (confirmação da senha atual)
 - **Notificações** — central com status de leitura, lembretes automáticos com reenvio (máx 3 tentativas). Sino com ações rápidas para agendamentos passados (marcar falta) e conversas WhatsApp
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
 - **Multi-tenant** — isolamento total por `tenant_id` derivado do token JWT em todas as consultas
@@ -90,6 +93,10 @@ Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponíve
 Para o histórico de conversas do chatbot, execute também `docs/schema-chatbot-mensagens.sql`.
 
 Para o status "faltou" nos agendamentos, execute `docs/schema-falta-status.sql`.
+
+Para os comunicados em massa via WhatsApp, execute `docs/schema-comunicados.sql`.
+
+Para notas de voz (áudio) nas conversas, execute `docs/migracao-audio-chatbot.sql`.
 
 Para a recuperação de senha funcionar, configure em **Authentication → URL Configuration**:
 - **Redirect URLs**: adicione `http://localhost:5173/**`
@@ -132,11 +139,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 370 testes (24 arquivos)
-cd frontend && npm test   # 313 testes (45 arquivos)
+cd backend && npm test    # 394 testes (25 arquivos)
+cd frontend && npm test   # 318 testes (45 arquivos)
 ```
 
-> **683 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **712 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
