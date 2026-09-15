@@ -60,8 +60,12 @@ export default function App() {
                   <Route path="/clientes" element={<Clientes />} />
                   <Route path="/servicos" element={<Servicos />} />
                   <Route path="/veiculos" element={<Veiculos />} />
-                <Route path="/agendamentos" element={<Agendamentos />} />
-                <Route path="/ordens-servico" element={<OrdensServico />} />
+<Route path="/agendamentos" element={<Agendamentos />} />
+                  <Route path="/ordens-servico" element={<OrdensServico />} />
+                  <Route path="/whatsapp" element={<WhatsApp />} />
+                  <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />
+                  <Route path="/whatsapp/conversas/:id" element={<ConversaDetalhe />} />
+                  <Route path="/comunicados" element={<Comunicados />} />
 
                 <Route element={<ProtectedRoute adminOnly />}>
                   <Route path="/funcionarios" element={<Funcionario />} />
@@ -76,10 +80,6 @@ export default function App() {
                   <Route path="/financeiro" element={<Financeiro />} />
                   <Route path="/financeiro/contas-pagar" element={<ContasPagar />} />
                   <Route path="/financeiro/faturamentos" element={<Faturamentos />} />
-                  <Route path="/whatsapp" element={<WhatsApp />} />
-                  <Route path="/whatsapp/conversas" element={<WhatsAppConversas />} />
-                  <Route path="/whatsapp/conversas/:id" element={<ConversaDetalhe />} />
-                  <Route path="/comunicados" element={<Comunicados />} />
                 </Route>
                 <Route path="/perfil" element={<Perfil />} />
                 </Route>

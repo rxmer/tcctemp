@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { whatsappService } from "../services/whatsapp.service";
 import { formatPhone } from "../utils/formatPhone";
-import { useAuth } from "../context/useAuth";
 import styles from "../styles/components/WhatsAppFab.module.css";
 import { MessageCircle, X } from "lucide-react";
 
@@ -20,7 +19,6 @@ function formatDate(dateStr) {
 }
 
 export function WhatsAppFab() {
-  const { isAdmin } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -29,8 +27,6 @@ export function WhatsAppFab() {
   const ref = useRef(null);
 
   useEffect(() => {
-    if (!isAdmin) return;
-
     let mounted = true;
 
     async function fetchCount() {
@@ -49,7 +45,7 @@ export function WhatsAppFab() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [isAdmin]);
+  }, []);
 
   async function handleToggle() {
     if (!isOpen) {
@@ -87,8 +83,6 @@ export function WhatsAppFab() {
     setIsOpen(false);
     navigate(`/whatsapp/conversas/${id}`);
   }
-
-  if (!isAdmin) return null;
 
   return (
     <div className={styles.container} ref={ref}>

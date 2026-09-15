@@ -157,10 +157,6 @@ const rotasSomenteAdmin = [
   ["POST", "/api/datas-bloqueadas"],
   ["DELETE", `/api/datas-bloqueadas/${IDX}`],
   ["GET", "/api/relatorios/geral"],
-  ["GET", "/api/comunicados"],
-  ["POST", "/api/comunicados"],
-  ["GET", "/api/chatbot/status"],
-  ["GET", "/api/chatbot/sessions"],
 ];
 
 const rotasAdminOk = [
@@ -179,6 +175,9 @@ const rotasComunsFuncionario = [
   ["GET", "/api/notificacoes/contagem"],
   ["GET", "/api/dashboard/resumo"],
   ["GET", "/api/servicos?limit=5"],
+  ["GET", "/api/comunicados"],
+  ["GET", "/api/chatbot/status"],
+  ["GET", "/api/chatbot/sessions"],
 ];
 
 describe("E2E Autorizacao - funcionario barrado em rotas de admin", () => {
@@ -202,5 +201,12 @@ describe("E2E Autorizacao - funcionario acessa rotas comuns com 200", () => {
     if (offline()) return;
     const res = await pedir(tokenFunc, caminho, metodo);
     expect(res.status).toBe(200);
+  });
+
+  it("funcionario cria comunicado sem barreira de admin (validacao 400, nao 403)", async () => {
+    if (offline()) return;
+    const res = await pedir(tokenFunc, "/api/comunicados", "POST", {});
+    expect(res.status).not.toBe(403);
+    expect(res.status).toBe(400);
   });
 });

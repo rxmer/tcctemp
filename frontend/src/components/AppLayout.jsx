@@ -57,7 +57,6 @@ const NAV_GROUPS = [
   {
     label: "WhatsApp",
     icon: MessageCircle,
-    adminOnly: true,
     items: [
       { label: "Conexão", path: "/whatsapp", exact: true },
       { label: "Conversas", path: "/whatsapp/conversas" },
