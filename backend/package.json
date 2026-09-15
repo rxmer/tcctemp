@@ -6,7 +6,9 @@
     "dev": "nodemon --ignore baileys_auth_* src/index.js",
     "start": "node src/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "stress:chatbot": "vitest run --config vitest.stress.config.js stress/chatbot.stress.test.js",
+    "stress:api": "node stress/api.stress.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.3",
