@@ -264,4 +264,46 @@ describe("E2E Sobreposicao de agendamento", () => {
     },
     30000
   );
+
+  it(
+    "reagendar (PUT) para horario conflitante retorna 409 e mantem o original",
+    async () => {
+      if (offline()) return;
+      const slot = await acharSlot();
+      if (!slot) { expect.fail("nenhum dia livre encontrado"); return; }
+
+      const b = dados.dadosB;
+      const servico = menorServico(b.servicos);
+      const base = {
+        cliente_id: b.veiculos[0].cliente_id,
+        veiculo_id: b.veiculos[0].veiculo_id,
+        servico_id: servico.servico_id,
+        data_agendamento: slot.data,
+      };
+
+      const um = await pedir(tokenB, "/api/agendamentos", "POST", { ...base, hora_agendamento: "10:00" });
+      expect(um.status).toBe(201);
+      criados.push({ token: tokenB, id: um.body.agendamento_id });
+
+      const alvo = await pedir(tokenB, "/api/agendamentos", "POST", { ...base, hora_agendamento: "11:00" });
+      expect(alvo.status).toBe(201);
+      const alvoId = alvo.body.agendamento_id;
+      criados.push({ token: tokenB, id: alvoId });
+
+      const conflito = await pedir(tokenB, `/api/agendamentos/${alvoId}`, "PUT", { hora_agendamento: "10:00" });
+      expect(conflito.status).toBe(409);
+      expect(conflito.body.error).toMatch(/conflita|conflito/i);
+
+      const lista = await pedir(tokenB, `/api/agendamentos?data_inicio=${slot.data}&data_fim=${slot.data}&limit=100`);
+      const original = (lista.body.data ?? []).find((a) => a.agendamento_id === alvoId);
+      expect(original).toBeTruthy();
+      expect(original.hora_agendamento.slice(0, 5)).toBe("11:00");
+      expect(original.status).toBe("pendente");
+
+      const livre = await pedir(tokenB, `/api/agendamentos/${alvoId}`, "PUT", { hora_agendamento: "09:00" });
+      expect(livre.status).toBe(200);
+      expect(livre.body.data?.hora_agendamento?.slice(0, 5) ?? livre.body.hora_agendamento?.slice(0, 5)).toBe("09:00");
+    },
+    30000
+  );
 });
