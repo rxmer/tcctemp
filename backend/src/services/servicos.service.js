@@ -45,6 +45,17 @@ export async function listarServicos(tenantId, { page = 1, limit = 20, search = 
 }
 
 export async function atualizarServico(id, tenantId, updates) {
+  const { data: existente, error: fetchError } = await supabaseAdmin
+    .from("servico")
+    .select("servico_id")
+    .eq("servico_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .maybeSingle();
+
+  if (fetchError) throw new AppError(`Erro ao buscar serviço: ${fetchError.message}`);
+  if (!existente) throw new AppError("Serviço não encontrado", 404);
+
   const { data, error } = await supabaseAdmin
     .from("servico")
     .update(updates)
@@ -59,6 +70,17 @@ export async function atualizarServico(id, tenantId, updates) {
 
 export async function deletarServico(id, tenantId) {
   const hoje = dataLocalISO();
+
+  const { data: servico, error: fetchError } = await supabaseAdmin
+    .from("servico")
+    .select("servico_id")
+    .eq("servico_id", id)
+    .eq("tenant_id", tenantId)
+    .is("deletado_em", null)
+    .maybeSingle();
+
+  if (fetchError) throw new AppError(`Erro ao buscar serviço: ${fetchError.message}`);
+  if (!servico) throw new AppError("Serviço não encontrado", 404);
 
   const { count: agAtivos } = await supabaseAdmin
     .from("agendamentos")
