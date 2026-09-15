@@ -21,6 +21,7 @@ const STATUS_LABELS = {
 export function WhatsApp() {
   const [state, setState] = useState({ status: "disconnected" });
   const [loading, setLoading] = useState(false);
+  const [rateLimitado, setRateLimitado] = useState(false);
   const { feedback, showFeedback } = useFeedback();
   const { confirm, ConfirmModal } = useConfirm();
   const mounted = useRef(true);
@@ -32,8 +33,14 @@ export function WhatsApp() {
     inFlight.current = true;
     try {
       const data = await whatsappService.getStatus();
-      if (mounted.current) setState(data);
+      if (mounted.current) {
+        setState(data);
+        if (rateLimitado) setRateLimitado(false);
+      }
     } catch (err) {
+      if (err?.status === 429) {
+        if (mounted.current) setRateLimitado(true);
+      }
       const now = Date.now();
       if (mounted.current && now - lastErrorShown.current > 30000) {
         lastErrorShown.current = now;
@@ -52,8 +59,8 @@ export function WhatsApp() {
     };
   }, [state.status]);
 
-  const fast = ["awaiting_qr", "qr_expired", "connecting", "reconnecting"].includes(state.status);
-  usePolling(carregarStatus, fast ? 3000 : 10000);
+  const fast = state.status === "qr_expired";
+  usePolling(carregarStatus, (fast ? 3 : rateLimitado ? 60 : 10) * 1000);
 
   async function handleConnect() {
     try {

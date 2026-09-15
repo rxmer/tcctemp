@@ -70,7 +70,10 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!result.ok) {
-    throw new Error(result.body?.error ?? `Erro ${result.status}`);
+    const err = new Error(result.body?.error ?? `Erro ${result.status}`);
+    err.status = result.status;
+    err.body = result.body;
+    throw err;
   }
 
   return result.data;

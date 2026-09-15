@@ -8,6 +8,7 @@ import { routes } from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { env } from "./config/env.js";
 import { swaggerSpec } from "./config/swagger.js";
+import { createHash } from "node:crypto";
 
 const app = express();
 
@@ -21,11 +22,19 @@ if (env.nodeEnv !== "production") {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
 
+function chaveLimite(req) {
+  const auth = req.headers.authorization ?? "";
+  const token = auth.replace(/^Bearer\s+/i, "").trim();
+  if (token) return `t:${createHash("sha256").update(token).digest("hex").slice(0, 24)}`;
+  return `i:${req.ip ?? "desconhecido"}`;
+}
+
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: chaveLimite,
   message: { error: "Muitas requisições. Tente novamente em alguns minutos." },
 });
 
