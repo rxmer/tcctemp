@@ -163,4 +163,24 @@ describe("E2E Multi-tenant - acesso cruzado", () => {
     const res = await pedir(tokA(), `/api/clientes/${alvo.cliente_id}`, "PUT", { nome: alvo.nome });
     expect(res.status).toBe(200);
   });
+
+  it("tenant B nao atualiza agendamento de A", async () => {
+    if (offline()) return;
+    const lista = await pedir(tokA(), "/api/agendamentos?limit=100");
+    expect(lista.body.data.length).toBeGreaterThanOrEqual(1);
+    const alvo = lista.body.data[0];
+    const res = await pedir(tokB(), `/api/agendamentos/${alvo.agendamento_id}`, "PUT", { data_agendamento: "2099-01-01" });
+    expect(res.status).toBe(404);
+  });
+
+  it("tenant B nao deleta agendamento de A", async () => {
+    if (offline()) return;
+    const lista = await pedir(tokA(), "/api/agendamentos?limit=100");
+    expect(lista.body.data.length).toBeGreaterThanOrEqual(1);
+    const alvo = lista.body.data[0];
+    const res = await pedir(tokB(), `/api/agendamentos/${alvo.agendamento_id}`, "DELETE");
+    expect(res.status).toBe(404);
+    const depois = await pedir(tokA(), "/api/agendamentos?limit=100");
+    expect(depois.body.data.some((a) => a.agendamento_id === alvo.agendamento_id)).toBe(true);
+  });
 });
