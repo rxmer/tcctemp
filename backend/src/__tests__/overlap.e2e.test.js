@@ -348,4 +348,47 @@ describe("E2E Sobreposicao de agendamento", () => {
     },
     30000
   );
+
+  it(
+    "sobreposicao parcial: servico que invade horario de outro agendamento e bloqueado",
+    async () => {
+      if (offline()) return;
+      const slot = await acharSlot();
+      if (!slot) { expect.fail("nenhum dia livre encontrado"); return; }
+
+      const b = dados.dadosB;
+      const duracao = menorServico(b.servicos).duracao_min ?? 45;
+      const base = {
+        cliente_id: b.veiculos[0].cliente_id,
+        veiculo_id: b.veiculos[0].veiculo_id,
+        servico_id: menorServico(b.servicos).servico_id,
+        data_agendamento: slot.data,
+      };
+
+      const t1 = "11:00";
+      const fim1Min = 11 * 60 + duracao;
+      const t2 = `${String(Math.floor((fim1Min - 15) / 60)).padStart(2, "0")}:${String((fim1Min - 15) % 60).padStart(2, "0")}`;
+      const tLivreMin = fim1Min + 1;
+      const tLivre = `${String(Math.floor(tLivreMin / 60)).padStart(2, "0")}:${String(tLivreMin % 60).padStart(2, "0")}`;
+
+      const criado = await pedir(tokenB, "/api/agendamentos", "POST", { ...base, hora_agendamento: t1 });
+      expect(criado.status).toBe(201);
+      criados.push({ token: tokenB, id: criado.body.agendamento_id });
+
+      const parcial = await pedir(tokenB, "/api/agendamentos", "POST", { ...base, hora_agendamento: t2 });
+      expect(parcial.status).toBe(409);
+      expect(parcial.body.error).toMatch(/conflita|conflito/i);
+
+      const livre = await pedir(tokenB, "/api/agendamentos", "POST", { ...base, hora_agendamento: tLivre });
+      expect(livre.status).toBe(201);
+      criados.push({ token: tokenB, id: livre.body.agendamento_id });
+
+      const lista = await pedir(tokenB, `/api/agendamentos?data_inicio=${slot.data}&data_fim=${slot.data}&limit=100`);
+      const ativos = (lista.body.data ?? []).filter(
+        (a) => [t1, tLivre].includes(a.hora_agendamento.slice(0, 5)) && ["pendente", "confirmado", "em_andamento"].includes(a.status)
+      );
+      expect(ativos.length).toBe(2);
+    },
+    30000
+  );
 });
