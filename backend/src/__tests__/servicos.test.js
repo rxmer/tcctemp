@@ -80,6 +80,7 @@ describe("servicosService", () => {
     it("deve atualizar servico", async () => {
       const expected = { servico_id: 1, nome_servico: "Premium" };
       supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { servico_id: 1 }, error: null }),
         single: vi.fn().mockResolvedValue({ data: expected, error: null }),
       }));
 
@@ -90,26 +91,46 @@ describe("servicosService", () => {
 
     it("deve lancar erro ao atualizar", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { servico_id: 1 }, error: null }),
         single: vi.fn().mockResolvedValue({ data: null, error: new Error("Update error") }),
       }));
 
       await expect(servicosService.atualizarServico(1, TENANT_ID, {})).rejects.toThrow("Erro ao atualizar serviço");
     });
+
+    it("deve lancar Servico nao encontrado quando nao pertencer ao tenant", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }));
+
+      await expect(servicosService.atualizarServico(999, TENANT_ID, {})).rejects.toThrow("Serviço não encontrado");
+    });
   });
 
   describe("deletarServico", () => {
     it("deve soft-deletar servico", async () => {
-      supabaseAdmin.from.mockReturnValue(mockQuery());
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { servico_id: 1 }, error: null }),
+      }));
 
       await servicosService.deletarServico(1, TENANT_ID);
     });
 
     it("deve lancar erro ao deletar", async () => {
       supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { servico_id: 1 }, error: null }),
         then: (resolve) => resolve({ data: null, error: new Error("Delete error") }),
       }));
 
       await expect(servicosService.deletarServico(1, TENANT_ID)).rejects.toThrow("Erro ao deletar serviço");
+    });
+
+    it("deve lancar Servico nao encontrado quando nao pertencer ao tenant", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }));
+
+      await expect(servicosService.deletarServico(999, TENANT_ID)).rejects.toThrow("Serviço não encontrado");
     });
   });
 
