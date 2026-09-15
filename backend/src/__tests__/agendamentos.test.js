@@ -161,6 +161,13 @@ describe("agendamentoService", () => {
       });
       await expect(agendamentoService.atualizarAgendamento(1, "t1", { data_agendamento: "2020-01-01" })).rejects.toThrow("data passada");
     });
+
+    it("deve retornar 404 para atualizacao de agendamento inexistente (apenas observacoes)", async () => {
+      supabaseAdmin.from.mockReturnValue(
+        q({ single: vi.fn().mockResolvedValue({ data: null, error: { code: "PGRST116", message: "JSON object requested, multiple (or no) rows returned" } }) })
+      );
+      await expect(agendamentoService.atualizarAgendamento(999, "t1", { observacoes: "obs" })).rejects.toThrow("Agendamento não encontrado");
+    });
   });
 
   describe("deletarAgendamento", () => {

@@ -458,7 +458,12 @@ export async function atualizarAgendamento(id, tenantId, updates) {
     .single();
 
   if (error) {
-    if (ehConflitoDeSlot(error)) throw new AppError("Este horário conflita com outro agendamento", 409);
+    if (error?.code === "PGRST116") {
+      throw new AppError("Agendamento não encontrado", 404);
+    }
+    if (ehConflitoDeSlot(error)) {
+      throw new AppError("Este horário conflita com outro agendamento", 409);
+    }
     throw new AppError(`Erro ao atualizar agendamento: ${error.message}`);
   }
 
