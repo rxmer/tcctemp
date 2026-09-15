@@ -30,6 +30,7 @@ async function pedir(tok, caminho, metodo = "GET", corpo = null) {
   if (metodo === "GET") req = req.get(caminho);
   else if (metodo === "POST") req = req.post(caminho);
   else if (metodo === "PUT") req = req.put(caminho);
+  else if (metodo === "PATCH") req = req.patch(caminho);
   else if (metodo === "DELETE") req = req.delete(caminho);
   if (tok) req = req.set("Authorization", `Bearer ${tok}`);
   if (corpo) req = req.send(corpo);
@@ -123,5 +124,83 @@ describe("E2E Autorizacao - funcionario nao admin", () => {
     const id = lista.body.data[0].agendamento_id;
     const res = await pedir(tokenFunc, `/api/agendamentos/${id}`, "DELETE");
     expect(res.status).toBe(403);
+  });
+});
+
+const IDX = "00000000-0000-0000-0000-000000000000";
+
+const rotasSomenteAdmin = [
+  ["GET", "/api/funcionarios"],
+  ["POST", "/api/funcionarios"],
+  ["PUT", `/api/funcionarios/${IDX}`],
+  ["PUT", `/api/funcionarios/${IDX}/senha`],
+  ["DELETE", `/api/funcionarios/${IDX}`],
+  ["GET", "/api/configuracao-empresa"],
+  ["PUT", "/api/configuracao-empresa"],
+  ["POST", "/api/servicos"],
+  ["PUT", `/api/servicos/${IDX}`],
+  ["PATCH", `/api/servicos/${IDX}/toggle`],
+  ["DELETE", `/api/servicos/${IDX}`],
+  ["DELETE", `/api/clientes/${IDX}`],
+  ["DELETE", `/api/veiculos/${IDX}`],
+  ["DELETE", `/api/agendamentos/${IDX}`],
+  ["DELETE", `/api/ordens-servico/${IDX}`],
+  ["DELETE", `/api/ordens-servico/${IDX}/itens/${IDX}`],
+  ["GET", "/api/financeiro/resumo"],
+  ["GET", "/api/financeiro/contas"],
+  ["POST", "/api/financeiro/contas"],
+  ["PUT", `/api/financeiro/contas/${IDX}`],
+  ["DELETE", `/api/financeiro/contas/${IDX}`],
+  ["GET", "/api/expediente"],
+  ["PUT", "/api/expediente"],
+  ["GET", "/api/datas-bloqueadas"],
+  ["POST", "/api/datas-bloqueadas"],
+  ["DELETE", `/api/datas-bloqueadas/${IDX}`],
+  ["GET", "/api/relatorios/geral"],
+  ["GET", "/api/comunicados"],
+  ["POST", "/api/comunicados"],
+  ["GET", "/api/chatbot/status"],
+  ["GET", "/api/chatbot/sessions"],
+];
+
+const rotasAdminOk = [
+  ["GET", "/api/funcionarios"],
+  ["GET", "/api/configuracao-empresa"],
+  ["GET", "/api/expediente"],
+  ["GET", "/api/datas-bloqueadas"],
+  ["GET", "/api/financeiro/resumo"],
+  ["GET", "/api/relatorios/geral"],
+  ["GET", "/api/comunicados"],
+  ["GET", "/api/chatbot/status"],
+];
+
+const rotasComunsFuncionario = [
+  ["GET", "/api/notificacoes"],
+  ["GET", "/api/notificacoes/contagem"],
+  ["GET", "/api/dashboard/resumo"],
+  ["GET", "/api/servicos?limit=5"],
+];
+
+describe("E2E Autorizacao - funcionario barrado em rotas de admin", () => {
+  it.each(rotasSomenteAdmin)("%s %s -> 403", async (metodo, caminho) => {
+    if (offline()) return;
+    const res = await pedir(tokenFunc, caminho, metodo, {});
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("E2E Autorizacao - admin acessa rotas restritas com 200", () => {
+  it.each(rotasAdminOk)("%s %s -> 200", async (metodo, caminho) => {
+    if (offline()) return;
+    const res = await pedir(tokenAdmin, caminho, metodo);
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("E2E Autorizacao - funcionario acessa rotas comuns com 200", () => {
+  it.each(rotasComunsFuncionario)("%s %s -> 200", async (metodo, caminho) => {
+    if (offline()) return;
+    const res = await pedir(tokenFunc, caminho, metodo);
+    expect(res.status).toBe(200);
   });
 });
