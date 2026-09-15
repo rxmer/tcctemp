@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePolling } from "../hooks/usePolling";
+import { useConfirm } from "../hooks/useConfirm";
 import { notificacoesService } from "../services/notificacoes.service";
 import { agendamentosService } from "../services/agendamentos.service";
 import styles from "../styles/components/NotificacaoBell.module.css";
@@ -10,22 +11,10 @@ export function NotificacaoBell() {
   const [contagem, setContagem] = useState(0);
   const [aberto, setAberto] = useState(false);
   const [processando, setProcessando] = useState(null);
+  const { confirm, ConfirmModal } = useConfirm();
   const navigate = useNavigate();
   const ref = useRef(null);
   const mountedRef = useRef(true);
-
-  async function carregar() {
-    try {
-      const [lista, cnt] = await Promise.all([
-        notificacoesService.listar(),
-        notificacoesService.contar(),
-      ]);
-      setNotificacoes(lista);
-      setContagem(cnt.count);
-} catch (err) {
-        console.error("Erro notificações:", err.message);
-      }
-  }
 
   async function carregarContagem() {
     try {
@@ -95,6 +84,18 @@ export function NotificacaoBell() {
     }
   }
 
+  async function handleLimpar() {
+    const ok = await confirm("Limpar todas as notificações?");
+    if (!ok) return;
+    try {
+      await notificacoesService.limparTudo();
+      setNotificacoes([]);
+      setContagem(0);
+    } catch {
+      // ignorado
+    }
+  }
+
   function formatTempo(dataStr) {
     const d = new Date(dataStr);
     const agora = new Date();
@@ -155,11 +156,18 @@ console.error("Erro notificações:", err.message);
         <div id="notificacoes-dropdown" className={styles.dropdown}>
           <div className={styles.header}>
             <strong>Notificações</strong>
-            {notificacoes.some((n) => !n.lida) && (
-              <button className={styles.markAllBtn} onClick={handleMarcarTodas}>
-                Marcar todas lidas
-              </button>
-            )}
+            <div className={styles.headerAcoes}>
+              {notificacoes.some((n) => !n.lida) && (
+                <button className={styles.markAllBtn} onClick={handleMarcarTodas}>
+                  Marcar todas lidas
+                </button>
+              )}
+              {notificacoes.length > 0 && (
+                <button className={styles.clearBtn} onClick={handleLimpar}>
+                  Limpar
+                </button>
+              )}
+            </div>
           </div>
           <div className={styles.lista}>
             {notificacoes.length === 0 ? (
@@ -202,6 +210,7 @@ console.error("Erro notificações:", err.message);
           </div>
         </div>
       )}
+      <ConfirmModal />
     </div>
   );
 }

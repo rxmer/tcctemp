@@ -10,3 +10,4 @@ notificacoesRoutes.get("/", notificacoesController.listar);
 notificacoesRoutes.get("/contagem", notificacoesController.contar);
 notificacoesRoutes.patch("/:id/lida", notificacoesController.marcarLida);
 notificacoesRoutes.post("/marcar-todas-lidas", notificacoesController.marcarTodasLidas);
+notificacoesRoutes.delete("/", notificacoesController.apagar);

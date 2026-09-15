@@ -515,6 +515,12 @@ const options = {
           security: [{ bearerAuth: [] }],
           responses: { 200: { description: "Lista de notificações" } },
         },
+        delete: {
+          tags: ["Notificações"],
+          summary: "Limpar todas as notificações",
+          security: [{ bearerAuth: [] }],
+          responses: { 200: { description: "Notificações limpas" } },
+        },
       },
       "/api/notificacoes/contagem": {
         get: {

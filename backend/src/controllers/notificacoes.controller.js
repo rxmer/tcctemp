@@ -24,6 +24,12 @@ export async function marcarTodasLidas(req, res) {
   res.json({ message: "Todas notificações marcadas como lidas" });
 }
 
+export async function apagar(req, res) {
+  await notificacoesService.apagarNotificacoes(req.tenantId);
+  await cacheDel(countKey(req.tenantId));
+  res.json({ message: "Notificações limpas" });
+}
+
 export async function contar(req, res) {
   const count = await cacheGetOrSet(countKey(req.tenantId), () => notificacoesService.contarNaoLidas(req.tenantId), 30);
   res.json({ count });

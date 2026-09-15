@@ -78,6 +78,15 @@ export async function marcarTodasComoLidas(tenantId) {
   if (error) throw new AppError(`Erro ao marcar notificações como lidas: ${error.message}`);
 }
 
+export async function apagarNotificacoes(tenantId) {
+  const { error } = await supabaseAdmin
+    .from("notificacoes")
+    .delete()
+    .eq("tenant_id", tenantId);
+
+  if (error) throw new AppError(`Erro ao limpar notificações: ${error.message}`);
+}
+
 export async function contarNaoLidas(tenantId) {
   const { count, error } = await supabaseAdmin
     .from("notificacoes")

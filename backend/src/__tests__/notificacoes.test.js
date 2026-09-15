@@ -5,6 +5,7 @@ import {
   listarNotificacoes,
   marcarComoLida,
   marcarTodasComoLidas,
+  apagarNotificacoes,
   contarNaoLidas,
 } from "../services/notificacoes.service.js";
 
@@ -13,6 +14,7 @@ function mockQuery(overrides = {}) {
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
@@ -120,6 +122,24 @@ describe("notificacoesService", () => {
       }));
 
       await expect(marcarTodasComoLidas(TENANT_ID)).rejects.toThrow("Erro ao marcar notificações como lidas");
+    });
+  });
+
+  describe("apagarNotificacoes", () => {
+    it("deve limpar notificacoes do tenant", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery());
+
+      await apagarNotificacoes(TENANT_ID);
+
+      expect(supabaseAdmin.from).toHaveBeenCalledWith("notificacoes");
+    });
+
+    it("deve lancar erro se limpar falhar", async () => {
+      supabaseAdmin.from.mockReturnValue(mockQuery({
+        then: (resolve) => resolve({ data: null, error: new Error("DB error") }),
+      }));
+
+      await expect(apagarNotificacoes(TENANT_ID)).rejects.toThrow("Erro ao limpar notificações");
     });
   });
 

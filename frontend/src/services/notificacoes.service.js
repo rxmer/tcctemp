@@ -13,4 +13,6 @@ export const notificacoesService = {
 
   marcarTodasLidas: () =>
     apiFetch("/api/notificacoes/marcar-todas-lidas", { method: "POST" }),
+
+  limparTudo: () => apiFetch("/api/notificacoes", { method: "DELETE" }),
 };

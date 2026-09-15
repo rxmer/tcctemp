@@ -9,6 +9,7 @@ vi.mock("../services/notificacoes.service", () => ({
     contar: vi.fn(),
     marcarLida: vi.fn(),
     marcarTodasLidas: vi.fn(),
+    limparTudo: vi.fn(),
   },
 }));
 
@@ -18,8 +19,13 @@ vi.mock("../services/agendamentos.service", () => ({
   },
 }));
 
+vi.mock("../hooks/useConfirm", () => ({
+  useConfirm: vi.fn(() => ({ confirm: vi.fn(), ConfirmModal: () => null })),
+}));
+
 import { notificacoesService } from "../services/notificacoes.service";
 import { agendamentosService } from "../services/agendamentos.service";
+import { useConfirm } from "../hooks/useConfirm";
 
 const notifRevisao = {
   notificacao_id: 10,
@@ -118,5 +124,46 @@ describe("NotificacaoBell - acoes de revisao de agendamento passado", () => {
     await screen.findByText(/continua confirmado|Lembrete não entregue/i);
 
     expect(screen.queryByText("Cliente faltou")).not.toBeInTheDocument();
+  });
+});
+
+describe("NotificacaoBell - limpar notificacoes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    notificacoesService.listar.mockResolvedValue([notifRevisao]);
+    notificacoesService.contar.mockResolvedValue({ count: 1 });
+  });
+
+  it("mostra botao Limpar quando ha notificacoes", async () => {
+    renderBell();
+    await waitFor(() => expect(notificacoesService.listar).toHaveBeenCalled());
+    fireEvent.click(screen.getByTitle("Notificações"));
+
+    expect(await screen.findByText("Limpar")).toBeInTheDocument();
+  });
+
+  it("limpa notificacoes apos confirmar", async () => {
+    useConfirm.mockReturnValue({ confirm: vi.fn().mockResolvedValue(true), ConfirmModal: () => null });
+    notificacoesService.limparTudo.mockResolvedValue({ message: "Notificações limpas" });
+    renderBell();
+
+    await waitFor(() => expect(notificacoesService.listar).toHaveBeenCalled());
+    fireEvent.click(screen.getByTitle("Notificações"));
+    fireEvent.click(await screen.findByText("Limpar"));
+
+    await waitFor(() => expect(notificacoesService.limparTudo).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText(/O agendamento de Ana/)).not.toBeInTheDocument());
+  });
+
+  it("nao limpa quando o usuario cancela a confirmacao", async () => {
+    useConfirm.mockReturnValue({ confirm: vi.fn().mockResolvedValue(false), ConfirmModal: () => null });
+    renderBell();
+
+    await waitFor(() => expect(notificacoesService.listar).toHaveBeenCalled());
+    fireEvent.click(screen.getByTitle("Notificações"));
+    fireEvent.click(await screen.findByText("Limpar"));
+
+    expect(notificacoesService.limparTudo).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByText(/O agendamento de Ana/)).toBeInTheDocument());
   });
 });
