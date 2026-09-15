@@ -3,11 +3,12 @@ import { logger } from "../config/logger.js";
 
 export function errorHandler(err, _req, res, _next) {
   if (err instanceof AppError) {
-    logger.error({ err }, err.message);
-
     if (err.statusCode >= 500) {
+      logger.error({ err }, err.message);
       return res.status(err.statusCode).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
     }
+
+    logger.warn({ err }, err.message);
 
     const publicMessage =
       err.publicMessage ??
