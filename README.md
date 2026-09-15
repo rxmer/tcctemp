@@ -88,13 +88,9 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 
 ### 2. Supabase
 
-Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`).
-
-Para o histórico de conversas do chatbot, execute também `docs/schema-chatbot-mensagens.sql`.
+Crie um projeto no Supabase e execute o SQL de criação das tabelas (disponível em `docs/schema.sql`) — ele já inclui clientes, veículos, serviços, agendamentos, ordens de serviço, financeiro, chatbot (`chatbot_session` e `chatbot_mensagem`), comunicados em massa e configurações.
 
 Para o status "faltou" nos agendamentos, execute `docs/schema-falta-status.sql`.
-
-Para os comunicados em massa via WhatsApp, execute `docs/schema-comunicados.sql`.
 
 Para notas de voz (áudio) nas conversas, execute `docs/migracao-audio-chatbot.sql`.
 

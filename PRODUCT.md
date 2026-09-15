@@ -63,7 +63,7 @@ The name "EstetiCar" is the project name; no committed logo, slogan, or brand sy
 
 - `README.md` — functional overview, business rules, setup, production gaps.
 - `projetoDetalhado.md` — detailed project documentation (architecture, stack, DB).
-- `docs/schema.sql` + `docs/schema-chatbot-mensagens.sql`, `schema-comunicados.sql`, `schema-falta-status.sql` — versioned database schema.
+- `docs/schema.sql` + `docs/schema-falta-status.sql` e demais `docs/migration-*.sql` — versioned database schema.
 - 583 automated tests (backend + frontend) pass.
 - Real customer testimonials, benchmarks, or production usage data do not exist and must not be fabricated.
 
