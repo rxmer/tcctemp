@@ -98,6 +98,8 @@ Para os comunicados em massa via WhatsApp, execute `docs/schema-comunicados.sql`
 
 Para notas de voz (áudio) nas conversas, execute `docs/migracao-audio-chatbot.sql`.
 
+Para notificações do chatbot (que referenciam sessões por UUID), execute `docs/migration-notificacoes-referencia-id-text.sql` — alinha `notificacoes.referencia_id` com `TEXT` conforme o schema.
+
 Para a recuperação de senha funcionar, configure em **Authentication → URL Configuration**:
 - **Redirect URLs**: adicione `http://localhost:5173/**`
 - Opcional: traduza o template **Emails → Templates → Reset Password** para português (a variável `{{ .ConfirmationURL }}` é o link mágico)
