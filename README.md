@@ -62,7 +62,7 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - **Autenticação** — JWT, dois perfis (admin/funcionário), proteção de rotas com `requireAdmin`, sessão em `sessionStorage`
 - **Multi-tenant** — isolamento total por `tenant_id` derivado do token JWT em todas as consultas
 - **Validação de entrada** — schemas Zod em todas as rotas de escrita (criação e atualização)
-- **Segurança** — Helmet, CORS restrito, rate limiting (global + login + exportações), sanitização de erros internos, logs sem dados pessoais, credenciais do WhatsApp criptografadas em repouso (AES-256-GCM via `BAILEYS_AUTH_PASSWORD`), Swagger apenas fora de produção
+- **Segurança** — Helmet, CORS restrito, rate limiting por token JWT no app (600 req/15min) + login e exportações, sanitização de erros internos, logs sem dados pessoais, credenciais do WhatsApp criptografadas em repouso (AES-256-GCM via `BAILEYS_AUTH_PASSWORD`), Swagger apenas fora de produção
 - **Manutenção automática** — limpeza de notificações antigas (>30 dias), expiração de sessões do chatbot (incluindo atendimento humano), lembretes com tolerância para reinicialização do servidor
 - **Máscara de telefone** — formatação `(11) 99999-9999` em todo o sistema
 - **Responsividade** — layout adaptável para mobile (≤ 768px), tabelas viram cards
@@ -78,6 +78,37 @@ Sistema web com chatbot integrado ao WhatsApp para gestão completa de estética
 - Cliente/veículo/serviço não podem ser excluídos se vinculados a registros ativos
 - Conta paga e faturamento recebido não podem ser pagos novamente
 - Atendimento humano no chatbot: cliente pode voltar ao bot a qualquer momento via keywords ou botões; timeout de 5 min sem atividade retorna automaticamente ao menu
+
+## Arquitetura
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                        FRONTEND (React + Vite)              │
+│  Login/recuperação ──► Supabase Auth (direto, PKCE)         │
+│  Demais dados     ──► fetch /api ... (backend)              │
+└──────────────────────┬─────────────────────────────────────┘
+                       │ Bearer JWT
+                       ▼
+┌────────────────────────────────────────────────────────────┐
+│              BACKEND (Node.js + Express)                    │
+│  1. Autentica o token via Supabase (supabaseAdmin)          │
+│  2. Aplica RBAC (admin/funcionário) — requireAdmin          │
+│  3. Regras de negócio (expediente, conflitos, status, etc.) │
+│  4. Acessa o banco com service role key                     │
+│  └─ chatbot Baileys (WhatsApp Web) embutido no processo     │
+└──────────────────────┬─────────────────────────────────────┘
+                       ▼
+┌────────────────────────────────────────────────────────────┐
+│           SUPABASE (Auth + PostgreSQL)                      │
+│  Tabelas: tenants, usuarios, clientes, veiculos, servicos, │
+│  agendamentos, ordens_servico, financeiro, chatbot_session,│
+│  chatbot_mensagem, comunicados, notificacoes e mais        │
+└────────────────────────────────────────────────────────────┘
+```
+
+- A autenticação usa Supabase Auth direto no frontend (login, cadastro, recuperação de senha); o backend valida o token a cada request e deriva `tenant_id`/`perfil` da tabela `usuarios`.
+- O banco só é acessado pelo backend com `service_role_key` (bypassa RLS); o frontend nunca recebe a chave.
+- O isolamento multi-tenant é aplicado nas queries por `tenant_id` e reforçado por autorização por perfil nas rotas.
 
 ## Setup para Desenvolvimento
 
@@ -137,11 +168,11 @@ O schema completo está versionado em `docs/schema.sql`. Para criar as tabelas, 
 ### 7. Testes
 
 ```bash
-cd backend && npm test    # 394 testes (25 arquivos)
+cd backend && npm test    # 468 testes (30 arquivos)
 cd frontend && npm test   # 318 testes (45 arquivos)
 ```
 
-> **712 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
+> **786 testes automatizados** (Vitest) — backend e frontend, 0 falhas.
 
 ## O que falta para produção
 
