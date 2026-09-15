@@ -18,6 +18,12 @@ function converterHoraParaMinutos(horaStr) {
   return h * 60 + m;
 }
 
+function ehConflitoDeSlot(erro) {
+  if (!erro) return false;
+  const msg = `${erro.message || ""} ${erro.details || ""}`;
+  return erro.code === "23505" || erro.code === "23P01" || /exclusion constraint|duplicate key|unique constraint/i.test(msg);
+}
+
 async function validarClienteVeiculo(tenantId, clienteId, veiculoId) {
   if (clienteId) {
     const { data: cliente, error } = await supabaseAdmin
@@ -199,6 +205,7 @@ export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, dat
       cliente_id,
       veiculo_id,
       servico_id,
+      duracao_min: duracaoMin,
       data_agendamento,
       hora_agendamento,
       observacoes,
@@ -209,7 +216,10 @@ export async function criarAgendamento({ cliente_id, veiculo_id, servico_id, dat
     .select("*, cliente:clientes(*), veiculo:veiculos(*), servico:servico(*)")
     .single();
 
-  if (error) throw new AppError(`Erro ao criar agendamento: ${error.message}`);
+  if (error) {
+    if (ehConflitoDeSlot(error)) throw new AppError("Este horário conflita com outro agendamento", 409);
+    throw new AppError(`Erro ao criar agendamento: ${error.message}`);
+  }
 
   const { data: conflitoPos } = await supabaseAdmin
     .from("agendamentos")
@@ -394,6 +404,7 @@ export async function atualizarAgendamento(id, tenantId, updates) {
       .single();
 
     const duracaoMin = servico?.duracao_min || 30;
+    updates.duracao_min = duracaoMin;
     const [hIni, mIni] = horaFinal.split(":").map(Number);
     const inicioNovo = hIni * 60 + mIni;
     const fimNovo = inicioNovo + duracaoMin;
@@ -427,6 +438,16 @@ export async function atualizarAgendamento(id, tenantId, updates) {
     updates.lembrete_enviado = null;
   }
 
+  if (updates.servico_id && !updates.data_agendamento && !updates.hora_agendamento) {
+    const { data: servicoNovo } = await supabaseAdmin
+      .from("servico")
+      .select("duracao_min")
+      .eq("servico_id", updates.servico_id)
+      .eq("tenant_id", tenantId)
+      .single();
+    updates.duracao_min = servicoNovo?.duracao_min || 30;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("agendamentos")
     .update(updates)
@@ -436,7 +457,10 @@ export async function atualizarAgendamento(id, tenantId, updates) {
     .select("*, cliente:clientes(*), veiculo:veiculos(*), servico:servico(*)")
     .single();
 
-  if (error) throw new AppError(`Erro ao atualizar agendamento: ${error.message}`);
+  if (error) {
+    if (ehConflitoDeSlot(error)) throw new AppError("Este horário conflita com outro agendamento", 409);
+    throw new AppError(`Erro ao atualizar agendamento: ${error.message}`);
+  }
 
   if (updates.status && current.status === "confirmado" && updates.status !== "confirmado") {
     await supabaseAdmin

@@ -6,6 +6,7 @@
 -- Extensões
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "btree_gist";
 
 -- ============================================================
 -- USUÁRIOS (gerenciado pelo Supabase Auth + tabela auxiliar)
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS agendamentos (
   cliente_id BIGINT NOT NULL REFERENCES clientes(cliente_id),
   veiculo_id BIGINT REFERENCES veiculos(veiculo_id),
   servico_id BIGINT REFERENCES servico(servico_id),
+  duracao_min INTEGER,
   data_agendamento DATE NOT NULL,
   hora_agendamento TIME NOT NULL,
   status TEXT NOT NULL DEFAULT 'pendente'
@@ -251,3 +253,18 @@ CREATE INDEX IF NOT EXISTS idx_faturamentos_os ON faturamentos (ordem_servico_id
 CREATE INDEX IF NOT EXISTS idx_notificacoes_tenant ON notificacoes (tenant_id, criado_em);
 CREATE INDEX IF NOT EXISTS idx_veiculos_cliente ON veiculos (cliente_id);
 CREATE INDEX IF NOT EXISTS idx_servico_tenant ON servico (tenant_id);
+
+-- ============================================================
+-- GARANTIA DE NÃO-OVERLAP DE AGENDAMENTOS ATIVOS (por tenant)
+-- Previne corrida: criações simultâneas em janelas sobrepostas.
+-- A janela usa duracao_min materializada no agendamento.
+-- ============================================================
+ALTER TABLE agendamentos ADD CONSTRAINT agendamentos_sem_sobreposicao
+  EXCLUDE USING gist (
+    tenant_id WITH =,
+    tsrange(
+      data_agendamento + hora_agendamento,
+      data_agendamento + hora_agendamento + make_interval(mins => COALESCE(duracao_min, 30))
+    ) WITH &&
+  )
+  WHERE (status NOT IN ('cancelado','falta','finalizado') AND deletado_em IS NULL);
