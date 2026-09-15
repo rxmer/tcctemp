@@ -1,6 +1,30 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 
+const BUCKET_LOGOS = "logos";
+
+async function persistirLogoUrl(tenantId, logoUrl) {
+  if (logoUrl == null) return null;
+  if (!logoUrl.startsWith("data:")) return logoUrl;
+
+  const match = logoUrl.match(/^data:(image\/[\w.+-]+);base64,([\s\S]+)$/);
+  if (!match) throw new AppError("Logo em base64 inválida");
+
+  const base64 = match[2].replace(/\s+/g, "");
+  if (base64.length > 700_000) throw new AppError("Logo muito grande (máx. ~500KB)");
+
+  const buffer = Buffer.from(base64, "base64");
+  const path = `tnt_${tenantId}/logo`;
+
+  const { error } = await supabaseAdmin.storage
+    .from(BUCKET_LOGOS)
+    .upload(path, buffer, { contentType: match[1], upsert: true });
+
+  if (error) throw new AppError(`Erro ao salvar logo: ${error.message}`);
+
+  return supabaseAdmin.storage.from(BUCKET_LOGOS).getPublicUrl(path).data.publicUrl;
+}
+
 export async function buscarConfiguracao(tenantId) {
   const { data, error } = await supabaseAdmin
     .from("configuracao_empresa")
@@ -22,7 +46,7 @@ export async function salvarConfiguracao({ tenantId, nome_fantasia, cnpj, telefo
     if (telefone !== undefined) updates.telefone = telefone;
     if (email !== undefined) updates.email = email;
     if (endereco !== undefined) updates.endereco = endereco;
-    if (logo_url !== undefined) updates.logo_url = logo_url;
+    if (logo_url !== undefined) updates.logo_url = await persistirLogoUrl(tenantId, logo_url);
 
     const { data, error } = await supabaseAdmin
       .from("configuracao_empresa")
@@ -44,7 +68,7 @@ export async function salvarConfiguracao({ tenantId, nome_fantasia, cnpj, telefo
       telefone: telefone || null,
       email: email || null,
       endereco: endereco || null,
-      logo_url: logo_url || null,
+      logo_url: logo_url === undefined ? null : await persistirLogoUrl(tenantId, logo_url),
     })
     .select()
     .single();

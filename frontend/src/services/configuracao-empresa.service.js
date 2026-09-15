@@ -2,5 +2,9 @@ import { apiFetch } from "./api";
 
 export const configuracaoEmpresaService = {
   buscar: () => apiFetch("/api/configuracao-empresa"),
-  salvar: (data) => apiFetch("/api/configuracao-empresa", { method: "PUT", body: JSON.stringify(data) }),
+  salvar: (data) =>
+    apiFetch("/api/configuracao-empresa", {
+      method: "PUT",
+      body: JSON.stringify({ ...data, logo_url: data.logo_url || null }),
+    }),
 };

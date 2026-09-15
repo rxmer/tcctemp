@@ -163,9 +163,11 @@ export const schemas = {
     email: z.string().email("E-mail inválido").max(100).optional().nullable(),
     endereco: z.string().max(200).optional().nullable(),
     logo_url: z.string()
-      .url("URL do logotipo inválida")
-      .refine((u) => u.startsWith("http://") || u.startsWith("https://"), "Logo deve usar http/https")
-      .max(500)
+      .refine(
+        (u) => /^https?:\/\//.test(u) || /^data:image\/[\w.+-]+;base64,[\s\S]+$/.test(u),
+        "Logo deve ser uma URL http(s) ou imagem em base64"
+      )
+      .max(700_000, "Logo muito grande (máx. ~500KB)")
       .optional()
       .nullable(),
   }),
