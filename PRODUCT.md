@@ -35,11 +35,11 @@ WhatsApp-first customer flow: customers start on WhatsApp and the same system ha
 Confirmed capabilities:
 
 - Clientes, Veículos (vinculados, placa única), Serviços (preço base e duração), Agendamentos (calendário + lista, conflito por janela de duração, expediente, feriados), Ordens de Serviço, Financeiro (contas a pagar, faturamentos, resumo), Relatórios com exportação PDF/Excel, Expediente, Feriados, Configuração da Empresa, Funcionários, Notificações, WhatsApp (conexão, chatbot, widget de conversas).
-- Chatbot WhatsApp: menu contextual, agendar/consultar/cancelar, keywords (`menu`, `0`, `voltar`), atendimento humano com botões "Voltar ao bot" / "Continuar com atendente", retorno automático ao menu após 30 min sem atividade, não responde a si mesmo.
+- Chatbot WhatsApp: menu contextual, agendar/consultar/cancelar, keywords (`menu`, `0`, `voltar`), atendimento humano com botões "Voltar ao bot" / "Continuar com atendente", retorno automático ao menu após 10 min sem resposta do atendente (5 min nos demais fluxos), não responde a si mesmo.
 - Auth via Supabase Auth (JWT), sessão em `sessionStorage`, recuperação de senha por e-mail (link mágico) com validação de e-mail cadastrado, redefinição manual pelo admin.
 - Segurança: Helmet, CORS restrito, rate limiting, Zod em rotas de escrita, sanitização de erros, logs sem dados pessoais, Swagger apenas fora de produção.
 - Manutenção automática: limpeza de notificações > 30 dias, expiração de sessões do chatbot, lembretes com reenvio (máx. 3 tentativas).
-- Testes: 306 backend + 277 frontend (Vitest).
+- Testes: 468 backend + 318 frontend (Vitest).
 
 Business rules (confirmed):
 
@@ -62,9 +62,8 @@ The name "EstetiCar" is the project name; no committed logo, slogan, or brand sy
 ## Evidence on Hand
 
 - `README.md` — functional overview, business rules, setup, production gaps.
-- `projetoDetalhado.md` — detailed project documentation (architecture, stack, DB).
 - `docs/schema.sql` + `docs/schema-falta-status.sql` e demais `docs/migration-*.sql` — versioned database schema.
-- 583 automated tests (backend + frontend) pass.
+- 786 automated tests (backend + frontend) pass.
 - Real customer testimonials, benchmarks, or production usage data do not exist and must not be fabricated.
 
 ## Product Principles
