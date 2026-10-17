@@ -34,6 +34,7 @@ const ConversaDetalhe = lazy(() => import("./pages/whatsapp-conversa-detalhe").t
 const Comunicados = lazy(() => import("./pages/comunicados").then((m) => ({ default: m.Comunicados })));
 const Perfil = lazy(() => import("./pages/perfil").then((m) => ({ default: m.Perfil })));
 const RedefinirSenha = lazy(() => import("./pages/redefinir-senha").then((m) => ({ default: m.RedefinirSenha })));
+const Onboarding = lazy(() => import("./pages/onboarding").then((m) => ({ default: m.Onboarding })));
 
 export default function App() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
 
               {/* Rotas autenticadas */}
               <Route element={<ProtectedRoute />}>
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
 

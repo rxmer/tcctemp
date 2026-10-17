@@ -69,7 +69,10 @@ export function AuthProvider({ children }) {
   };
 
   const signUp = async ({ nomeEmpresa, nome, email, senha }) => {
-    return authService.signup({ nomeEmpresa, nome, email, senha });
+    const result = await authService.signup({ nomeEmpresa, nome, email, senha, aceiteTermos: true });
+    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    if (error) throw error;
+    return result;
   };
 
   return (

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
+import { seedTenantDefaults, TERMOS_VERSAO } from "./onboarding.service.js";
 
 export async function signup({ nomeEmpresa, nome, email, senha }) {
   const slug = `${nomeEmpresa
@@ -19,6 +20,8 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
 
   if (tenantError) throw new AppError(`Erro ao criar tenant: ${tenantError.message}`);
 
+  const termosAceitosEm = new Date().toISOString();
+
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password: senha,
@@ -27,6 +30,8 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
       nome,
       tenant_id: tenantData.id,
       perfil: "admin",
+      termos_aceitos_em: termosAceitosEm,
+      termos_versao: TERMOS_VERSAO,
     },
   });
 
@@ -58,6 +63,8 @@ export async function signup({ nomeEmpresa, nome, email, senha }) {
   if (configError) {
     logger.warn({ err: configError }, "Erro ao criar configuracao_empresa inicial");
   }
+
+  await seedTenantDefaults(tenantData.id);
 
   return {
     id: authData.user.id,

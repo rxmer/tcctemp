@@ -1,148 +1,370 @@
-.authLayout {
+.split {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,168,67,0.08) 0%, transparent 70%), var(--bg-base);
-  gap: 24px;
+  background: var(--bg-base);
 }
 
-.authCard {
+/* ── PALCO DE MARCA ────────────────────────────────────────── */
+.stage {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  background:
+    radial-gradient(ellipse 90% 60% at 20% 25%, rgba(212, 168, 67, 0.16) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 50% at 85% 90%, rgba(212, 168, 67, 0.08) 0%, transparent 55%),
+    linear-gradient(150deg, var(--bg-surface) 0%, #0a0a0a 100%);
+}
+
+.stageGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 80% 70% at 30% 30%, #000 25%, transparent 78%);
+  pointer-events: none;
+}
+
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(212, 168, 67, 0.05) 100%);
+  pointer-events: none;
+}
+
+.stageInner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   width: 100%;
-  max-width: 400px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  max-width: 520px;
+  padding: 48px 52px;
 }
 
-.authBrand {
+.brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.brandIcon {
-  width: 44px;
-  height: 44px;
-  background: rgba(212,168,67,0.1);
-  border: 1px solid rgba(212,168,67,0.2);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.brandLogo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(212, 168, 67, 0.35));
 }
 
 .brandName {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-.stepIndicator {
+.stageCopy {
+  padding: 40px 0;
+  animation: stageIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stageTitle {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.4vw, 44px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  margin-bottom: 14px;
+  text-wrap: balance;
+}
+
+.stageLead {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 34ch;
+}
+
+.gains {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.gains li {
   display: flex;
   align-items: center;
-  gap: 0;
-  position: relative;
-  padding-bottom: 8px;
-}
-
-.stepItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-  transition: color 0.3s;
-}
-
-.stepItemActive,
-.stepItemDone {
+  gap: 12px;
+  font-size: 14.5px;
   color: var(--text-primary);
 }
 
-.stepDot {
+.gainMark {
+  flex-shrink: 0;
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid rgba(212, 168, 67, 0.28);
+}
+
+.track {
+  position: relative;
+  display: flex;
+  gap: 32px;
+  padding-top: 26px;
+}
+
+.trackRail {
+  position: absolute;
+  top: 38px;
+  left: 12px;
+  right: auto;
+  width: min(150px, 60%);
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.trackRailFill {
+  display: block;
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 2px;
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trackStop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.trackDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  flex-shrink: 0;
-  transition: all 0.3s;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  transition: all var(--transition);
 }
 
-.stepItemActive .stepDot {
+.trackActive {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.trackActive .trackDot {
   border-color: var(--accent);
   color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
-.stepItemDone .stepDot {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
-.authHeader h1 {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
-}
-
-.authHeader p {
+.trackDone {
   color: var(--text-secondary);
-  font-size: 14px;
-  margin-top: 4px;
 }
 
-.authForm {
+.trackDone .trackDot {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #1a1a1a;
+}
+
+/* ── FORMULÁRIO FOCADO ─────────────────────────────────────── */
+.formSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  background: var(--bg-base);
+  background-image: radial-gradient(ellipse 55% 40% at 50% 0%, rgba(212, 168, 67, 0.045) 0%, transparent 62%);
+}
+
+.formWrap {
+  width: 100%;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
+  gap: 22px;
+}
+
+.formHead {
+  animation: stageIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.formHead h2 {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+.formHead p {
+  color: var(--text-secondary);
+  font-size: 14.5px;
+  margin-top: 6px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.senhaRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 
-.formActions {
+.terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.terms input {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.legalLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.actions {
   display: flex;
   gap: 10px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
-.stepLine {
-  position: absolute;
-  bottom: 8px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--border);
-  border-radius: 1px;
+.primaryAction {
+  flex: 1;
 }
 
-.stepLine::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: var(--progress, 0%);
-  background: var(--accent);
-  border-radius: 1px;
-  transition: width 0.4s ease;
-}
-
-.authFooterText {
+.footer {
   text-align: center;
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+@keyframes stageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageCopy,
+  .formHead {
+    animation: none;
+  }
+
+  .trackRailFill,
+  .trackDot {
+    transition: none;
+  }
+}
+
+/* ── TEMA CLARO ────────────────────────────────────────────── */
+:global([data-theme="light"]) .stage {
+  background:
+    radial-gradient(ellipse 90% 60% at 20% 25%, rgba(184, 148, 31, 0.12) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 50% at 85% 90%, rgba(184, 148, 31, 0.06) 0%, transparent 55%),
+    linear-gradient(150deg, #f8f8f7 0%, #ededea 100%);
+}
+
+:global([data-theme="light"]) .stageGrid {
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+}
+
+:global([data-theme="light"]) .trackDone .trackDot {
+  color: #fff;
+}
+
+/* ── MOBILE ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .stage {
+    min-height: 0;
+  }
+
+  .stageInner {
+    max-width: none;
+    padding: 22px 24px;
+  }
+
+  .brand {
+    margin-bottom: 16px;
+  }
+
+  .stageCopy {
+    padding: 4px 0 0;
+  }
+
+  .stageTitle {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .stageLead,
+  .gains,
+  .track,
+  .stageGrid {
+    display: none;
+  }
+
+  .formSide {
+    padding: 28px 24px 48px;
+    align-items: flex-start;
+  }
+
+  .formHead h2 {
+    font-size: 24px;
+  }
+
+  .senhaRow {
+    grid-template-columns: 1fr;
+  }
 }

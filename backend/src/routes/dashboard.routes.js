@@ -7,3 +7,4 @@ export const dashboardRoutes = Router();
 dashboardRoutes.use(authenticate);
 
 dashboardRoutes.get("/resumo", dashboardController.resumo);
+dashboardRoutes.get("/onboarding", dashboardController.onboarding);

@@ -1,6 +1,6 @@
 import { maskPhone } from "../../utils/formatPhone";
 
-export function Input({ label, error, className = "", id, mask, onChange, value, ...props }) {
+export function Input({ label, error, hint, suffix, className = "", id, mask, onChange, value, ...props }) {
   const inputId = id || props.name;
 
   function handleChange(e) {
@@ -11,6 +11,16 @@ export function Input({ label, error, className = "", id, mask, onChange, value,
     onChange?.(e);
   }
 
+  const field = (
+    <input
+      id={inputId}
+      className={`input-field${error ? " error" : ""} ${className}`}
+      value={mask === "phone" && value ? maskPhone(value) : value}
+      onChange={handleChange}
+      {...props}
+    />
+  );
+
   return (
     <div className="input-group">
       {label && (
@@ -18,14 +28,19 @@ export function Input({ label, error, className = "", id, mask, onChange, value,
           {label}
         </label>
       )}
-      <input
-        id={inputId}
-        className={`input-field${error ? " error" : ""} ${className}`}
-        value={mask === "phone" && value ? maskPhone(value) : value}
-        onChange={handleChange}
-        {...props}
-      />
-      {error && <span className="field-error">{error}</span>}
+      {suffix ? (
+        <div className="input-affix">
+          {field}
+          <span className="input-affix-slot">{suffix}</span>
+        </div>
+      ) : (
+        field
+      )}
+      {error ? (
+        <span className="field-error">{error}</span>
+      ) : hint ? (
+        <span className="field-hint">{hint}</span>
+      ) : null}
     </div>
   );
 }

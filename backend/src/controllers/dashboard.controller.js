@@ -1,4 +1,5 @@
 import * as dashboardService from "../services/dashboard.service.js";
+import { statusOnboarding } from "../services/onboarding.service.js";
 import { cacheGetOrSet, cacheDelPattern, buildCacheKey } from "../utils/cache.js";
 
 const DASHBOARD_TTL = 30;
@@ -21,6 +22,11 @@ export async function resumo(req, res) {
 
   const { faturamento_mes, ...resto } = dados;
   res.json(resto);
+}
+
+export async function onboarding(req, res) {
+  const dados = await statusOnboarding(req.tenantId);
+  res.json(dados);
 }
 
 export async function invalidarDashboardCache(tenantId) {

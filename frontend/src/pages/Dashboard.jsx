@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { PageHeader, Button } from "../components/ui";
+import { OnboardingChecklist } from "../components/OnboardingChecklist";
 import { dashboardService } from "../services/dashboard.service";
 import styles from "../styles/pages/Dashboard.module.css";
 import { CalendarDays, CheckCircle2, Users, DollarSign, AlertTriangle, CalendarPlus, UserPlus, Clock, ChevronRight } from "lucide-react";
@@ -121,6 +122,8 @@ const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "num
       />
 
       <div className={styles.dashContent}>
+        <OnboardingChecklist />
+
         <div className={styles.statGrid}>
           {STATS.map((s) => (
             <div key={s.label} className={styles.statCard}>

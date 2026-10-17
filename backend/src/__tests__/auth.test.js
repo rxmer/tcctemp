@@ -72,7 +72,12 @@ describe("authService", () => {
         email: "admin@oficina.com",
         password: "123456",
         email_confirm: true,
-        user_metadata: { nome: "Admin", tenant_id: "tenant-1", perfil: "admin" },
+        user_metadata: expect.objectContaining({
+          nome: "Admin",
+          tenant_id: "tenant-1",
+          perfil: "admin",
+          termos_versao: "2026-01",
+        }),
       });
 
       const upsertArg = supabaseAdmin.from.mock.results[1].value.upsert.mock.calls[0][0];

@@ -78,6 +78,9 @@ export const schemas = {
     nome: z.string().min(2, "Nome deve ter no mínimo 2 caracteres").max(100),
     email: z.string().email("E-mail inválido").max(100),
     senha: z.string().min(8, "Senha deve ter no mínimo 8 caracteres").max(100),
+    aceiteTermos: z.literal(true, {
+      errorMap: () => ({ message: "É necessário aceitar os Termos de Uso e a Política de Privacidade" }),
+    }),
   }),
 
   criarContaPagar: z.object({

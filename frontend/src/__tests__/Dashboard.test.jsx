@@ -10,7 +10,12 @@ vi.mock("../context/useAuth", () => ({
 vi.mock("../services/dashboard.service", () => ({
   dashboardService: {
     resumo: vi.fn(),
+    onboarding: vi.fn().mockResolvedValue({ servicos: true, expediente: true, empresa: true }),
   },
+}));
+
+vi.mock("../components/OnboardingChecklist", () => ({
+  OnboardingChecklist: () => null,
 }));
 
 vi.mock("../styles/pages/Dashboard.module.css", () => ({

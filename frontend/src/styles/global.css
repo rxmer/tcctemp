@@ -374,7 +374,7 @@ select.input-field option {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  border-left: 3px solid;
+  border: 1px solid transparent;
   animation: slideIn 0.3s ease-out;
 }
 @keyframes slideIn {
@@ -382,21 +382,18 @@ select.input-field option {
   to { opacity: 1; transform: translateX(0); }
 }
 .alert-error {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-left-color: var(--error);
+  background: rgba(239, 68, 68, 0.09);
+  border-color: rgba(239, 68, 68, 0.22);
   color: #fca5a5;
 }
 .alert-success {
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-left-color: var(--success);
+  background: rgba(34, 197, 94, 0.09);
+  border-color: rgba(34, 197, 94, 0.22);
   color: #86efac;
 }
 .alert-info {
-  background: rgba(212, 168, 67, 0.06);
-  border: 1px solid rgba(212, 168, 67, 0.15);
-  border-left-color: var(--accent);
+  background: rgba(212, 168, 67, 0.07);
+  border-color: rgba(212, 168, 67, 0.18);
   color: #fed7aa;
 }
 
@@ -421,6 +418,68 @@ select.input-field option {
   font-size: 11px;
   color: var(--error);
   margin-top: 4px;
+}
+
+.field-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+/* ── INPUT AFFIX (sufixo: revelar senha, unidades) ──────────── */
+.input-affix {
+  position: relative;
+  display: flex;
+}
+
+.input-affix > .input-field {
+  padding-right: 46px;
+}
+
+.input-affix-slot {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.input-affix-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+
+.input-affix-btn:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.input-affix-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ── BROWSER SURFACES ───────────────────────────────────────── */
+::selection {
+  background: var(--accent-dim);
+  color: var(--text-primary);
+}
+
+::placeholder {
+  opacity: 1;
+}
+
+html {
+  caret-color: var(--accent);
 }
 
 /* ── BUTTON SPINNER ──────────────────────────────────────────── */
@@ -540,7 +599,7 @@ select.input-field option {
   max-width: 420px;
   width: 90%;
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(212, 168, 67, 0.05);
-  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes modalIn {
