@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { AppError } from "./errors.js";
 
-const horaRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+const horaRegex = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+
+function normalizarHora(valor) {
+  if (typeof valor === "string" && horaRegex.test(valor)) {
+    return valor.slice(0, 5);
+  }
+  return valor;
+}
 const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const clienteBase = z.object({
@@ -151,8 +158,14 @@ export const schemas = {
 
   upsertExpedienteDia: z.object({
     dia_semana: z.number().int().min(0).max(6),
-    abertura: z.string().regex(horaRegex, "Abertura deve estar no formato HH:MM").optional().nullable(),
-    fechamento: z.string().regex(horaRegex, "Fechamento deve estar no formato HH:MM").optional().nullable(),
+    abertura: z.preprocess(
+      (v) => normalizarHora(v),
+      z.string().regex(horaRegex, "Abertura deve estar no formato HH:MM").optional().nullable()
+    ),
+    fechamento: z.preprocess(
+      (v) => normalizarHora(v),
+      z.string().regex(horaRegex, "Fechamento deve estar no formato HH:MM").optional().nullable()
+    ),
     ativo: z.boolean().optional(),
   }),
   upsertExpedienteAll: z.object({

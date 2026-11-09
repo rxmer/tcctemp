@@ -35,14 +35,14 @@ export async function listarExpediente(tenantId) {
   }));
 }
 
-const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
 function normalizeTime(val) {
   if (val === "" || val == null) return null;
   if (typeof val !== "string" || !HORA_REGEX.test(val)) {
     throw new AppError("Horário inválido — use o formato HH:MM", 400);
   }
-  return val;
+  return val.slice(0, 5);
 }
 
 function minutosDe(hora) {

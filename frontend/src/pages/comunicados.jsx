@@ -30,7 +30,7 @@ export function Comunicados() {
   const [enviando, setEnviando] = useState(false);
   const [comunicados, setComunicados] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [conectado, setConectado] = useState(false);
+  const [conectado, setConectado] = useState(null);
   const mounted = useRef(true);
   const inFlight = useRef(false);
 
@@ -118,7 +118,16 @@ export function Comunicados() {
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
-      {!conectado ? (
+      {conectado === null ? (
+        <div className={crud.pageGrid}>
+          <Card>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", color: "var(--text-secondary)" }}>
+              <Loader2 size={18} className="spin" />
+              <span style={{ fontSize: 14 }}>Verificando conexão do WhatsApp...</span>
+            </div>
+          </Card>
+        </div>
+      ) : !conectado ? (
         <div className={crud.pageGrid}>
           <Card>
             <CardHeader
