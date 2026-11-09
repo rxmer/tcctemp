@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
-import { useAuth } from "../context/useAuth";
+
 import { expedienteService } from "../services/expediente.service";
-import { Button, PageHeader, Alert, TenantChip, SkeletonCard } from "../components/ui";
+import { Button, PageHeader, Alert, SkeletonCard } from "../components/ui";
 import { Card, CardHeader } from "../components/crud";
 
 const DIAS_SEMANA = [
@@ -16,7 +16,6 @@ const DIAS_SEMANA = [
 ];
 
 export function Expediente() {
-  const { tenant } = useAuth();
   const { feedback, showFeedback } = useFeedback();
   const [dias, setDias] = useState(
     DIAS_SEMANA.map((d) => ({ dia_semana: d.id, abertura: "08:00", fechamento: "18:00", ativo: d.id >= 1 && d.id <= 5 }))
@@ -80,7 +79,6 @@ export function Expediente() {
       <PageHeader
         title="Expediente"
         subtitle="Configure os horários de funcionamento"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}

@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
-import { useAuth } from "../context/useAuth";
+
 import { ordensServicoService } from "../services/ordens-servico.service";
 import { agendamentosService } from "../services/agendamentos.service";
 import { servicosService } from "../services/servicos.service";
-import { Button, PageHeader, Alert, TenantChip, Select, Pagination, SkeletonTable } from "../components/ui";
+import { Button, PageHeader, Alert, Select, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, StatusBadge, styles as crud } from "../components/crud";
 import { CheckCircle2, Clock, Trash2, ChevronRight, ChevronUp } from "lucide-react";
 import { formatMoney } from "../utils/format";
@@ -23,7 +23,6 @@ const STATUS_VARIANTS = {
 };
 
 export function OrdensServico() {
-  const { tenant } = useAuth();
 
   const [ordens, setOrdens] = useState([]);
   const [agendamentos, setAgendamentos] = useState([]);
@@ -220,7 +219,6 @@ export function OrdensServico() {
       <PageHeader
         title="Ordens de Serviço"
         subtitle="Gerencie as ordens de serviço"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}

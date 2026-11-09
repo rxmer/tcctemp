@@ -216,34 +216,6 @@
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
-/* ── TENANT CHIP ────────────────────────────────────────────── */
-.tenantChip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.tenantDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  flex-shrink: 0;
-  box-shadow: 0 0 8px var(--success);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
 /* ── STATUS BADGE ───────────────────────────────────────────── */
 .statusBadge {
   display: inline-flex;

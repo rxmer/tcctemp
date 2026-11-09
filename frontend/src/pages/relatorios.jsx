@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useAuth } from "../context/useAuth";
+
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, Button, TenantChip } from "../components/ui";
+import { PageHeader, Button } from "../components/ui";
 import { ClientesRanking } from "../components/relatorios/ClientesRanking";
 import { EmptyRelatorio } from "../components/relatorios/EmptyRelatorio";
 import {
@@ -32,7 +32,6 @@ const KPI_CONFIG = [
 ];
 
 export function Relatorios() {
-  const { tenant } = useAuth();
   const [dados, setDados] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -136,9 +135,7 @@ export function Relatorios() {
 
   return (
     <>
-      <PageHeader title="Relatórios" subtitle="Visão geral da empresa"
-        action={<TenantChip nome={tenant?.nome} />}
-      />
+      <PageHeader title="Relatórios" subtitle="Visão geral da empresa" />
 
       <div className={styles.toolbar}>
         <div className={styles.filtros}>

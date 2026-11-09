@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
-import { useAuth } from "../context/useAuth";
+
 import { financeiroService } from "../services/financeiro.service";
-import { Input, Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
+import { Input, Button, PageHeader, Alert, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, StatusBadge, styles as crud } from "../components/crud";
 import { CheckCircle2, Pencil } from "lucide-react";
 import { formatMoney, formatDate } from "../utils/format";
@@ -10,7 +10,6 @@ import { formatMoney, formatDate } from "../utils/format";
 const formInitial = { descricao: "", valor: "", data_vencimento: "", observacoes: "" };
 
 export function ContasPagar() {
-  const { tenant } = useAuth();
   const { feedback, showFeedback } = useFeedback();
 
   const [contas, setContas] = useState([]);
@@ -138,9 +137,7 @@ export function ContasPagar() {
 
   return (
     <>
-      <PageHeader title="Contas a Pagar" subtitle="Gerencie as despesas da empresa"
-        action={<TenantChip nome={tenant?.nome} />}
-      />
+      <PageHeader title="Contas a Pagar" subtitle="Gerencie as despesas da empresa" />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 

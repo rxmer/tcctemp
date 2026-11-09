@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/useAuth";
+
 import { servicosService } from "../services/servicos.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
 import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
-import { Input, Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
+import { Input, Button, PageHeader, Alert, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, StatusBadge, styles as crud } from "../components/crud";
 import { Pencil, Trash2, Pause, Play } from "lucide-react";
 import { formatMoney } from "../utils/format";
@@ -17,7 +17,6 @@ const formInitial = {
 };
 
 export function Servicos() {
-  const { tenant } = useAuth();
 
   const [servicos, setServicos] = useState([]);
   const [form, setForm] = useState({ ...formInitial });
@@ -189,7 +188,6 @@ export function Servicos() {
       <PageHeader
         title="Serviços"
         subtitle="Gerencie os serviços oferecidos pela sua empresa"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}

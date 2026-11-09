@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "../context/useAuth";
+
 import { relatoriosService } from "../services/relatorios.service";
-import { PageHeader, Button, TenantChip } from "./ui";
+import { PageHeader, Button } from "./ui";
 import styles from "../styles/pages/relatorios.module.css";
 import { Download, FileText, BarChart3 } from "lucide-react";
 
@@ -51,7 +51,6 @@ export function RelatorioBase({
   align = "wide",
   totalTexto,
 }) {
-  const { tenant } = useAuth();
   const [dados, setDados] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -119,9 +118,7 @@ export function RelatorioBase({
 
   return (
     <>
-      <PageHeader title={titulo} subtitle={subtitle}
-        action={<TenantChip nome={tenant?.nome} />}
-      />
+      <PageHeader title={titulo} subtitle={subtitle} />
 
       <div className={styles.toolbar}>
         <div className={styles.filtros}>

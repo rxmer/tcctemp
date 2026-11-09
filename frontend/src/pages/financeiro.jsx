@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFeedback } from "../hooks/useFeedback";
-import { useAuth } from "../context/useAuth";
+
 import { financeiroService } from "../services/financeiro.service";
-import { Button, PageHeader, Alert, TenantChip } from "../components/ui";
+import { Button, PageHeader, Alert } from "../components/ui";
 import { styles as crud } from "../components/crud";
 import styles from "../styles/pages/financeiro.module.css";
 import { TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, Receipt, Wallet, ChevronRight } from "lucide-react";
 import { formatMoney } from "../utils/format";
 
 export function Financeiro() {
-  const { tenant } = useAuth();
   const { feedback, showFeedback } = useFeedback();
   const navigate = useNavigate();
 
@@ -34,9 +33,7 @@ export function Financeiro() {
 
   return (
     <>
-      <PageHeader title="Financeiro" subtitle="Visão geral do controle financeiro"
-        action={<TenantChip nome={tenant?.nome} />}
-      />
+      <PageHeader title="Financeiro" subtitle="Visão geral do controle financeiro" />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 

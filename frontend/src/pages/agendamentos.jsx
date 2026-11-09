@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
-import { useAuth } from "../context/useAuth";
+
 import { agendamentosService } from "../services/agendamentos.service";
 import { clientesService } from "../services/clientes.service";
 import { veiculosService } from "../services/veiculos.service";
 import { servicosService } from "../services/servicos.service";
-import { Input, Button, PageHeader, Alert, TenantChip, Select, Pagination, Calendar, SkeletonTable } from "../components/ui";
+import { Input, Button, PageHeader, Alert, Select, Pagination, Calendar, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import styles from "../styles/pages/agendamentos.module.css";
 import { List, CalendarDays, Pencil, Trash2, CheckCircle2, Play, CheckSquare, XCircle, UserX, ArrowRight, Smartphone, Clock } from "lucide-react";
@@ -41,7 +41,6 @@ const formInitial = {
 };
 
 export function Agendamentos() {
-  const { tenant } = useAuth();
 
   const [agendamentos, setAgendamentos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -233,12 +232,11 @@ export function Agendamentos() {
       <PageHeader
         title="Agendamentos"
         subtitle="Gerencie os agendamentos da sua empresa"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
-      <div className={crud.filtros}>
+      <div className={`${crud.filtros} ${styles.filtrosRight}`}>
         <div className={crud.filtroGroup}>
           <label className={crud.filtroLabel}>Filtrar por data</label>
           <input
@@ -479,8 +477,8 @@ export function Agendamentos() {
               ) : agendamentos.length === 0 ? (
                 <div className={crud.emptyState}>Nenhum agendamento encontrado.</div>
               ) : (
-                <div className={crud.tableWrapper}>
-                  <table className={crud.table}>
+                <div className={`${crud.tableWrapper} ${styles.listScroll}`}>
+                  <table className={`${crud.table} ${styles.compactTable}`}>
                     <thead>
                       <tr>
                         <th>Data/Hora</th>

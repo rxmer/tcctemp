@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { useFeedback } from "../hooks/useFeedback";
-import { useAuth } from "../context/useAuth";
+
 import { financeiroService } from "../services/financeiro.service";
-import { Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
+import { Button, PageHeader, Alert, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, StatusBadge, styles as crud } from "../components/crud";
 import { Wallet } from "lucide-react";
 import { formatMoney, formatDate } from "../utils/format";
 
 export function Faturamentos() {
-  const { tenant } = useAuth();
   const { feedback, showFeedback } = useFeedback();
 
   const [faturamentos, setFaturamentos] = useState([]);
@@ -79,9 +78,7 @@ export function Faturamentos() {
 
   return (
     <>
-      <PageHeader title="Faturamentos" subtitle="Receitas geradas pelas ordens de serviço"
-        action={<TenantChip nome={tenant?.nome} />}
-      />
+      <PageHeader title="Faturamentos" subtitle="Receitas geradas pelas ordens de serviço" />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 

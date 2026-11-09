@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/useAuth";
+
 import { veiculosService } from "../services/veiculos.service";
 import { clientesService } from "../services/clientes.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
 import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
-import { Input, Button, PageHeader, Alert, TenantChip, Select, Pagination, SkeletonTable } from "../components/ui";
+import { Input, Button, PageHeader, Alert, Select, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
@@ -20,7 +20,6 @@ const formInitial = {
 };
 
 export function Veiculos() {
-  const { tenant } = useAuth();
 
   const [veiculos, setVeiculos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -175,7 +174,6 @@ export function Veiculos() {
       <PageHeader
         title="Veículos"
         subtitle="Gerencie os veículos dos seus clientes"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}

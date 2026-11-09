@@ -1,21 +1,3 @@
-.tenantChip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-}
-
-.tenantDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-}
-
 .filtros {
   display: flex;
   align-items: flex-end;
@@ -54,9 +36,34 @@
   border-color: var(--accent);
 }
 
+.filtrosRight {
+  justify-content: flex-end;
+}
+
 .filtroActions {
   display: flex;
   align-items: center;
+}
+
+.listScroll {
+  max-height: 55vh;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.listScroll table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-elevated);
+}
+
+.compactTable td {
+  padding: 6px 10px;
+}
+
+.compactTable th {
+  padding: 8px 10px;
 }
 
 .agGrid {

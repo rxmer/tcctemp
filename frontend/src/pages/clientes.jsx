@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/useAuth";
+
 import { clientesService } from "../services/clientes.service";
 import { useFeedback } from "../hooks/useFeedback";
 import { useConfirm } from "../hooks/useConfirm";
 import { useDebouncedEffect } from "../hooks/useDebouncedEffect";
-import { Input, Button, PageHeader, Alert, TenantChip, Pagination, SkeletonTable } from "../components/ui";
+import { Input, Button, PageHeader, Alert, Pagination, SkeletonTable } from "../components/ui";
 import { Card, CardHeader, DataTable, ActionBtn, ActionBtns, styles as crud } from "../components/crud";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "../utils/formatPhone";
@@ -16,7 +16,6 @@ const formInitial = {
 };
 
 export function Clientes() {
-  const { tenant } = useAuth();
 
   const [clientes, setClientes] = useState([]);
   const [form, setForm] = useState({ ...formInitial });
@@ -153,7 +152,6 @@ export function Clientes() {
       <PageHeader
         title="Clientes"
         subtitle="Gerencie os clientes da sua empresa"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
