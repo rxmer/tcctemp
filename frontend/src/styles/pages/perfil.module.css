@@ -1,14 +1,121 @@
 /* src/styles/pages/perfil.module.css */
 
-.identity {
+.page {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(155deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+  animation: panelRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes panelRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── IDENTIDADE ─────────────────────────────────────────────── */
+.identityPanel {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.identityPanel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+  opacity: 0.8;
+}
+
+.identityPanel::after {
+  content: "";
+  position: absolute;
+  top: -110px;
+  right: -80px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 168, 67, 0.16) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+:global([data-theme="light"]) .identityPanel::after {
+  background: radial-gradient(circle, rgba(138, 101, 0, 0.1) 0%, transparent 70%);
+}
+
+.watermark {
+  position: absolute;
+  right: 14px;
+  bottom: -52px;
+  z-index: 0;
+  font-family: var(--font-display);
+  font-size: 230px;
+  font-weight: 700;
+  line-height: 0.8;
+  color: var(--accent);
+  opacity: 0.055;
+  pointer-events: none;
+  user-select: none;
+}
+
+.identityHead,
+.identityBody,
+.metaList,
+.securityNote {
+  position: relative;
+  z-index: 1;
+}
+
+.identityHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.avatarWrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+}
+
+.avatarRing {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 168, 67, 0.3);
 }
 
 .avatar {
-  width: 64px;
-  height: 64px;
+  position: relative;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background: var(--accent-gradient);
   background-size: 200% 100%;
@@ -17,107 +124,394 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
+  font-size: 34px;
   font-weight: 700;
-  font-size: 26px;
-  box-shadow: var(--shadow-accent);
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 22px rgba(212, 168, 67, 0.28);
+}
+
+.avatarBadge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid rgba(212, 168, 67, 0.35);
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme="light"]) .avatarBadge {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.sessionPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--status-confirmado-border);
+  background: var(--status-confirmado-bg);
+  color: var(--status-confirmado-fg);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sessionDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
   flex-shrink: 0;
 }
 
-.identityInfo {
-  min-width: 0;
+.identityBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .name {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 30px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
 .email {
-  font-size: 13px;
+  margin-top: 5px;
+  font-size: 13.5px;
   color: var(--text-secondary);
-  margin-top: 2px;
   overflow-wrap: anywhere;
-}
-
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 20px 0;
-}
-
-.accountMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.metaRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.metaLabel {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
-}
-
-.metaValue {
-  font-size: 14px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-  text-align: right;
 }
 
 .roleBadge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 4px 11px;
+  margin-top: 14px;
+  padding: 5px 11px;
   border-radius: 999px;
+  border: 1px solid rgba(212, 168, 67, 0.24);
   background: var(--accent-dim);
   color: var(--accent);
-  border: 1px solid rgba(212, 168, 67, 0.25);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.form {
+.metaList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
 }
 
-.hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: -6px;
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.metaRow:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.metaIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.metaText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.metaLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.metaValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .securityNote {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  max-width: 980px;
-  margin-top: 18px;
-  padding: 13px 18px;
-  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 168, 67, 0.16);
   background: rgba(212, 168, 67, 0.06);
-  border: 1px solid rgba(212, 168, 67, 0.14);
-  font-size: 13px;
   color: var(--text-secondary);
+  font-size: 12.5px;
   line-height: 1.5;
 }
 
 .securityNote svg {
   color: var(--accent);
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+:global([data-theme="light"]) .securityNote {
+  background: rgba(138, 101, 0, 0.06);
+  border-color: rgba(138, 101, 0, 0.16);
+}
+
+/* ── SEGURANÇA ──────────────────────────────────────────────── */
+.securityPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation-delay: 0.07s;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.headerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 168, 67, 0.16);
+  background: var(--accent-dim);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.panelHeader h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.panelHeader p {
+  margin-top: 4px;
+  max-width: 48ch;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.passwordForm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.passwordGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.strength {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.strengthTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.strengthTop strong {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.strengthTrack {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.strengthSegment {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background var(--transition);
+}
+
+.strengthSegmentActive {
+  background: var(--accent);
+}
+
+.strength[data-score="1"] .strengthSegmentActive {
+  background: var(--error);
+}
+
+.strength[data-score="1"] .strengthTop strong {
+  color: var(--error);
+}
+
+.strength[data-score="2"] .strengthSegmentActive {
+  background: var(--warning);
+}
+
+.strength[data-score="2"] .strengthTop strong {
+  color: var(--warning);
+}
+
+.strength[data-score="3"] .strengthSegmentActive {
+  background: var(--accent);
+}
+
+.strength[data-score="3"] .strengthTop strong {
+  color: var(--accent);
+}
+
+.strength[data-score="4"] .strengthSegmentActive {
+  background: var(--success);
+}
+
+.strength[data-score="4"] .strengthTop strong {
+  color: var(--success);
+}
+
+.requirements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.requirement,
+.requirementMet,
+.requirementMiss {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color var(--transition);
+}
+
+.requirement {
+  color: var(--text-secondary);
+}
+
+.requirementMet {
+  color: var(--success);
+}
+
+.requirementMiss {
+  color: var(--error);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.formActions button {
+  min-width: 220px;
+}
+
+/* ── RESPONSIVO ─────────────────────────────────────────────── */
+@media (max-width: 940px) {
+  .layout {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .panel {
+    padding: 20px;
+  }
+
+  .name {
+    font-size: 26px;
+  }
+
+  .avatarWrap,
+  .avatar {
+    width: 72px;
+    height: 72px;
+  }
+
+  .avatar {
+    font-size: 30px;
+  }
+
+  .watermark {
+    right: 4px;
+    bottom: -38px;
+    font-size: 180px;
+  }
+
+  .panelHeader h2 {
+    font-size: 20px;
+  }
+
+  .passwordGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formActions {
+    justify-content: stretch;
+  }
+
+  .formActions button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
 }
