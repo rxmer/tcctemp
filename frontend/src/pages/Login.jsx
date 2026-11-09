@@ -4,7 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { supabase } from "../lib/supabase";
 import { authService } from "../services/auth.service";
 import { traduzirErroAuth } from "../lib/authErrors";
-import { Input, Button, Alert } from "../components/ui";
+import { Input, PasswordInput, Button, Alert } from "../components/ui";
 import styles from "../styles/pages/Login.module.css";
 
 export function Login() {
@@ -134,10 +134,9 @@ export function Login() {
                   required
                   autoComplete="email"
                 />
-                <Input
+                <PasswordInput
                   label="Senha"
                   name="senha"
-                  type="password"
                   placeholder="••••••••"
                   value={form.senha}
                   onChange={handleChange}

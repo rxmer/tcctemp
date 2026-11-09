@@ -47,13 +47,13 @@ describe("Funcionario page", () => {
     expect(screen.getByLabelText(/nome completo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/e-mail/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirmar senha/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^confirmar senha$/i)).toBeInTheDocument();
   });
 
   it("mostra erro se senhas nao coincidem", async () => {
     renderPage();
     fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "123456" } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: "654321" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar senha$/i), { target: { value: "654321" } });
     fireEvent.submit(screen.getByRole("button", { name: /cadastrar/i }).closest("form"));
     await waitFor(() => { expect(mockShowFeedback).toHaveBeenCalledWith("error", "As senhas não coincidem"); });
   });
@@ -64,7 +64,7 @@ describe("Funcionario page", () => {
     fireEvent.change(screen.getByLabelText(/nome completo/i), { target: { value: "Maria" } });
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "maria@test.com" } });
     fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "123456" } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: "123456" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar senha$/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
     await waitFor(() => { expect(funcionariosService.criar).toHaveBeenCalled(); });
   });
@@ -75,7 +75,7 @@ describe("Funcionario page", () => {
     fireEvent.change(screen.getByLabelText(/nome completo/i), { target: { value: "Maria" } });
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "maria@test.com" } });
     fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "123456" } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: "123456" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar senha$/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
     await waitFor(() => { expect(mockShowFeedback).toHaveBeenCalledWith("success", expect.stringContaining("sucesso")); });
   });
@@ -86,7 +86,7 @@ describe("Funcionario page", () => {
     fireEvent.change(screen.getByLabelText(/nome completo/i), { target: { value: "Maria" } });
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "maria@test.com" } });
     fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "123456" } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: "123456" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar senha$/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
     await waitFor(() => { expect(mockShowFeedback).toHaveBeenCalledWith("error", "Erro ao criar"); });
   });

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { traduzirErroAuth } from "../lib/authErrors";
-import { Input, Button, Alert } from "../components/ui";
+import { Input, PasswordInput, Button, Alert } from "../components/ui";
 import { LegalModal } from "../components/LegalModal";
 import { Check } from "lucide-react";
 import styles from "../styles/pages/Cadastro.module.css";
@@ -198,20 +198,18 @@ export function Cadastro() {
                   autoComplete="email"
                 />
                 <div className={styles.senhaRow}>
-                  <Input
+                  <PasswordInput
                     label="Senha"
                     name="senha"
-                    type="password"
                     placeholder="Mínimo 8 caracteres"
                     value={form.senha}
                     onChange={handleChange}
                     error={erros.senha}
                     autoComplete="new-password"
                   />
-                  <Input
+                  <PasswordInput
                     label="Confirmar senha"
                     name="confirma"
-                    type="password"
                     placeholder="Repita a senha"
                     value={form.confirma}
                     onChange={handleChange}

@@ -82,7 +82,7 @@ describe("RedefinirSenha page", () => {
       expect(screen.getByText(/redefinir senha/i)).toBeInTheDocument();
     });
     expect(screen.getByLabelText(/^nova senha$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirmar nova senha/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^confirmar nova senha$/i)).toBeInTheDocument();
   });
 
   it("valida senhas diferentes", async () => {
@@ -91,7 +91,7 @@ describe("RedefinirSenha page", () => {
     await waitFor(() => screen.getByLabelText(/^nova senha$/i));
 
     fireEvent.change(screen.getByLabelText(/^nova senha$/i), { target: { value: "senhaNova123" } });
-    fireEvent.change(screen.getByLabelText(/confirmar nova senha/i), { target: { value: "outra456" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar nova senha$/i), { target: { value: "outra456" } });
     fireEvent.click(screen.getByRole("button", { name: /salvar nova senha/i }));
 
     await waitFor(() => {
@@ -106,7 +106,7 @@ describe("RedefinirSenha page", () => {
     await waitFor(() => screen.getByLabelText(/^nova senha$/i));
 
     fireEvent.change(screen.getByLabelText(/^nova senha$/i), { target: { value: "123" } });
-    fireEvent.change(screen.getByLabelText(/confirmar nova senha/i), { target: { value: "123" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar nova senha$/i), { target: { value: "123" } });
     fireEvent.click(screen.getByRole("button", { name: /salvar nova senha/i }));
 
     await waitFor(() => {
@@ -122,7 +122,7 @@ describe("RedefinirSenha page", () => {
     await waitFor(() => screen.getByLabelText(/^nova senha$/i));
 
     fireEvent.change(screen.getByLabelText(/^nova senha$/i), { target: { value: "senhaNova123" } });
-    fireEvent.change(screen.getByLabelText(/confirmar nova senha/i), { target: { value: "senhaNova123" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar nova senha$/i), { target: { value: "senhaNova123" } });
     fireEvent.click(screen.getByRole("button", { name: /salvar nova senha/i }));
 
     await waitFor(() => {
@@ -141,7 +141,7 @@ describe("RedefinirSenha page", () => {
     await waitFor(() => screen.getByLabelText(/^nova senha$/i));
 
     fireEvent.change(screen.getByLabelText(/^nova senha$/i), { target: { value: "senhaNova123" } });
-    fireEvent.change(screen.getByLabelText(/confirmar nova senha/i), { target: { value: "senhaNova123" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar nova senha$/i), { target: { value: "senhaNova123" } });
     fireEvent.click(screen.getByRole("button", { name: /salvar nova senha/i }));
 
     await waitFor(() => {
@@ -157,7 +157,7 @@ describe("RedefinirSenha page", () => {
     await waitFor(() => screen.getByLabelText(/^nova senha$/i));
 
     fireEvent.change(screen.getByLabelText(/^nova senha$/i), { target: { value: "senhaNova123" } });
-    fireEvent.change(screen.getByLabelText(/confirmar nova senha/i), { target: { value: "senhaNova123" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar nova senha$/i), { target: { value: "senhaNova123" } });
     fireEvent.click(screen.getByRole("button", { name: /salvar nova senha/i }));
 
     await waitFor(() => {
@@ -175,7 +175,7 @@ describe("RedefinirSenha page", () => {
     await waitFor(() => screen.getByLabelText(/^nova senha$/i));
 
     fireEvent.change(screen.getByLabelText(/^nova senha$/i), { target: { value: "senhaNova123" } });
-    fireEvent.change(screen.getByLabelText(/confirmar nova senha/i), { target: { value: "senhaNova123" } });
+    fireEvent.change(screen.getByLabelText(/^confirmar nova senha$/i), { target: { value: "senhaNova123" } });
     fireEvent.click(screen.getByRole("button", { name: /salvar nova senha/i }));
 
     await waitFor(() => {

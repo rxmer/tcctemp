@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useFeedback } from "../hooks/useFeedback";
-import { useAuth } from "../context/useAuth";
 import { funcionariosService } from "../services/funcionarios.service";
-import { Input, Button, PageHeader, Alert, TenantChip } from "../components/ui";
+import { Input, PasswordInput, Button, PageHeader, Alert } from "../components/ui";
 import { Card, CardHeader, styles as crud } from "../components/crud";
 import { Users, ShieldCheck, Pencil, Trash2, X, Check, KeyRound } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
 
 export function Funcionario() {
-  const { tenant } = useAuth();
   const { feedback, showFeedback } = useFeedback();
   const { confirm, ConfirmModal: ConfirmDialog } = useConfirm();
 
@@ -146,7 +144,6 @@ export function Funcionario() {
       <PageHeader
         title="Funcionários"
         subtitle="Cadastre e gerencie os usuários da sua empresa"
-        action={<TenantChip nome={tenant?.nome} />}
       />
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
@@ -171,11 +168,11 @@ export function Funcionario() {
             </p>
 
             <form onSubmit={handleSalvarReset} style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
-              <Input label="Nova senha" name="senha" type="password" placeholder="********"
+              <PasswordInput label="Nova senha" name="senha" placeholder="********"
                 value={resetForm.senha}
                 onChange={(e) => setResetForm((f) => ({ ...f, senha: e.target.value }))}
                 required autoComplete="new-password" />
-              <Input label="Confirmar nova senha" name="confirmar" type="password" placeholder="********"
+              <PasswordInput label="Confirmar nova senha" name="confirmar" placeholder="********"
                 value={resetForm.confirmar}
                 onChange={(e) => setResetForm((f) => ({ ...f, confirmar: e.target.value }))}
                 required autoComplete="new-password" />
@@ -197,8 +194,8 @@ export function Funcionario() {
             <Input label="E-mail" name="email" type="email" placeholder="Digite o e-mail" value={form.email} onChange={handleChange} required />
 
             <div className={crud.row}>
-              <Input label="Senha" name="senha" type="password" placeholder="********" value={form.senha} onChange={handleChange} required />
-              <Input label="Confirmar senha" name="confirmarSenha" type="password" placeholder="********" value={form.confirmarSenha} onChange={handleChange} required />
+              <PasswordInput label="Senha" name="senha" placeholder="********" value={form.senha} onChange={handleChange} required />
+              <PasswordInput label="Confirmar senha" name="confirmarSenha" placeholder="********" value={form.confirmarSenha} onChange={handleChange} required />
             </div>
 
             <Button type="submit" fullWidth loading={loading}>

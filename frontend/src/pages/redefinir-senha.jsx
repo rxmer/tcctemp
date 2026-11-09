@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { traduzirErroAuth } from "../lib/authErrors";
-import { Input, Button, Alert } from "../components/ui";
+import { PasswordInput, Button, Alert } from "../components/ui";
 import styles from "../styles/pages/Login.module.css";
 
 export function RedefinirSenha() {
@@ -125,20 +125,18 @@ export function RedefinirSenha() {
               {erro && <Alert>{erro}</Alert>}
 
               <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
-                <Input
+                <PasswordInput
                   label="Nova senha"
                   name="senha"
-                  type="password"
                   placeholder="••••••••"
                   value={form.senha}
                   onChange={handleChange}
                   required
                   autoComplete="new-password"
                 />
-                <Input
+                <PasswordInput
                   label="Confirmar nova senha"
                   name="confirmar"
-                  type="password"
                   placeholder="••••••••"
                   value={form.confirmar}
                   onChange={handleChange}

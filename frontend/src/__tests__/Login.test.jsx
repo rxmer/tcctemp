@@ -58,7 +58,7 @@ describe("Login page", () => {
   it("renderiza campos de email e senha", () => {
     renderLogin();
     expect(screen.getByLabelText(/e-mail/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/senha/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument();
   });
 
   it("renderiza botao de entrar", () => {
@@ -84,7 +84,7 @@ describe("Login page", () => {
     renderLogin();
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "test@test.com" } });
-    fireEvent.change(screen.getByLabelText(/senha/i), { target: { value: "123456" } });
+    fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => {
@@ -98,7 +98,7 @@ describe("Login page", () => {
     renderLogin();
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "test@test.com" } });
-    fireEvent.change(screen.getByLabelText(/senha/i), { target: { value: "wrong" } });
+    fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "wrong" } });
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => {
@@ -112,7 +112,7 @@ describe("Login page", () => {
     renderLogin();
 
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: "test@test.com" } });
-    fireEvent.change(screen.getByLabelText(/senha/i), { target: { value: "123456" } });
+    fireEvent.change(screen.getByLabelText(/^senha$/i), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => {
